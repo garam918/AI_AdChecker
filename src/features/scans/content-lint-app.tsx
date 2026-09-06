@@ -24,6 +24,8 @@ import {
   History,
   Info,
   ExternalLink,
+  Layers3,
+  Link2,
   LoaderCircle,
   PlaySquare,
   Plus,
@@ -37,12 +39,16 @@ import {
 import { z } from 'zod';
 
 import { analyzeContent } from '@/src/ai/analyze-content';
+import { analyzeUrl } from '@/src/ai/analyze-url';
+import { AI_SAAS_DEMO_FIXTURE_ID } from '@/src/content/web/fixture-web-content-extractor';
+import type { PageSection } from '@/src/content/web/schemas';
 import type {
   Issue,
   ScanAnalysisResult,
   Severity,
 } from '@/src/compliance/core/schemas';
 import { SAFE_DEMO_REWRITE } from '@/src/compliance/packs/general-advertising/demo-data';
+import { validatePublicHttpUrl } from '@/src/security/url-validator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -58,6 +64,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import {
   Sidebar,
@@ -87,13 +94,22 @@ import { Textarea } from '@/components/ui/textarea';
 
 export const DEMO_TEXT = '업무 시간을 70% 줄여주는 국내 최고의 AI 서비스';
 
-const progressStages = [
+const textProgressStages = [
   '콘텐츠 분석',
   'Claim 추출',
   '규정 검색 질의 생성',
   '공식 규정 검색',
   '위험 맥락 분석',
   '출처 검증',
+  '리포트 생성',
+] as const;
+
+const urlProgressStages = [
+  '웹페이지 연결',
+  '콘텐츠 추출',
+  '주요 광고 Claim 탐색',
+  '적용 규정 검색',
+  '위험 요소 분석',
   '리포트 생성',
 ] as const;
 
@@ -117,6 +133,8 @@ const navItems: Array<{
 export function ContentLintApp() {
   const [view, setView] = useState<View>('dashboard');
   const [inputText, setInputText] = useState('');
+  const [inputUrl, setInputUrl] = useState('');
+  const [scanTab, setScanTab] = useState<'text' | 'url'>('text');
   const [analyzedText, setAnalyzedText] = useState('');
   const [result, setResult] = useState<ScanAnalysisResult | null>(null);
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
@@ -125,6 +143,11 @@ export function ContentLintApp() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [draftNotice, setDraftNotice] = useState<string | null>(null);
+  const [activeProgressStages, setActiveProgressStages] =
+    useState<readonly string[]>(textProgressStages);
+  const [lastUrlRequest, setLastUrlRequest] = useState<
+    { url?: string; fixtureId?: string } | undefined
+  >();
 
   const activeIssue = useMemo(
     () => result?.issues.find((issue) => issue.id === activeIssueId) ?? null,
@@ -139,13 +162,15 @@ export function ContentLintApp() {
     setInputText(normalizedText);
     setAnalysisError(null);
     setDraftNotice(null);
+    setActiveProgressStages(textProgressStages);
+    setLastUrlRequest(undefined);
     setProgressStage(0);
     setView('progress');
 
     try {
       const pendingResult = analyzeContent(normalizedText);
 
-      for (let index = 0; index < progressStages.length; index += 1) {
+      for (let index = 0; index < textProgressStages.length; index += 1) {
         setProgressStage(index);
         await delay(320);
       }
@@ -165,6 +190,42 @@ export function ContentLintApp() {
       );
     }
   }, []);
+
+  const runUrlAnalysis = useCallback(
+    async (request: { url?: string; fixtureId?: string }) => {
+      if (!request.url && !request.fixtureId) return;
+      if (request.url) setInputUrl(request.url);
+      setLastUrlRequest(request);
+      setAnalysisError(null);
+      setDraftNotice(null);
+      setProgressStage(0);
+      setActiveProgressStages(urlProgressStages);
+      setView('progress');
+
+      try {
+        const pendingResult = analyzeUrl(request);
+        for (let index = 0; index < urlProgressStages.length; index += 1) {
+          setProgressStage(index);
+          await delay(320);
+        }
+        const nextResult = await pendingResult;
+        const firstIssue = nextResult.issues[0] ?? null;
+        setResult(nextResult);
+        setAnalyzedText(nextResult.webContent?.visibleText ?? '');
+        setActiveIssueId(firstIssue?.id ?? null);
+        setSelectedRewrite(firstIssue?.suggestedRewrites[0] ?? '');
+        setView('result');
+        return nextResult;
+      } catch (error) {
+        setAnalysisError(
+          error instanceof Error
+            ? error.message
+            : '웹페이지 분석 결과를 생성하지 못했습니다.',
+        );
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     const context = document.modelContext;
@@ -349,7 +410,14 @@ export function ContentLintApp() {
         <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-8 sm:px-8 lg:px-10 lg:py-10">
           {view === 'dashboard' && (
             <Dashboard
-              onStart={() => setView('new-scan')}
+              onStart={() => {
+                setScanTab('text');
+                setView('new-scan');
+              }}
+              onUrlStart={() => {
+                setScanTab('url');
+                setView('new-scan');
+              }}
               onUseDemo={() => {
                 setInputText(DEMO_TEXT);
                 setView('new-scan');
@@ -360,14 +428,27 @@ export function ContentLintApp() {
             <NewScan
               text={inputText}
               setText={setInputText}
+              url={inputUrl}
+              setUrl={setInputUrl}
+              activeTab={scanTab}
+              setActiveTab={setScanTab}
               onAnalyze={() => void runAnalysis(inputText)}
+              onAnalyzeUrl={() => void runUrlAnalysis({ url: inputUrl })}
+              onAnalyzeDemoUrl={() =>
+                void runUrlAnalysis({ fixtureId: AI_SAAS_DEMO_FIXTURE_ID })
+              }
             />
           )}
           {view === 'progress' && (
             <AnalysisProgress
               activeStage={progressStage}
+              stages={activeProgressStages}
               error={analysisError}
-              onRetry={() => void runAnalysis(inputText)}
+              onRetry={() =>
+                lastUrlRequest
+                  ? void runUrlAnalysis(lastUrlRequest)
+                  : void runAnalysis(inputText)
+              }
               onBack={() => setView('new-scan')}
             />
           )}
@@ -386,9 +467,18 @@ export function ContentLintApp() {
               onCopy={() => void copyRewrite()}
               copied={copied}
               draftNotice={draftNotice}
-              onRescan={() => void runAnalysis(inputText)}
+              onRescan={() =>
+                result.inputType === 'URL'
+                  ? void runUrlAnalysis(
+                      result.webContent?.fixtureId
+                        ? { fixtureId: result.webContent.fixtureId }
+                        : { url: result.webContent?.url },
+                    )
+                  : void runAnalysis(inputText)
+              }
               onNewScan={() => {
                 setInputText('');
+                setInputUrl('');
                 setResult(null);
                 setView('new-scan');
               }}
@@ -402,9 +492,11 @@ export function ContentLintApp() {
 
 function Dashboard({
   onStart,
+  onUrlStart,
   onUseDemo,
 }: {
   onStart: () => void;
+  onUrlStart: () => void;
   onUseDemo: () => void;
 }) {
   return (
@@ -433,16 +525,18 @@ function Dashboard({
         <ScanCard
           eyebrow="Available now"
           icon={ScanText}
-          title="Text / Image"
+          title="Text"
           description="광고 문구를 입력하고 위험 표현과 수정안을 확인합니다."
           onClick={onStart}
           active
         />
         <ScanCard
-          eyebrow="Coming soon"
+          eyebrow="Available now"
           icon={Globe2}
           title="Website / Product Page"
           description="URL에서 보이는 광고 표현을 추출해 검사합니다."
+          onClick={onUrlStart}
+          active
         />
         <ScanCard
           eyebrow="Coming soon"
@@ -571,13 +665,26 @@ function ScanCard({
 function NewScan({
   text,
   setText,
+  url,
+  setUrl,
+  activeTab,
+  setActiveTab,
   onAnalyze,
+  onAnalyzeUrl,
+  onAnalyzeDemoUrl,
 }: {
   text: string;
   setText: (value: string) => void;
+  url: string;
+  setUrl: (value: string) => void;
+  activeTab: 'text' | 'url';
+  setActiveTab: (value: 'text' | 'url') => void;
   onAnalyze: () => void;
+  onAnalyzeUrl: () => void;
+  onAnalyzeDemoUrl: () => void;
 }) {
   const tooLong = text.length > 2000;
+  const urlError = getUrlValidationError(url);
   return (
     <div className="mx-auto max-w-4xl">
       <p className="mb-2 text-sm font-medium text-indigo-600">New analysis</p>
@@ -585,17 +692,19 @@ function NewScan({
         새 콘텐츠 검사
       </h1>
       <p className="mt-3 text-base leading-7 text-slate-500">
-        게시하려는 문구를 입력하면 문제 구간과 수정 방향을 정리합니다.
+        웹페이지 주소나 게시하려는 문구를 입력하면 문제 구간과 수정 방향을
+        정리합니다.
       </p>
       <Card className="mt-8 gap-0 border-0 py-0 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-slate-200">
-        <Tabs defaultValue="text">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as 'text' | 'url')}
+        >
           <TabsList
             variant="line"
             className="h-14 w-full justify-start gap-6 border-b border-slate-200 px-6"
           >
-            <TabsTrigger value="url" disabled>
-              URL
-            </TabsTrigger>
+            <TabsTrigger value="url">URL</TabsTrigger>
             <TabsTrigger value="youtube" disabled>
               YouTube
             </TabsTrigger>
@@ -604,6 +713,56 @@ function NewScan({
               Image / Video
             </TabsTrigger>
           </TabsList>
+          <TabsContent value="url" className="p-6 sm:p-8">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <label
+                className="text-sm font-semibold text-slate-800"
+                htmlFor="scan-url"
+              >
+                웹사이트 또는 상품 상세페이지 URL
+              </label>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-lg border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                onClick={onAnalyzeDemoUrl}
+              >
+                <Sparkles /> AI SaaS 데모 페이지 분석
+              </Button>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-white text-slate-500 shadow-xs ring-1 ring-slate-200">
+                  <Globe2 className="size-4" />
+                </span>
+                <Input
+                  id="scan-url"
+                  type="url"
+                  value={url}
+                  onChange={(event) => setUrl(event.target.value)}
+                  placeholder="https://example.com"
+                  aria-invalid={Boolean(urlError)}
+                  className="h-11 rounded-xl border-slate-200 bg-white text-sm"
+                />
+              </div>
+              <p
+                className={`mt-3 text-xs ${urlError ? 'text-red-600' : 'text-slate-500'}`}
+              >
+                {urlError ??
+                  '공개된 http/https 정적 HTML 페이지를 안전하게 가져옵니다.'}
+              </p>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button
+                size="lg"
+                disabled={!url.trim() || Boolean(urlError)}
+                onClick={onAnalyzeUrl}
+                className="h-11 rounded-xl bg-indigo-600 px-5 shadow-sm shadow-indigo-200 hover:bg-indigo-700"
+              >
+                <Globe2 /> 웹페이지 검사
+              </Button>
+            </div>
+          </TabsContent>
           <TabsContent value="text" className="p-6 sm:p-8">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <label
@@ -658,8 +817,8 @@ function NewScan({
       </Card>
       <div className="mt-5 flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-500">
         <FileImage className="mt-1 size-4 shrink-0 text-slate-400" />
-        현재 MVP는 광고 텍스트 검사를 지원합니다. 이미지와 동영상 검사는 준비
-        중입니다.
+        현재 MVP는 공개 웹페이지와 광고 텍스트 검사를 지원합니다. 로그인,
+        JavaScript 렌더링, 이미지·동영상 검사는 지원하지 않습니다.
       </div>
     </div>
   );
@@ -667,16 +826,18 @@ function NewScan({
 
 function AnalysisProgress({
   activeStage,
+  stages,
   error,
   onRetry,
   onBack,
 }: {
   activeStage: number;
+  stages: readonly string[];
   error: string | null;
   onRetry: () => void;
   onBack: () => void;
 }) {
-  const progress = ((activeStage + 1) / progressStages.length) * 100;
+  const progress = ((activeStage + 1) / stages.length) * 100;
   return (
     <div className="mx-auto flex min-h-[calc(100vh-11rem)] max-w-2xl items-center justify-center">
       <Card className="w-full border-0 px-2 py-2 shadow-[0_18px_60px_rgba(15,23,42,0.08)] ring-1 ring-slate-200">
@@ -708,7 +869,7 @@ function AnalysisProgress({
                 className="mt-4 [&_[data-slot=progress-track]]:h-2 [&_[data-slot=progress-indicator]]:bg-indigo-600"
               />
               <ol className="mt-7 space-y-1.5">
-                {progressStages.map((stage, index) => {
+                {stages.map((stage, index) => {
                   const isDone = index < activeStage;
                   const isActive = index === activeStage;
                   return (
@@ -789,6 +950,7 @@ function ScanResult({
   onNewScan: () => void;
 }) {
   const isLow = result.overallRisk === 'LOW';
+  const isWeb = result.inputType === 'URL' && Boolean(result.webContent);
   return (
     <div className="space-y-6">
       <section className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
@@ -805,43 +967,106 @@ function ScanResult({
             <span>Result</span>
           </div>
           <h1 className="text-3xl font-semibold tracking-[-0.035em] text-slate-950">
-            검사 결과
+            {isWeb
+              ? (result.webContent?.title ?? '웹페이지 검사 결과')
+              : '검사 결과'}
           </h1>
+          {isWeb && result.webContent && (
+            <a
+              href={result.webContent.finalUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 flex max-w-2xl items-center gap-1.5 truncate text-sm text-indigo-600 hover:text-indigo-700"
+            >
+              <Link2 className="size-3.5 shrink-0" />
+              <span className="truncate">{result.webContent.finalUrl}</span>
+              <ExternalLink className="size-3 shrink-0" />
+            </a>
+          )}
           <p className="mt-2 text-base text-slate-500">
             {isLow
               ? '현재 적용 규칙과 공식 규정 검색 기준에서 높은 위험 표현이 발견되지 않았습니다.'
               : '게시 전에 확인이 필요한 표현을 찾았습니다.'}
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="h-10 rounded-xl"
-          onClick={onNewScan}
-        >
-          <Plus /> 새 검사
-        </Button>
+        <div className="flex gap-2">
+          {isWeb && (
+            <Button
+              variant="outline"
+              className="h-10 rounded-xl"
+              onClick={onRescan}
+            >
+              <RefreshCw /> 웹페이지 다시 검사
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            className="h-10 rounded-xl"
+            onClick={onNewScan}
+          >
+            <Plus /> 새 검사
+          </Button>
+        </div>
       </section>
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section
+        className={`grid gap-3 sm:grid-cols-2 ${isWeb ? 'xl:grid-cols-5' : 'xl:grid-cols-3'}`}
+      >
         <SummaryMetric
           label="Detected"
-          value="General Advertising"
+          value={formatContentType(result.detectedContentType)}
           icon={ScanText}
         />
+        {isWeb && (
+          <SummaryMetric
+            label="Category"
+            value={formatCategory(result.detectedCategory)}
+            icon={Layers3}
+          />
+        )}
         <SummaryMetric
           label="Overall Risk"
           value={<RiskBadge severity={result.overallRisk} />}
           icon={ShieldAlert}
         />
+        {isWeb && (
+          <SummaryMetric
+            label="Claims Found"
+            value={`${result.claims.length} Claims`}
+            icon={ScanText}
+          />
+        )}
         <SummaryMetric
-          label="Findings"
+          label={isWeb ? 'Issues' : 'Findings'}
           value={`${result.issues.length} Risks Found`}
           icon={Clipboard}
         />
       </section>
+      {result.notices.length > 0 && (
+        <div className="space-y-2">
+          {result.notices.map((notice) => (
+            <div
+              key={notice.code}
+              className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-900"
+            >
+              <Info className="mt-1 size-4 shrink-0" /> {notice.message}
+            </div>
+          ))}
+        </div>
+      )}
       {process.env.NODE_ENV === 'development' && result.debug && (
         <RetrievalDebugPanel debug={result.debug} />
       )}
-      {isLow ? (
+      {isWeb && result.webContent ? (
+        <WebScanResultBody
+          result={result}
+          activeIssue={activeIssue}
+          selectedRewrite={selectedRewrite}
+          setSelectedRewrite={setSelectedRewrite}
+          onSelectIssue={onSelectIssue}
+          onCopy={onCopy}
+          copied={copied}
+        />
+      ) : isLow ? (
         <LowRiskResult text={analyzedText} onNewScan={onNewScan} />
       ) : (
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
@@ -918,12 +1143,217 @@ function ScanResult({
               onApplyRewrite={onApplyRewrite}
               onCopy={onCopy}
               copied={copied}
+              canApplyRewrite
             />
           )}
         </div>
       )}
     </div>
   );
+}
+
+function WebScanResultBody({
+  result,
+  activeIssue,
+  selectedRewrite,
+  setSelectedRewrite,
+  onSelectIssue,
+  onCopy,
+  copied,
+}: {
+  result: ScanAnalysisResult;
+  activeIssue: Issue | null;
+  selectedRewrite: string;
+  setSelectedRewrite: (rewrite: string) => void;
+  onSelectIssue: (issue: Issue) => void;
+  onCopy: () => void;
+  copied: boolean;
+}) {
+  const content = result.webContent!;
+  const navigationSections = content.sections
+    .filter(
+      (section) =>
+        section.heading &&
+        [
+          'HERO',
+          'HEADING',
+          'FEATURE',
+          'PRICING',
+          'TESTIMONIAL',
+          'FAQ',
+        ].includes(section.type),
+    )
+    .slice(0, 8);
+
+  return (
+    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
+      <div className="min-w-0 space-y-5">
+        <Card className="gap-0 border-0 py-0 shadow-sm ring-1 ring-slate-200">
+          <CardHeader className="border-b border-slate-200 px-5 py-5 sm:px-6">
+            <CardTitle className="text-base font-semibold text-slate-900">
+              분석한 페이지 콘텐츠
+            </CardTitle>
+            <CardDescription>
+              페이지에서 추출한 주요 구간과 광고 Claim입니다.
+            </CardDescription>
+          </CardHeader>
+          {navigationSections.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto border-b border-slate-100 px-5 py-3 sm:px-6">
+              {navigationSections.map((section) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() =>
+                    document
+                      .getElementById(`page-${section.id}`)
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  }
+                  className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-200 hover:text-indigo-700"
+                >
+                  {section.heading}
+                </button>
+              ))}
+            </div>
+          )}
+          <CardContent className="space-y-3 px-5 py-5 sm:px-6">
+            {content.sections.map((section) => (
+              <PageSectionCard
+                key={section.id}
+                section={section}
+                result={result}
+                activeIssueId={activeIssue?.id ?? null}
+                onSelectIssue={onSelectIssue}
+              />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+      {activeIssue ? (
+        <IssueInspector
+          issue={activeIssue}
+          result={result}
+          selectedRewrite={selectedRewrite}
+          setSelectedRewrite={setSelectedRewrite}
+          onApplyRewrite={() => undefined}
+          onCopy={onCopy}
+          copied={copied}
+          canApplyRewrite={false}
+        />
+      ) : (
+        <Card className="sticky top-6 border-0 shadow-sm ring-1 ring-slate-200">
+          <CardContent className="px-6 py-8 text-center">
+            <span className="mx-auto grid size-12 place-items-center rounded-xl bg-blue-50 text-blue-600">
+              {result.overallRisk === 'LOW' ? (
+                <CheckCircle2 className="size-5" />
+              ) : (
+                <Info className="size-5" />
+              )}
+            </span>
+            <RiskBadge severity={result.overallRisk} />
+            <p className="mt-4 text-sm leading-6 text-slate-600">
+              {result.overallRisk === 'LOW'
+                ? '현재 지원하는 General Advertising 규칙에서 우선 검토할 Claim을 찾지 못했습니다.'
+                : '현재 활성화된 Compliance Pack만으로 판단하지 않고 추가 검토 대상으로 남겼습니다.'}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function PageSectionCard({
+  section,
+  result,
+  activeIssueId,
+  onSelectIssue,
+}: {
+  section: PageSection;
+  result: ScanAnalysisResult;
+  activeIssueId: string | null;
+  onSelectIssue: (issue: Issue) => void;
+}) {
+  const claims = result.claims.filter(
+    (claim) => claim.sourceSectionId === section.id,
+  );
+  const issues = claims.flatMap((claim) => {
+    const issue = result.issues.find(
+      (candidate) => candidate.claimId === claim.id,
+    );
+    return issue ? [{ claim, issue }] : [];
+  });
+  const active = issues.some(({ issue }) => issue.id === activeIssueId);
+
+  return (
+    <section
+      id={`page-${section.id}`}
+      className={`scroll-mt-24 rounded-xl border px-4 py-4 transition ${active ? 'border-red-300 bg-red-50/30 ring-2 ring-red-100' : issues.length > 0 ? 'border-amber-200 bg-amber-50/20' : 'border-slate-200 bg-slate-50/50'}`}
+    >
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <Badge
+          variant="outline"
+          className="bg-white text-[10px] text-slate-500"
+        >
+          {formatSectionType(section.type)}
+        </Badge>
+        {section.heading && section.heading !== section.text && (
+          <span className="text-xs font-semibold text-slate-500">
+            {section.heading}
+          </span>
+        )}
+      </div>
+      <HighlightedSectionText
+        text={section.text}
+        issues={issues}
+        activeIssueId={activeIssueId}
+        onSelectIssue={onSelectIssue}
+      />
+    </section>
+  );
+}
+
+function HighlightedSectionText({
+  text,
+  issues,
+  activeIssueId,
+  onSelectIssue,
+}: {
+  text: string;
+  issues: Array<{
+    claim: ScanAnalysisResult['claims'][number];
+    issue: Issue;
+  }>;
+  activeIssueId: string | null;
+  onSelectIssue: (issue: Issue) => void;
+}) {
+  const matches = issues
+    .map(({ claim, issue }) => ({
+      issue,
+      start: text.indexOf(claim.text),
+      end: text.indexOf(claim.text) + claim.text.length,
+    }))
+    .filter((match) => match.start >= 0)
+    .sort((a, b) => a.start - b.start);
+  const content: ReactNode[] = [];
+  let cursor = 0;
+  matches.forEach((match) => {
+    if (match.start < cursor) return;
+    if (match.start > cursor) content.push(text.slice(cursor, match.start));
+    content.push(
+      <button
+        key={match.issue.id}
+        type="button"
+        onClick={() => onSelectIssue(match.issue)}
+        className={`mx-0.5 rounded-md px-1.5 py-1 font-semibold underline decoration-2 underline-offset-4 transition ${getIssueHighlightClass(match.issue.severity, match.issue.id === activeIssueId)}`}
+      >
+        {text.slice(match.start, match.end)}
+        <span className="sr-only"> {match.issue.severity} RISK</span>
+      </button>,
+    );
+    cursor = match.end;
+  });
+  if (cursor < text.length) content.push(text.slice(cursor));
+  return <p className="text-sm leading-7 text-slate-700">{content}</p>;
 }
 
 function SummaryMetric({
@@ -1055,6 +1485,7 @@ function IssueInspector({
   onApplyRewrite,
   onCopy,
   copied,
+  canApplyRewrite = true,
 }: {
   issue: Issue;
   result: ScanAnalysisResult;
@@ -1063,9 +1494,16 @@ function IssueInspector({
   onApplyRewrite: () => void;
   onCopy: () => void;
   copied: boolean;
+  canApplyRewrite?: boolean;
 }) {
   const sources = result.sources.filter((source) =>
     issue.regulationSourceIds.includes(source.id),
+  );
+  const claim = result.claims.find(
+    (candidate) => candidate.id === issue.claimId,
+  );
+  const pageSection = result.webContent?.sections.find(
+    (section) => section.id === claim?.sourceSectionId,
   );
   return (
     <aside className="sticky top-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.07)]">
@@ -1081,6 +1519,18 @@ function IssueInspector({
             “{issue.originalText}”
           </p>
         </InspectorSection>
+        {pageSection && (
+          <InspectorSection title="Page Source">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-semibold text-indigo-700">
+                {formatSectionType(pageSection.type)} Section
+              </p>
+              <p className="mt-1 text-sm leading-5 text-slate-700">
+                {pageSection.heading ?? pageSection.text}
+              </p>
+            </div>
+          </InspectorSection>
+        )}
         <InspectorSection title="Reason">
           <p className="text-sm leading-6 text-slate-600">
             {issue.explanation}
@@ -1185,21 +1635,26 @@ function IssueInspector({
               </label>
             ))}
           </div>
-          <div className="mt-3 grid grid-cols-[auto_1fr] gap-2">
+          <div
+            className={`mt-3 grid gap-2 ${canApplyRewrite ? 'grid-cols-[auto_1fr]' : 'grid-cols-1'}`}
+          >
             <Button
               variant="outline"
-              size="icon"
+              size={canApplyRewrite ? 'icon' : 'default'}
               aria-label="수정안 복사"
               onClick={onCopy}
             >
               {copied ? <Check className="text-emerald-600" /> : <Copy />}
+              {!canApplyRewrite && (copied ? '복사됨' : '선택한 수정안 복사')}
             </Button>
-            <Button
-              onClick={onApplyRewrite}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              이 표현으로 교체 <ArrowRight />
-            </Button>
+            {canApplyRewrite && (
+              <Button
+                onClick={onApplyRewrite}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
+                이 표현으로 교체 <ArrowRight />
+              </Button>
+            )}
           </div>
         </InspectorSection>
       </div>
@@ -1305,6 +1760,70 @@ function delay(milliseconds: number) {
 
 function createExcerpt(text: string) {
   return text.length > 96 ? `${text.slice(0, 96).trim()}…` : text;
+}
+
+function getUrlValidationError(value: string) {
+  if (!value.trim()) return null;
+  if (value.length > 2048) return 'URL은 2,048자 이하로 입력해 주세요.';
+  try {
+    validatePublicHttpUrl(value);
+    return null;
+  } catch (error) {
+    return error instanceof Error
+      ? error.message
+      : '올바른 웹사이트 URL을 입력해 주세요.';
+  }
+}
+
+function formatContentType(type: ScanAnalysisResult['detectedContentType']) {
+  return {
+    ADVERTISEMENT_TEXT: 'Advertisement Text',
+    LANDING_PAGE: 'Landing Page',
+    PRODUCT_DETAIL: 'Product Detail',
+    BLOG: 'Blog',
+    DOCUMENTATION: 'Documentation',
+    UNKNOWN: 'Unknown',
+  }[type];
+}
+
+function formatCategory(category: ScanAnalysisResult['detectedCategory']) {
+  return {
+    GENERAL_ADVERTISING: 'General Advertising',
+    GENERAL_FOOD: 'General Food',
+    UNKNOWN: 'Review Required',
+  }[category];
+}
+
+function formatSectionType(type: PageSection['type']) {
+  return {
+    HERO: 'Hero',
+    HEADING: 'Heading',
+    PARAGRAPH: 'Content',
+    CTA: 'CTA',
+    FEATURE: 'Features',
+    PRICING: 'Pricing',
+    TESTIMONIAL: 'Testimonials',
+    COMPARISON: 'Comparison',
+    FAQ: 'FAQ',
+    IMAGE_ALT: 'Image',
+    META_DESCRIPTION: 'Meta',
+  }[type];
+}
+
+function getIssueHighlightClass(severity: Severity, active: boolean) {
+  if (severity === 'HIGH') {
+    return active
+      ? 'bg-red-100 text-red-900 decoration-red-500 ring-2 ring-red-200'
+      : 'bg-red-50 text-red-800 decoration-red-400 hover:bg-red-100';
+  }
+  if (severity === 'MEDIUM') {
+    return active
+      ? 'bg-amber-100 text-amber-900 decoration-amber-500 ring-2 ring-amber-200'
+      : 'bg-amber-50 text-amber-800 decoration-amber-400 hover:bg-amber-100';
+  }
+  return active
+    ? 'bg-blue-100 text-blue-900 decoration-blue-500 ring-2 ring-blue-200'
+    : 'bg-blue-50 text-blue-800 decoration-blue-400 hover:bg-blue-100';
 }
 
 function RetrievalDebugPanel({
