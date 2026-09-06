@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Clipboard,
   Clock3,
@@ -22,6 +23,7 @@ import {
   Globe2,
   History,
   Info,
+  ExternalLink,
   LoaderCircle,
   PlaySquare,
   Plus,
@@ -51,6 +53,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Progress } from '@/components/ui/progress';
 import {
   Sidebar,
@@ -83,8 +90,10 @@ export const DEMO_TEXT = '업무 시간을 70% 줄여주는 국내 최고의 AI 
 const progressStages = [
   '콘텐츠 분석',
   'Claim 추출',
-  '적용 규정 탐색',
-  '위험 요소 평가',
+  '규정 검색 질의 생성',
+  '공식 규정 검색',
+  '위험 맥락 분석',
+  '출처 검증',
   '리포트 생성',
 ] as const;
 
@@ -220,7 +229,16 @@ export function ContentLintApp() {
   };
 
   const applyAllRewrites = () => {
-    setInputText(SAFE_DEMO_REWRITE);
+    if (!result) return;
+    const rewritten = result.issues.reduce(
+      (draft, issue) =>
+        draft.replace(
+          issue.originalText,
+          issue.suggestedRewrites[0] ?? issue.originalText,
+        ),
+      inputText,
+    );
+    setInputText(rewritten);
     setDraftNotice('추천 수정안을 모두 적용했습니다. 다시 검사해 보세요.');
   };
 
@@ -791,7 +809,7 @@ function ScanResult({
           </h1>
           <p className="mt-2 text-base text-slate-500">
             {isLow
-              ? '현재 데모 규칙에서 높은 위험 표현이 발견되지 않았습니다.'
+              ? '현재 적용 규칙과 공식 규정 검색 기준에서 높은 위험 표현이 발견되지 않았습니다.'
               : '게시 전에 확인이 필요한 표현을 찾았습니다.'}
           </p>
         </div>
@@ -820,6 +838,9 @@ function ScanResult({
           icon={Clipboard}
         />
       </section>
+      {process.env.NODE_ENV === 'development' && result.debug && (
+        <RetrievalDebugPanel debug={result.debug} />
+      )}
       {isLow ? (
         <LowRiskResult text={analyzedText} onNewScan={onNewScan} />
       ) : (
@@ -1064,6 +1085,11 @@ function IssueInspector({
           <p className="text-sm leading-6 text-slate-600">
             {issue.explanation}
           </p>
+          {issue.uncertaintyReason && (
+            <p className="mt-2 rounded-lg bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-800">
+              추가 확인: {issue.uncertaintyReason}
+            </p>
+          )}
         </InspectorSection>
         <InspectorSection title="Required Evidence">
           <ul className="grid grid-cols-2 gap-2">
@@ -1083,25 +1109,59 @@ function IssueInspector({
             {sources.map((source) => (
               <div
                 key={source.id}
-                className="rounded-xl border border-blue-100 bg-blue-50/60 p-4"
+                className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4"
               >
-                <div className="mb-2 flex items-center gap-2">
-                  <Badge className="bg-blue-100 text-blue-800">DEMO DATA</Badge>
-                  <span className="text-xs text-blue-700">
-                    공식 법령 미연결
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <Badge className="bg-emerald-100 text-emerald-800">
+                    VERIFIED
+                  </Badge>
+                  <span className="text-xs text-emerald-800">
+                    {source.authority}
                   </span>
                 </div>
                 <p className="text-sm font-semibold leading-5 text-slate-800">
                   {source.title}
                 </p>
+                <p className="mt-1 text-xs font-medium text-slate-600">
+                  {[source.provision, source.heading]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
                 <p className="mt-2 text-xs leading-5 text-slate-500">
-                  {source.text}
+                  {createExcerpt(source.text)}
                 </p>
-                <p className="mt-2 text-[11px] text-slate-400">
-                  조항 번호를 제공하지 않는 데모 검토 기준입니다.
-                </p>
+                <Collapsible className="mt-3 border-t border-emerald-100 pt-3">
+                  <CollapsibleTrigger className="group flex w-full items-center text-left text-xs font-semibold text-emerald-800">
+                    관련 원문 펼쳐보기
+                    <ChevronDown className="ml-auto size-3.5 transition-transform group-data-panel-open:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-3 text-xs leading-5 text-slate-600">
+                    <p>{source.text}</p>
+                    {source.sourceUrl && (
+                      <a
+                        href={source.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex items-center gap-1 font-semibold text-indigo-700 hover:text-indigo-800"
+                      >
+                        공식 출처에서 확인 <ExternalLink className="size-3" />
+                      </a>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             ))}
+            {sources.length === 0 && (
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+                <Badge className="bg-blue-100 text-blue-800">
+                  REVIEW REQUIRED
+                </Badge>
+                <p className="mt-2 text-xs leading-5 text-blue-900">
+                  검증된 공식 규정 청크를 연결하지 못했습니다. 확인되지 않은
+                  법령명이나 조항은 표시하지 않습니다.
+                </p>
+              </div>
+            )}
           </div>
         </InspectorSection>
         <InspectorSection title="Suggested Rewrite">
@@ -1182,8 +1242,8 @@ function LowRiskResult({
           높은 위험 표현이 발견되지 않았습니다
         </h2>
         <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
-          현재 데모 규칙 기준의 결과입니다. 실제 게시 전에는 제품 특성, 근거
-          자료, 최신 공식 규정을 추가로 확인하세요.
+          현재 적용 규칙과 공식 규정 검색 기준의 결과입니다. 실제 게시 전에는
+          제품 특성, 근거 자료, 최신 공식 규정을 추가로 확인하세요.
         </p>
         <div className="mt-7 w-full max-w-2xl rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-left text-base leading-7 text-slate-700">
           {text}
@@ -1241,4 +1301,41 @@ function RiskBadge({
 
 function delay(milliseconds: number) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+function createExcerpt(text: string) {
+  return text.length > 96 ? `${text.slice(0, 96).trim()}…` : text;
+}
+
+function RetrievalDebugPanel({
+  debug,
+}: {
+  debug: NonNullable<ScanAnalysisResult['debug']>;
+}) {
+  return (
+    <details className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-xs text-slate-600">
+      <summary className="cursor-pointer font-semibold text-slate-700">
+        Development · Retrieval debug
+      </summary>
+      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        <pre className="overflow-x-auto rounded-lg bg-slate-950 p-3 text-[11px] leading-5 text-slate-200">
+          {JSON.stringify(
+            { queries: debug.queries, retrieved: debug.retrieved },
+            null,
+            2,
+          )}
+        </pre>
+        <pre className="overflow-x-auto rounded-lg bg-slate-950 p-3 text-[11px] leading-5 text-slate-200">
+          {JSON.stringify(
+            {
+              selected: debug.selectedSourceChunkIds,
+              rejected: debug.rejectedCitations,
+            },
+            null,
+            2,
+          )}
+        </pre>
+      </div>
+    </details>
+  );
 }
