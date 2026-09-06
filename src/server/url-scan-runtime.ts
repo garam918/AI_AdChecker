@@ -6,7 +6,7 @@ import { SemanticHtmlExtractor } from '@/src/content/web/semantic-html-extractor
 import { UrlComplianceScanService } from '@/src/content/web/url-compliance-scan-service';
 import { CloudflareDnsResolver } from '@/src/security/cloudflare-dns-resolver';
 
-import { regulatoryAnalyzer } from './regulatory-runtime';
+import { contentComplianceScanService } from './regulatory-runtime';
 
 const dnsResolver = new CloudflareDnsResolver();
 const safeHtmlFetcher = new SafeHtmlFetcher(dnsResolver);
@@ -22,5 +22,5 @@ const cachedWebContentExtractor = new CachedWebContentExtractor(
 export const urlComplianceScanService = new UrlComplianceScanService(
   cachedWebContentExtractor,
   new FixtureWebContentExtractor(semanticHtmlExtractor),
-  regulatoryAnalyzer,
+  contentComplianceScanService,
 );
