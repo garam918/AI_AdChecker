@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { AI_SAAS_DEMO_FIXTURE_ID } from '@/src/content/web/fixture-web-content-extractor';
+import { DEMO_FIXTURE_IDS } from '@/src/content/web/fixture-web-content-extractor';
 import { WebExtractionError } from '@/src/content/web/web-extraction-error';
 import {
   UnsafeUrlError,
@@ -11,7 +11,7 @@ import { urlComplianceScanService } from '@/src/server/url-scan-runtime';
 const RequestSchema = z
   .object({
     url: z.string().trim().min(1).max(2048).optional(),
-    fixtureId: z.literal(AI_SAAS_DEMO_FIXTURE_ID).optional(),
+    fixtureId: z.enum(DEMO_FIXTURE_IDS).optional(),
   })
   .refine((input) => Boolean(input.url) !== Boolean(input.fixtureId), {
     message: 'URL 또는 demo fixture 하나만 지정해야 합니다.',
