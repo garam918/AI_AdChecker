@@ -1,0 +1,49 @@
+{
+  "pack": "GENERAL_FOOD",
+  "cases": [
+    {
+      "id": "mfds-food-ad-case-2026-cold-prevention",
+      "pack": "GENERAL_FOOD",
+      "authority": "식품의약품안전처",
+      "publishedAt": "2026-06-05",
+      "category": "일반식품 온라인 광고",
+      "problematicExpression": "감기 예방",
+      "issueType": "DISEASE_PREVENTION_TREATMENT",
+      "description": "식약처가 식품 온라인 광고 점검에서 감기 예방을 표방한 사례를 부당광고 적발 유형으로 공개한 공식 보도자료입니다.",
+      "sourceUrl": "https://www.mfds.go.kr/brd/m_99/view.do?seq=50051"
+    },
+    {
+      "id": "mfds-food-ad-case-2026-immunity",
+      "pack": "GENERAL_FOOD",
+      "authority": "식품의약품안전처",
+      "publishedAt": "2026-06-05",
+      "category": "일반식품 온라인 광고",
+      "problematicExpression": "면역력 강화",
+      "issueType": "HEALTH_FUNCTIONAL_FOOD_CONFUSION",
+      "description": "식약처가 식품 온라인 광고 점검에서 면역력 강화를 표방한 사례를 부당광고 적발 유형으로 공개한 공식 보도자료입니다.",
+      "sourceUrl": "https://www.mfds.go.kr/brd/m_99/view.do?seq=50051"
+    },
+    {
+      "id": "mfds-food-ad-case-2024-general-food-disease",
+      "pack": "GENERAL_FOOD",
+      "authority": "식품의약품안전처",
+      "publishedAt": "2024-06-03",
+      "category": "일반식품 온라인 광고",
+      "problematicExpression": "일반식품의 질병 예방·치료 효능 표방",
+      "issueType": "DISEASE_PREVENTION_TREATMENT",
+      "description": "식약처가 일반식품을 질병 예방·치료 식품처럼 광고한 온라인 게시물 적발 결과를 공개한 공식 사례입니다.",
+      "sourceUrl": "https://www.mfds.go.kr/brd/m_99/view.do?seq=48324"
+    },
+    {
+      "id": "mfds-food-ad-case-2024-immunity",
+      "pack": "GENERAL_FOOD",
+      "authority": "식품의약품안전처",
+      "publishedAt": "2024-09-09",
+      "category": "명절 식품 온라인 광고",
+      "problematicExpression": "면역력 증진",
+      "issueType": "HEALTH_FUNCTIONAL_FOOD_CONFUSION",
+      "description": "식약처가 면역력 증진 등을 내세운 식품 온라인 부당광고 점검 결과를 공개한 공식 사례입니다.",
+      "sourceUrl": "https://www.mfds.go.kr/brd/m_99/view.do?seq=48539"
+    }
+  ]
+}
