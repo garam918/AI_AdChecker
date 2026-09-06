@@ -1,8 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { createRagComplianceAnalyzer } from '@/src/server/regulatory-runtime';
+import { contentComplianceScanService } from '@/src/server/regulatory-runtime';
 import { FixtureWebContentExtractor } from './fixture-web-content-extractor';
-import { SemanticHtmlExtractor } from './semantic-html-extractor';
 import { UrlComplianceScanService } from './url-compliance-scan-service';
 
 describe('URL compliance scan integration', () => {
@@ -15,7 +14,7 @@ describe('URL compliance scan integration', () => {
         },
       },
       fixtureExtractor,
-      createRagComplianceAnalyzer(),
+      contentComplianceScanService,
     );
 
     const result = await service.analyze({ fixtureId: 'ai-saas-landing' });
@@ -37,37 +36,38 @@ describe('URL compliance scan integration', () => {
     ).toBe(true);
   });
 
-  it('returns review required without running general-ad rules for food content', async () => {
-    const foodContent = new SemanticHtmlExtractor().extract({
-      html: `
-        <html lang="ko">
-          <head><title>건강 음료</title></head>
-          <body><main class="hero"><h1>매일 한 잔으로 혈당 관리와 면역력 개선</h1></main></body>
-        </html>
-      `,
-      url: 'https://food.example.com',
-      finalUrl: 'https://food.example.com',
-    });
-    const analyze = vi.fn();
+  it('runs a general-food fixture through both applicable packs', async () => {
     const service = new UrlComplianceScanService(
       {
         async extract() {
-          return foodContent;
+          throw new Error('Network extraction must not run for demo fixtures.');
         },
       },
       new FixtureWebContentExtractor(),
-      { analyze },
+      contentComplianceScanService,
     );
 
-    const result = await service.analyze({ url: foodContent.url });
+    const result = await service.analyze({ fixtureId: 'general-food-product' });
 
     expect(result.detectedCategory).toBe('GENERAL_FOOD');
-    expect(result.overallRisk).toBe('REVIEW_REQUIRED');
-    expect(result.claims).toEqual([]);
-    expect(result.issues).toEqual([]);
-    expect(result.notices).toContainEqual(
-      expect.objectContaining({ code: 'GENERAL_FOOD_PACK_DISABLED' }),
+    expect(result.detectedContentType).toBe('PRODUCT_DETAIL');
+    expect(result.overallRisk).toBe('HIGH');
+    expect(result.activePacks).toEqual(
+      expect.arrayContaining(['GENERAL_ADVERTISING', 'GENERAL_FOOD']),
     );
-    expect(analyze).not.toHaveBeenCalled();
+    expect(result.issues.map((issue) => issue.category)).toEqual(
+      expect.arrayContaining([
+        'HEALTH_FUNCTIONAL_FOOD_CONFUSION',
+        'CONSUMER_EXPERIENCE_GENERALIZATION',
+      ]),
+    );
+    expect(
+      result.issues.every(
+        (issue) =>
+          issue.citationStatus === 'VERIFIED' &&
+          issue.sourceChunkIds.length > 0,
+      ),
+    ).toBe(true);
+    expect(result.enforcementCases.length).toBeGreaterThan(0);
   });
 });
