@@ -1,9 +1,8 @@
-import type { ComplianceAnalyzer } from '@/src/compliance/core/compliance-analyzer';
+import type { ContentComplianceScanService } from '@/src/compliance/core/content-compliance-scan-service';
 import { ScanAnalysisResultSchema } from '@/src/compliance/core/schemas';
 
 import { classifyWebContent } from './content-classifier';
 import type { FixtureWebContentExtractor } from './fixture-web-content-extractor';
-import { PageClaimExtractor } from './page-claim-extractor';
 import type { WebContentExtractor } from './web-content-extractor';
 
 export type UrlScanInput =
@@ -11,12 +10,13 @@ export type UrlScanInput =
   | { fixtureId: string; url?: never };
 
 export class UrlComplianceScanService {
-  private readonly claimExtractor = new PageClaimExtractor();
-
   constructor(
     private readonly webContentExtractor: WebContentExtractor,
     private readonly fixtureContentExtractor: FixtureWebContentExtractor,
-    private readonly complianceAnalyzer: ComplianceAnalyzer,
+    private readonly complianceAnalyzer: Pick<
+      ContentComplianceScanService,
+      'analyzeContent'
+    >,
   ) {}
 
   async analyze(input: UrlScanInput) {
@@ -26,10 +26,7 @@ export class UrlComplianceScanService {
     const { detectedContentType, detectedCategory } =
       classifyWebContent(webContent);
     const notices: Array<{
-      code:
-        | 'CONTENT_TRUNCATED'
-        | 'GENERAL_FOOD_PACK_DISABLED'
-        | 'UNKNOWN_CATEGORY';
+      code: 'CONTENT_TRUNCATED' | 'UNKNOWN_CATEGORY';
       message: string;
     }> = webContent.contentTruncated
       ? [
@@ -40,20 +37,12 @@ export class UrlComplianceScanService {
         ]
       : [];
 
-    if (detectedCategory !== 'GENERAL_ADVERTISING') {
-      notices.push(
-        detectedCategory === 'GENERAL_FOOD'
-          ? {
-              code: 'GENERAL_FOOD_PACK_DISABLED',
-              message:
-                'General Food로 분류됐지만 해당 Compliance Pack은 아직 활성화되지 않았습니다.',
-            }
-          : {
-              code: 'UNKNOWN_CATEGORY',
-              message:
-                '페이지 유형 또는 상품 카테고리를 충분히 분류하지 못해 추가 검토가 필요합니다.',
-            },
-      );
+    if (detectedCategory === 'UNKNOWN') {
+      notices.push({
+        code: 'UNKNOWN_CATEGORY',
+        message:
+          '페이지 유형 또는 상품 카테고리를 충분히 분류하지 못해 추가 검토가 필요합니다.',
+      });
 
       return ScanAnalysisResultSchema.parse({
         inputType: 'URL',
@@ -68,19 +57,19 @@ export class UrlComplianceScanService {
       });
     }
 
-    const claims = this.claimExtractor.extract(webContent);
-    const complianceResult = await this.complianceAnalyzer.analyze({
+    const complianceResult = await this.complianceAnalyzer.analyzeContent({
       text: webContent.visibleText,
-      claims,
+      detectedContentType,
+      webContent,
     });
 
     return ScanAnalysisResultSchema.parse({
       ...complianceResult,
       inputType: 'URL',
       detectedContentType,
-      detectedCategory,
+      detectedCategory: complianceResult.detectedCategory,
       webContent,
-      notices,
+      notices: [...complianceResult.notices, ...notices],
     });
   }
 }
