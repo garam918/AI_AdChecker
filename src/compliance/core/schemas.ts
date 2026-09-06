@@ -5,8 +5,12 @@ import {
   DetectedContentTypeSchema,
   ExtractedWebContentSchema,
 } from '@/src/content/web/schemas';
+import { EnforcementCaseSchema } from '@/src/compliance/regulatory/enforcement-case-schemas';
 
-import { RegulationSourceTypeSchema } from '../regulatory/schemas';
+import {
+  CompliancePackIdSchema,
+  RegulationSourceTypeSchema,
+} from '../regulatory/schemas';
 
 export const SeveritySchema = z.enum([
   'LOW',
@@ -24,15 +28,19 @@ export const ScanStatusSchema = z.enum([
 
 export const CitationStatusSchema = z.enum(['VERIFIED', 'REVIEW_REQUIRED']);
 export const ClaimImportanceSchema = z.enum(['LOW', 'MEDIUM', 'HIGH']);
-export const ClaimSignalSchema = z.enum([
-  'NUMERICAL',
-  'PERCENTAGE',
-  'MULTIPLIER',
-  'SUPERLATIVE',
-  'FREE',
-  'GUARANTEE',
-  'SOCIAL_PROOF',
+export const ClaimSignalSchema = z.string().min(1);
+export const ClaimContextRoleSchema = z.enum([
+  'ADVERTISING',
   'TESTIMONIAL',
+  'WARNING',
+  'NUTRITION_INFORMATION',
+  'UNKNOWN',
+]);
+export const ResolutionTypeSchema = z.enum([
+  'REMOVE_OR_REWRITE',
+  'VERIFY_PRODUCT_CLASSIFICATION',
+  'PROVIDE_EVIDENCE',
+  'HUMAN_REVIEW',
 ]);
 
 export const RegulationSourceSchema = z.object({
@@ -59,35 +67,23 @@ export const ClaimSchema = z.object({
   id: z.string().min(1),
   scanId: z.string().min(1),
   text: z.string().min(1),
-  claimType: z.enum([
-    'OBJECTIVE_PERFORMANCE',
-    'SUPERIORITY',
-    'COMPARATIVE',
-    'PRICE_CONDITION',
-    'NUMERICAL',
-    'GUARANTEE',
-    'FREE',
-    'TESTIMONIAL',
-    'GENERAL_MARKETING',
-    'UNKNOWN',
-  ]),
+  claimType: z.string().min(1),
   startOffset: z.number().int().nonnegative(),
   endOffset: z.number().int().positive(),
   sourceSectionId: z.string().min(1).nullable().optional(),
   importance: ClaimImportanceSchema.optional(),
   signals: z.array(ClaimSignalSchema).optional(),
+  contextText: z.string().min(1).nullable().optional(),
+  contextRole: ClaimContextRoleSchema.optional(),
 });
 
 export const IssueSchema = z.object({
   id: z.string().min(1),
   scanId: z.string().min(1),
   claimId: z.string().min(1),
+  packId: CompliancePackIdSchema.default('GENERAL_ADVERTISING'),
   severity: SeveritySchema,
-  category: z.enum([
-    'EVIDENCE_REQUIRED',
-    'COMPARATIVE_CLAIM',
-    'CONDITION_DISCLOSURE',
-  ]),
+  category: z.string().min(1),
   originalText: z.string().min(1),
   explanation: z.string().min(1),
   regulationSourceIds: z.array(z.string().min(1)),
@@ -96,6 +92,8 @@ export const IssueSchema = z.object({
   uncertaintyReason: z.string().min(1).nullable().default(null),
   suggestedRewrites: z.array(z.string().min(1)).min(1),
   requiredEvidence: z.array(z.string().min(1)),
+  resolutionType: ResolutionTypeSchema.default('HUMAN_REVIEW'),
+  similarEnforcementCaseIds: z.array(z.string().min(1)).default([]),
 });
 
 export const AnalysisDebugSchema = z.object({
@@ -144,15 +142,13 @@ export const ScanAnalysisResultSchema = z
     claims: z.array(ClaimSchema),
     issues: z.array(IssueSchema),
     sources: z.array(RegulationSourceSchema),
+    enforcementCases: z.array(EnforcementCaseSchema).default([]),
+    activePacks: z.array(CompliancePackIdSchema).default([]),
     webContent: ExtractedWebContentSchema.optional(),
     notices: z
       .array(
         z.object({
-          code: z.enum([
-            'CONTENT_TRUNCATED',
-            'GENERAL_FOOD_PACK_DISABLED',
-            'UNKNOWN_CATEGORY',
-          ]),
+          code: z.enum(['CONTENT_TRUNCATED', 'UNKNOWN_CATEGORY']),
           message: z.string().min(1),
         }),
       )
@@ -162,6 +158,9 @@ export const ScanAnalysisResultSchema = z
   .superRefine((result, context) => {
     const claimIds = new Set(result.claims.map((claim) => claim.id));
     const sourceIds = new Set(result.sources.map((source) => source.id));
+    const enforcementCaseIds = new Set(
+      result.enforcementCases.map((enforcementCase) => enforcementCase.id),
+    );
 
     if (result.inputType === 'URL' && !result.webContent) {
       context.addIssue({
@@ -199,6 +198,20 @@ export const ScanAnalysisResultSchema = z
           });
         }
       });
+      issue.similarEnforcementCaseIds.forEach((caseId, caseIndex) => {
+        if (!enforcementCaseIds.has(caseId)) {
+          context.addIssue({
+            code: 'custom',
+            message: 'Issue must reference a resolved enforcement case.',
+            path: [
+              'issues',
+              issueIndex,
+              'similarEnforcementCaseIds',
+              caseIndex,
+            ],
+          });
+        }
+      });
     });
   });
 
@@ -206,6 +219,8 @@ export type Severity = z.infer<typeof SeveritySchema>;
 export type CitationStatus = z.infer<typeof CitationStatusSchema>;
 export type ClaimImportance = z.infer<typeof ClaimImportanceSchema>;
 export type ClaimSignal = z.infer<typeof ClaimSignalSchema>;
+export type ClaimContextRole = z.infer<typeof ClaimContextRoleSchema>;
+export type ResolutionType = z.infer<typeof ResolutionTypeSchema>;
 export type Scan = z.infer<typeof ScanSchema>;
 export type Claim = z.infer<typeof ClaimSchema>;
 export type Issue = z.infer<typeof IssueSchema>;
