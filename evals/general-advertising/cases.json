@@ -1,0 +1,83 @@
+[
+  {
+    "id": "objective-time-reduction",
+    "input": "업무 시간을 70% 줄여드립니다",
+    "expectedClaimType": "OBJECTIVE_PERFORMANCE",
+    "expectedRiskFamily": "EVIDENCE_REQUIRED",
+    "citationRequired": true,
+    "expectedSourceTopic": "실증"
+  },
+  {
+    "id": "domestic-best",
+    "input": "국내 최고의 AI 서비스",
+    "expectedClaimType": "SUPERIORITY",
+    "expectedRiskFamily": "COMPARATIVE_CLAIM",
+    "citationRequired": true,
+    "expectedSourceTopic": "비교 기준"
+  },
+  {
+    "id": "absolute-accuracy",
+    "input": "100% 정확한 AI",
+    "expectedClaimType": "OBJECTIVE_PERFORMANCE",
+    "expectedRiskFamily": "EVIDENCE_REQUIRED",
+    "citationRequired": true,
+    "expectedSourceTopic": "객관적 자료"
+  },
+  {
+    "id": "competitor-speed-comparison",
+    "input": "경쟁사 대비 3배 빠릅니다",
+    "expectedClaimType": "COMPARATIVE",
+    "expectedRiskFamily": "COMPARATIVE_CLAIM",
+    "citationRequired": true,
+    "expectedSourceTopic": "비교 대상"
+  },
+  {
+    "id": "free-with-conditions",
+    "input": "무료로 사용할 수 있습니다",
+    "fixtureContext": "무료 범위와 유료 전환 조건이 문구에 표시되지 않았다고 가정한다.",
+    "expectedClaimType": "PRICE_CONDITION",
+    "expectedRiskFamily": "CONDITION_DISCLOSURE",
+    "citationRequired": true,
+    "expectedSourceTopic": "소비자 오인"
+  },
+  {
+    "id": "supportive-efficiency-copy",
+    "input": "업무 효율 개선을 지원합니다",
+    "expectedClaimType": null,
+    "expectedRiskFamily": "NONE",
+    "citationRequired": false,
+    "expectedSourceTopic": null
+  },
+  {
+    "id": "feature-availability-copy",
+    "input": "다양한 기능을 제공합니다",
+    "expectedClaimType": null,
+    "expectedRiskFamily": "NONE",
+    "citationRequired": false,
+    "expectedSourceTopic": null
+  },
+  {
+    "id": "measured-accuracy",
+    "input": "99.9% 정확도를 기록했습니다",
+    "expectedClaimType": "OBJECTIVE_PERFORMANCE",
+    "expectedRiskFamily": "EVIDENCE_REQUIRED",
+    "citationRequired": true,
+    "expectedSourceTopic": "실증 방법"
+  },
+  {
+    "id": "industry-number-one",
+    "input": "업계 1위",
+    "expectedClaimType": "SUPERIORITY",
+    "expectedRiskFamily": "COMPARATIVE_CLAIM",
+    "citationRequired": true,
+    "expectedSourceTopic": "비교 광고"
+  },
+  {
+    "id": "neutral-dashboard-copy",
+    "input": "팀 협업을 위한 대시보드를 제공합니다",
+    "expectedClaimType": null,
+    "expectedRiskFamily": "NONE",
+    "citationRequired": false,
+    "expectedSourceTopic": null
+  }
+]
