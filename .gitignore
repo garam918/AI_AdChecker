@@ -19,6 +19,9 @@
 # misc
 .DS_Store
 *.pem
+*.log
+.idea/
+.vscode/
 
 # debug
 npm-debug.log*
@@ -26,8 +29,22 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# local environment
-.env*
+# local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+.dev.vars
+.dev.vars.*
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*credentials*.json
+*service-account*.json
+*serviceAccount*.json
+**/secrets/
 
 # deployment and generated files
 .vercel
