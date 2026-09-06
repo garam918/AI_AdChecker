@@ -3,12 +3,16 @@ import { z } from 'zod';
 export const RegulationSourceTypeSchema = z.enum([
   'LAW',
   'ENFORCEMENT_DECREE',
+  'ENFORCEMENT_RULE',
   'ADMINISTRATIVE_RULE',
   'OFFICIAL_GUIDELINE',
   'OFFICIAL_CASE',
 ]);
 
-export const CompliancePackIdSchema = z.literal('GENERAL_ADVERTISING');
+export const CompliancePackIdSchema = z.enum([
+  'GENERAL_ADVERTISING',
+  'GENERAL_FOOD',
+]);
 
 export const RegulationDocumentSchema = z.object({
   id: z.string().min(1),
