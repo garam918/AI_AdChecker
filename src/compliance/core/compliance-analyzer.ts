@@ -1,5 +1,14 @@
-import type { ScanAnalysisResult } from './schemas';
+import type { Claim, ScanAnalysisResult } from './schemas';
+
+export type PreparedClaim = Omit<Claim, 'id' | 'scanId'>;
+
+export type ComplianceAnalysisInput =
+  | string
+  | {
+      text: string;
+      claims: PreparedClaim[];
+    };
 
 export interface ComplianceAnalyzer {
-  analyze(input: string): Promise<ScanAnalysisResult>;
+  analyze(input: ComplianceAnalysisInput): Promise<ScanAnalysisResult>;
 }
