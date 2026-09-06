@@ -2,6 +2,7 @@ import type {
   ComplianceAnalysisInput,
   ComplianceAnalyzer,
 } from '@/src/compliance/core/compliance-analyzer';
+import type { CompliancePackDefinition } from '@/src/compliance/core/compliance-pack';
 import {
   ScanAnalysisResultSchema,
   type Issue,
@@ -9,16 +10,13 @@ import {
   type ScanAnalysisResult,
   type Severity,
 } from '@/src/compliance/core/schemas';
-import {
-  extractGeneralAdvertisingClaimCandidates,
-  materializeClaims,
-} from '@/src/compliance/packs/general-advertising/claim-extractor';
+import { materializeClaims } from '@/src/compliance/packs/general-advertising/claim-extractor';
+import { generalAdvertisingCompliancePack } from '@/src/compliance/packs/general-advertising/general-advertising-compliance-pack';
 import { CitationValidator } from '@/src/compliance/regulatory/citation-validator';
 import type {
   ProcessedRegulationLoader,
   RegulationRepository,
 } from '@/src/compliance/regulatory/ingestion';
-import { RegulatoryQueryBuilder } from '@/src/compliance/regulatory/regulatory-query-builder';
 import { RegulatoryRetriever } from '@/src/compliance/regulatory/regulatory-retriever';
 import type {
   RegulationChunk,
@@ -29,26 +27,26 @@ import {
   ComplianceFindingSchema,
   type ComplianceReasoningProvider,
 } from './providers/compliance-reasoning-provider';
-import { SAFE_ANALYSIS_INSTRUCTIONS } from './providers/mock-rag-reasoning-provider';
-
 type RagComplianceAnalyzerDependencies = {
   corpusLoader: ProcessedRegulationLoader;
   repository: RegulationRepository;
   reasoningProvider: ComplianceReasoningProvider;
+  pack?: CompliancePackDefinition;
   includeDebug?: boolean;
 };
 
 export class RagComplianceAnalyzer implements ComplianceAnalyzer {
   private initialization: Promise<void> | null = null;
   private readonly retriever: RegulatoryRetriever;
-  private readonly queryBuilder = new RegulatoryQueryBuilder();
   private readonly citationValidator: CitationValidator;
+  private readonly pack: CompliancePackDefinition;
 
   constructor(
     private readonly dependencies: RagComplianceAnalyzerDependencies,
   ) {
     this.retriever = new RegulatoryRetriever(dependencies.repository);
     this.citationValidator = new CitationValidator(dependencies.repository);
+    this.pack = dependencies.pack ?? generalAdvertisingCompliancePack;
   }
 
   async analyze(input: ComplianceAnalysisInput): Promise<ScanAnalysisResult> {
@@ -56,7 +54,10 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
       typeof input === 'string'
         ? {
             text: input,
-            claims: extractGeneralAdvertisingClaimCandidates(input),
+            claims: this.pack.extractClaims({
+              text: input,
+              detectedContentType: 'ADVERTISEMENT_TEXT',
+            }),
           }
         : input;
     const normalizedInput = preparedInput.text.trim();
@@ -66,7 +67,7 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
 
     await this.initialize();
 
-    const scanId = `scan-${createStableId(normalizedInput)}`;
+    const scanId = `scan-${this.pack.metadata.id.toLowerCase()}-${createStableId(normalizedInput)}`;
     const claims = materializeClaims(preparedInput.claims, scanId);
     const debug = {
       queries: [] as Array<{ claimId: string; query: string }>,
@@ -85,9 +86,9 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
 
     const reasoningItems = await Promise.all(
       claims.map(async (claim) => {
-        const query = this.queryBuilder.build(claim);
+        const query = this.pack.buildRetrievalQuery(claim);
         const retrievalHits = await this.retriever.retrieve(query, {
-          pack: 'GENERAL_ADVERTISING',
+          pack: this.pack.metadata.id,
           maxResults: 5,
           effectiveAt: new Date().toISOString().slice(0, 10),
           minimumScore: 0.08,
@@ -111,7 +112,7 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
     );
 
     const rawFindings = await this.dependencies.reasoningProvider.analyze({
-      instructions: SAFE_ANALYSIS_INSTRUCTIONS,
+      instructions: [...this.pack.analysisInstructions],
       items: reasoningItems,
     });
     const findings = rawFindings.map((finding) =>
@@ -156,6 +157,7 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
         id: `${scanId}-issue-${issues.length + 1}`,
         scanId,
         claimId: claim.id,
+        packId: this.pack.metadata.id,
         severity: hasVerifiedCitation ? finding.severity : 'REVIEW_REQUIRED',
         category: finding.issueType,
         originalText: claim.text,
@@ -169,6 +171,8 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
             '검증된 공식 규정 출처를 연결하지 못해 추가 검토가 필요합니다.'),
         suggestedRewrites: finding.suggestedRewrites,
         requiredEvidence: finding.requiredEvidence,
+        resolutionType: finding.resolutionType,
+        similarEnforcementCaseIds: [],
       });
     }
 
@@ -176,11 +180,12 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
 
     return ScanAnalysisResultSchema.parse({
       detectedContentType: 'ADVERTISEMENT_TEXT',
-      detectedCategory: 'GENERAL_ADVERTISING',
+      detectedCategory: this.pack.metadata.category,
       overallRisk: calculateOverallRisk(deduplicatedIssues),
       claims,
       issues: deduplicatedIssues,
       sources: [...sourceMap.values()],
+      activePacks: [this.pack.metadata.id],
       ...(this.dependencies.includeDebug && { debug }),
     });
   }
