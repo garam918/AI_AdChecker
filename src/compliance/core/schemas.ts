@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { RegulationSourceTypeSchema } from '../regulatory/schemas';
+
 export const SeveritySchema = z.enum([
   'LOW',
   'MEDIUM',
@@ -14,13 +16,25 @@ export const ScanStatusSchema = z.enum([
   'FAILED',
 ]);
 
+export const CitationStatusSchema = z.enum(['VERIFIED', 'REVIEW_REQUIRED']);
+
 export const RegulationSourceSchema = z.object({
   id: z.string().min(1),
+  documentId: z.string().min(1).nullable().default(null),
+  chunkId: z.string().min(1).nullable().default(null),
   title: z.string().min(1),
+  shortTitle: z.string().min(1).nullable().default(null),
   authority: z.string().min(1),
+  sourceType: RegulationSourceTypeSchema.nullable().default(null),
+  effectiveDate: z.iso.date().nullable().default(null),
+  article: z.string().min(1).nullable().default(null),
+  paragraph: z.string().min(1).nullable().default(null),
+  section: z.string().min(1).nullable().default(null),
+  heading: z.string().min(1).nullable().default(null),
   provision: z.string().nullable(),
   text: z.string().min(1),
   sourceUrl: z.url().nullable(),
+  citationStatus: CitationStatusSchema.default('REVIEW_REQUIRED'),
   isDemoData: z.boolean(),
 });
 
@@ -28,7 +42,12 @@ export const ClaimSchema = z.object({
   id: z.string().min(1),
   scanId: z.string().min(1),
   text: z.string().min(1),
-  claimType: z.enum(['OBJECTIVE_PERFORMANCE', 'SUPERIORITY']),
+  claimType: z.enum([
+    'OBJECTIVE_PERFORMANCE',
+    'SUPERIORITY',
+    'COMPARATIVE',
+    'PRICE_CONDITION',
+  ]),
   startOffset: z.number().int().nonnegative(),
   endOffset: z.number().int().positive(),
 });
@@ -38,12 +57,43 @@ export const IssueSchema = z.object({
   scanId: z.string().min(1),
   claimId: z.string().min(1),
   severity: SeveritySchema,
-  category: z.enum(['EVIDENCE_REQUIRED', 'COMPARATIVE_CLAIM']),
+  category: z.enum([
+    'EVIDENCE_REQUIRED',
+    'COMPARATIVE_CLAIM',
+    'CONDITION_DISCLOSURE',
+  ]),
   originalText: z.string().min(1),
   explanation: z.string().min(1),
-  regulationSourceIds: z.array(z.string().min(1)).min(1),
+  regulationSourceIds: z.array(z.string().min(1)),
+  sourceChunkIds: z.array(z.string().min(1)).default([]),
+  citationStatus: CitationStatusSchema.default('REVIEW_REQUIRED'),
+  uncertaintyReason: z.string().min(1).nullable().default(null),
   suggestedRewrites: z.array(z.string().min(1)).min(1),
   requiredEvidence: z.array(z.string().min(1)),
+});
+
+export const AnalysisDebugSchema = z.object({
+  queries: z.array(
+    z.object({
+      claimId: z.string(),
+      query: z.string(),
+    }),
+  ),
+  retrieved: z.array(
+    z.object({
+      claimId: z.string(),
+      chunkId: z.string(),
+      score: z.number(),
+    }),
+  ),
+  selectedSourceChunkIds: z.array(z.string()),
+  rejectedCitations: z.array(
+    z.object({
+      claimId: z.string(),
+      chunkId: z.string(),
+      reason: z.string(),
+    }),
+  ),
 });
 
 export const ScanSchema = z.object({
@@ -66,6 +116,7 @@ export const ScanAnalysisResultSchema = z
     claims: z.array(ClaimSchema),
     issues: z.array(IssueSchema),
     sources: z.array(RegulationSourceSchema),
+    debug: AnalysisDebugSchema.optional(),
   })
   .superRefine((result, context) => {
     const claimIds = new Set(result.claims.map((claim) => claim.id));
@@ -89,10 +140,21 @@ export const ScanAnalysisResultSchema = z
           });
         }
       });
+
+      issue.sourceChunkIds.forEach((sourceId, sourceIndex) => {
+        if (!sourceIds.has(sourceId)) {
+          context.addIssue({
+            code: 'custom',
+            message: 'Issue must reference a resolved regulation chunk.',
+            path: ['issues', issueIndex, 'sourceChunkIds', sourceIndex],
+          });
+        }
+      });
     });
   });
 
 export type Severity = z.infer<typeof SeveritySchema>;
+export type CitationStatus = z.infer<typeof CitationStatusSchema>;
 export type Scan = z.infer<typeof ScanSchema>;
 export type Claim = z.infer<typeof ClaimSchema>;
 export type Issue = z.infer<typeof IssueSchema>;
