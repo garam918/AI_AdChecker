@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { regulatoryAnalyzer } from '@/src/server/regulatory-runtime';
+import { contentComplianceScanService } from '@/src/server/regulatory-runtime';
 
 const RequestSchema = z.object({
   text: z.string().trim().min(1).max(2000),
@@ -9,7 +9,7 @@ const RequestSchema = z.object({
 export async function POST(request: Request) {
   try {
     const input = RequestSchema.parse(await request.json());
-    const result = await regulatoryAnalyzer.analyze(input.text);
+    const result = await contentComplianceScanService.analyze(input.text);
     return Response.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
