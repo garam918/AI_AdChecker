@@ -7,11 +7,7 @@ export const ComplianceFindingSchema = z
   .object({
     claimId: z.string().min(1),
     severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'REVIEW_REQUIRED']),
-    issueType: z.enum([
-      'EVIDENCE_REQUIRED',
-      'COMPARATIVE_CLAIM',
-      'CONDITION_DISCLOSURE',
-    ]),
+    issueType: z.string().min(1),
     explanation: z.string().min(1),
     sourceChunkIds: z.array(z.string().min(1)),
     citationAssertions: z.array(
@@ -22,6 +18,14 @@ export const ComplianceFindingSchema = z
     ),
     requiredEvidence: z.array(z.string().min(1)),
     suggestedRewrites: z.array(z.string().min(1)).min(1),
+    resolutionType: z
+      .enum([
+        'REMOVE_OR_REWRITE',
+        'VERIFY_PRODUCT_CLASSIFICATION',
+        'PROVIDE_EVIDENCE',
+        'HUMAN_REVIEW',
+      ])
+      .default('HUMAN_REVIEW'),
     uncertaintyReason: z.string().min(1).optional(),
   })
   .superRefine((finding, context) => {
