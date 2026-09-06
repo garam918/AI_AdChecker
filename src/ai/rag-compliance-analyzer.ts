@@ -1,4 +1,7 @@
-import type { ComplianceAnalyzer } from '@/src/compliance/core/compliance-analyzer';
+import type {
+  ComplianceAnalysisInput,
+  ComplianceAnalyzer,
+} from '@/src/compliance/core/compliance-analyzer';
 import {
   ScanAnalysisResultSchema,
   type Issue,
@@ -6,7 +9,10 @@ import {
   type ScanAnalysisResult,
   type Severity,
 } from '@/src/compliance/core/schemas';
-import { extractGeneralAdvertisingClaims } from '@/src/compliance/packs/general-advertising/claim-extractor';
+import {
+  extractGeneralAdvertisingClaimCandidates,
+  materializeClaims,
+} from '@/src/compliance/packs/general-advertising/claim-extractor';
 import { CitationValidator } from '@/src/compliance/regulatory/citation-validator';
 import type {
   ProcessedRegulationLoader,
@@ -45,8 +51,15 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
     this.citationValidator = new CitationValidator(dependencies.repository);
   }
 
-  async analyze(input: string): Promise<ScanAnalysisResult> {
-    const normalizedInput = input.trim();
+  async analyze(input: ComplianceAnalysisInput): Promise<ScanAnalysisResult> {
+    const preparedInput =
+      typeof input === 'string'
+        ? {
+            text: input,
+            claims: extractGeneralAdvertisingClaimCandidates(input),
+          }
+        : input;
+    const normalizedInput = preparedInput.text.trim();
     if (!normalizedInput) {
       throw new Error('분석할 광고 문구를 입력해 주세요.');
     }
@@ -54,7 +67,7 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
     await this.initialize();
 
     const scanId = `scan-${createStableId(normalizedInput)}`;
-    const claims = extractGeneralAdvertisingClaims(normalizedInput, scanId);
+    const claims = materializeClaims(preparedInput.claims, scanId);
     const debug = {
       queries: [] as Array<{ claimId: string; query: string }>,
       retrieved: [] as Array<{
