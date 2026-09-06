@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+import {
+  DetectedCategorySchema,
+  DetectedContentTypeSchema,
+  ExtractedWebContentSchema,
+} from '@/src/content/web/schemas';
+
 import { RegulationSourceTypeSchema } from '../regulatory/schemas';
 
 export const SeveritySchema = z.enum([
@@ -17,6 +23,17 @@ export const ScanStatusSchema = z.enum([
 ]);
 
 export const CitationStatusSchema = z.enum(['VERIFIED', 'REVIEW_REQUIRED']);
+export const ClaimImportanceSchema = z.enum(['LOW', 'MEDIUM', 'HIGH']);
+export const ClaimSignalSchema = z.enum([
+  'NUMERICAL',
+  'PERCENTAGE',
+  'MULTIPLIER',
+  'SUPERLATIVE',
+  'FREE',
+  'GUARANTEE',
+  'SOCIAL_PROOF',
+  'TESTIMONIAL',
+]);
 
 export const RegulationSourceSchema = z.object({
   id: z.string().min(1),
@@ -47,9 +64,18 @@ export const ClaimSchema = z.object({
     'SUPERIORITY',
     'COMPARATIVE',
     'PRICE_CONDITION',
+    'NUMERICAL',
+    'GUARANTEE',
+    'FREE',
+    'TESTIMONIAL',
+    'GENERAL_MARKETING',
+    'UNKNOWN',
   ]),
   startOffset: z.number().int().nonnegative(),
   endOffset: z.number().int().positive(),
+  sourceSectionId: z.string().min(1).nullable().optional(),
+  importance: ClaimImportanceSchema.optional(),
+  signals: z.array(ClaimSignalSchema).optional(),
 });
 
 export const IssueSchema = z.object({
@@ -98,10 +124,11 @@ export const AnalysisDebugSchema = z.object({
 
 export const ScanSchema = z.object({
   id: z.string().min(1),
-  inputType: z.literal('TEXT'),
-  inputText: z.string().min(1),
-  detectedContentType: z.literal('ADVERTISEMENT_TEXT'),
-  detectedCategory: z.literal('GENERAL_ADVERTISING'),
+  inputType: z.enum(['TEXT', 'URL']),
+  inputText: z.string().min(1).nullable(),
+  inputUrl: z.url().nullable(),
+  detectedContentType: DetectedContentTypeSchema,
+  detectedCategory: DetectedCategorySchema,
   status: ScanStatusSchema,
   overallRisk: SeveritySchema,
   createdAt: z.iso.datetime(),
@@ -110,17 +137,39 @@ export const ScanSchema = z.object({
 
 export const ScanAnalysisResultSchema = z
   .object({
-    detectedContentType: z.literal('ADVERTISEMENT_TEXT'),
-    detectedCategory: z.literal('GENERAL_ADVERTISING'),
+    inputType: z.enum(['TEXT', 'URL']).default('TEXT'),
+    detectedContentType: DetectedContentTypeSchema,
+    detectedCategory: DetectedCategorySchema,
     overallRisk: SeveritySchema,
     claims: z.array(ClaimSchema),
     issues: z.array(IssueSchema),
     sources: z.array(RegulationSourceSchema),
+    webContent: ExtractedWebContentSchema.optional(),
+    notices: z
+      .array(
+        z.object({
+          code: z.enum([
+            'CONTENT_TRUNCATED',
+            'GENERAL_FOOD_PACK_DISABLED',
+            'UNKNOWN_CATEGORY',
+          ]),
+          message: z.string().min(1),
+        }),
+      )
+      .default([]),
     debug: AnalysisDebugSchema.optional(),
   })
   .superRefine((result, context) => {
     const claimIds = new Set(result.claims.map((claim) => claim.id));
     const sourceIds = new Set(result.sources.map((source) => source.id));
+
+    if (result.inputType === 'URL' && !result.webContent) {
+      context.addIssue({
+        code: 'custom',
+        message: 'URL analysis must include extracted web content.',
+        path: ['webContent'],
+      });
+    }
 
     result.issues.forEach((issue, issueIndex) => {
       if (!claimIds.has(issue.claimId)) {
@@ -155,6 +204,8 @@ export const ScanAnalysisResultSchema = z
 
 export type Severity = z.infer<typeof SeveritySchema>;
 export type CitationStatus = z.infer<typeof CitationStatusSchema>;
+export type ClaimImportance = z.infer<typeof ClaimImportanceSchema>;
+export type ClaimSignal = z.infer<typeof ClaimSignalSchema>;
 export type Scan = z.infer<typeof ScanSchema>;
 export type Claim = z.infer<typeof ClaimSchema>;
 export type Issue = z.infer<typeof IssueSchema>;
