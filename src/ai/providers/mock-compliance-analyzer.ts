@@ -1,4 +1,7 @@
-import type { ComplianceAnalyzer } from '@/src/compliance/core/compliance-analyzer';
+import type {
+  ComplianceAnalysisInput,
+  ComplianceAnalyzer,
+} from '@/src/compliance/core/compliance-analyzer';
 import {
   ScanAnalysisResultSchema,
   type ScanAnalysisResult,
@@ -7,8 +10,9 @@ import { GENERAL_ADVERTISING_DEMO_SOURCE } from '@/src/compliance/packs/general-
 import { runGeneralAdvertisingDemoRules } from '@/src/compliance/packs/general-advertising/demo-rules';
 
 export class MockComplianceAnalyzer implements ComplianceAnalyzer {
-  async analyze(input: string): Promise<ScanAnalysisResult> {
-    const normalizedInput = input.trim();
+  async analyze(input: ComplianceAnalysisInput): Promise<ScanAnalysisResult> {
+    const normalizedInput =
+      typeof input === 'string' ? input.trim() : input.text.trim();
 
     if (!normalizedInput) {
       throw new Error('분석할 광고 문구를 입력해 주세요.');
