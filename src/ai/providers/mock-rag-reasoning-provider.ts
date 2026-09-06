@@ -1,5 +1,6 @@
 import type { Claim } from '@/src/compliance/core/schemas';
 import type { RegulationChunk } from '@/src/compliance/regulatory/schemas';
+import { BASE_SAFE_ANALYSIS_INSTRUCTIONS } from '@/src/compliance/core/analysis-instructions';
 
 import {
   ComplianceFindingSchema,
@@ -8,12 +9,7 @@ import {
   type ComplianceReasoningProvider,
 } from './compliance-reasoning-provider';
 
-const SAFE_ANALYSIS_INSTRUCTIONS = [
-  '제공된 규정 청크만 근거로 사용한다.',
-  '출처, 법령명 또는 조항 번호를 새로 만들지 않는다.',
-  '근거가 불충분하면 REVIEW_REQUIRED를 반환한다.',
-  '합법 또는 위법을 단정하지 않고 잠재적 위험만 설명한다.',
-];
+const SAFE_ANALYSIS_INSTRUCTIONS = [...BASE_SAFE_ANALYSIS_INSTRUCTIONS];
 
 export class MockRagReasoningProvider implements ComplianceReasoningProvider {
   async analyze(input: Parameters<ComplianceReasoningProvider['analyze']>[0]) {
@@ -64,6 +60,7 @@ function createFinding(
             ? 'HIGH'
             : 'REVIEW_REQUIRED',
       issueType: 'EVIDENCE_REQUIRED',
+      resolutionType: 'PROVIDE_EVIDENCE',
       ...findingContent,
       sourceChunkIds,
       citationAssertions,
@@ -78,6 +75,7 @@ function createFinding(
       claimId: claim.id,
       severity: hasSources ? 'HIGH' : 'REVIEW_REQUIRED',
       issueType: 'COMPARATIVE_CLAIM',
+      resolutionType: 'PROVIDE_EVIDENCE',
       explanation:
         '비교 우위 표현은 비교 대상과 기준이 명확해야 하며, 적정한 방법으로 확인된 사실에 근거하는지 추가 검토가 필요합니다.',
       sourceChunkIds,
@@ -104,6 +102,7 @@ function createFinding(
       claimId: claim.id,
       severity: hasSources ? 'MEDIUM' : 'REVIEW_REQUIRED',
       issueType: 'CONDITION_DISCLOSURE',
+      resolutionType: 'HUMAN_REVIEW',
       explanation:
         '무료 표현의 적용 범위나 기간, 유료 전환 조건이 생략되면 소비자가 실제 이용 조건을 다르게 이해할 수 있어 조건 확인이 필요합니다.',
       sourceChunkIds,
@@ -123,6 +122,7 @@ function createFinding(
       claimId: claim.id,
       severity: hasSources ? 'MEDIUM' : 'REVIEW_REQUIRED',
       issueType: 'EVIDENCE_REQUIRED',
+      resolutionType: 'PROVIDE_EVIDENCE',
       explanation:
         '업무 자동화나 효율 개선 같은 효익 표현은 실제 제공 기능과 적용 범위에 따라 소비자가 기대하는 효과가 달라질 수 있어 추가 확인이 필요합니다.',
       sourceChunkIds,
@@ -146,6 +146,7 @@ function createFinding(
     claimId: claim.id,
     severity: 'REVIEW_REQUIRED',
     issueType: 'EVIDENCE_REQUIRED',
+    resolutionType: 'HUMAN_REVIEW',
     explanation:
       '현재 활성화된 일반 광고 규칙만으로는 이 표현의 맥락을 충분히 판단하기 어렵습니다.',
     sourceChunkIds,
