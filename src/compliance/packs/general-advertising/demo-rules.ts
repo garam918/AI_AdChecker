@@ -79,6 +79,10 @@ export function runGeneralAdvertisingDemoRules(input: string, scanId: string) {
         originalText,
         explanation: rule.explanation,
         regulationSourceIds: [GENERAL_ADVERTISING_DEMO_SOURCE.id],
+        sourceChunkIds: [],
+        citationStatus: 'REVIEW_REQUIRED',
+        uncertaintyReason:
+          '데모 분석기는 공식 규정 코퍼스와 연결되지 않습니다.',
         suggestedRewrites: rule.suggestedRewrites,
         requiredEvidence: rule.requiredEvidence,
       });
