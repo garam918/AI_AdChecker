@@ -1,0 +1,152 @@
+{
+  "pack": "GENERAL_ADVERTISING",
+  "documents": [
+    {
+      "id": "fair-labeling-advertising-act-2025",
+      "title": "표시·광고의 공정화에 관한 법률",
+      "shortTitle": "표시광고법",
+      "authority": "공정거래위원회",
+      "sourceType": "LAW",
+      "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률",
+      "effectiveDate": "2025-01-21",
+      "version": "법률 제20712호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00",
+      "pack": "GENERAL_ADVERTISING",
+      "sections": [
+        {
+          "id": "article-3-paragraph-1",
+          "article": "제3조",
+          "paragraph": "제1항",
+          "section": null,
+          "heading": "부당한 표시·광고 행위의 금지",
+          "text": "사업자등은 소비자를 속이거나 소비자로 하여금 잘못 알게 할 우려가 있는 표시·광고 행위로서 공정한 거래질서를 해칠 우려가 있는 다음 각 호의 행위를 하거나 다른 사업자등으로 하여금 하게 하여서는 아니 된다. 1. 거짓·과장의 표시·광고 2. 기만적인 표시·광고 3. 부당하게 비교하는 표시·광고 4. 비방적인 표시·광고",
+          "metadata": {
+            "topics": ["거짓", "과장", "기만", "부당한 비교", "소비자 오인"]
+          }
+        },
+        {
+          "id": "article-5-paragraph-1",
+          "article": "제5조",
+          "paragraph": "제1항",
+          "section": null,
+          "heading": "표시·광고 내용의 실증 등",
+          "text": "사업자등은 자기가 한 표시·광고 중 사실과 관련한 사항에 대하여는 실증할 수 있어야 한다.",
+          "metadata": {
+            "topics": [
+              "실증",
+              "사실 관련 사항",
+              "객관적 주장",
+              "수치 주장",
+              "근거 자료"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "fair-labeling-advertising-enforcement-decree-2025",
+      "title": "표시·광고의 공정화에 관한 법률 시행령",
+      "shortTitle": "표시광고법 시행령",
+      "authority": "공정거래위원회",
+      "sourceType": "ENFORCEMENT_DECREE",
+      "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률시행령",
+      "effectiveDate": "2025-10-01",
+      "version": "대통령령 제35811호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00",
+      "pack": "GENERAL_ADVERTISING",
+      "sections": [
+        {
+          "id": "article-4-paragraph-1",
+          "article": "제4조",
+          "paragraph": "제1항",
+          "section": null,
+          "heading": "실증방법 등",
+          "text": "사업자등이 법 제5조제1항에 따라 자기가 한 표시·광고 중 사실과 관련한 사항을 실증하기 위하여 시험이나 조사를 하려는 경우에는 다음 각 호의 기준에 따라야 한다. 1. 실증에 사용되는 시험 또는 조사의 방법은 학술적으로 또는 산업계에서 일반적으로 인정된 방법 등 객관적이고 타당한 방법일 것 2. 시험 또는 조사는 법령에 따른 시험·조사기관이나 사업자등과 독립적으로 경영되는 시험·조사기관에서 할 것.",
+          "metadata": {
+            "topics": [
+              "실증 방법",
+              "시험",
+              "조사",
+              "객관적 방법",
+              "타당한 방법",
+              "독립 기관"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "advertising-substantiation-operation-2015",
+      "title": "표시·광고 실증에 관한 운영",
+      "shortTitle": "광고 실증 운영고시",
+      "authority": "공정거래위원회",
+      "sourceType": "ADMINISTRATIVE_RULE",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/표시ㆍ광고실증에관한운영",
+      "effectiveDate": "2015-10-23",
+      "version": "공정거래위원회고시 제2015-15호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00",
+      "pack": "GENERAL_ADVERTISING",
+      "sections": [
+        {
+          "id": "section-2-definitions-1-2",
+          "article": null,
+          "paragraph": null,
+          "section": "Ⅱ. 용어의 정의 제1호·제2호",
+          "heading": "사실과 관련한 사항 및 실증의 정의",
+          "text": "“사실과 관련한 사항”이라 함은 표시·광고에서 주장한 내용 중에서 합리적인 근거나 객관적인 자료 등을 통하여 그 진위여부의 판단이 가능한 내용을 말한다. “실증”이라 함은 표시·광고에서 주장한 내용 중에서 사실과 관련한 사항이 진실임을 합리적인 근거나 객관적인 자료 등을 통하여 증명하는 것을 말한다.",
+          "metadata": {
+            "topics": [
+              "사실 관련 사항",
+              "실증",
+              "합리적 근거",
+              "객관적 자료",
+              "진위 판단"
+            ]
+          }
+        },
+        {
+          "id": "section-4-relevance",
+          "article": null,
+          "paragraph": null,
+          "section": "Ⅳ. 실증자료의 심사",
+          "heading": "표시·광고 내용과 실증자료의 관련성",
+          "text": "실증자료의 내용은 실증이 요구된 표시·광고 내용과 직접적으로 관계가 있어야 하며, 관련이 없는 자료는 합리적인 근거로 인정되지 않는다.",
+          "metadata": {
+            "topics": ["실증자료", "직접 관련성", "합리적 근거", "증거 적합성"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "comparative-advertising-review-guideline-2012",
+      "title": "비교표시·광고에 관한 심사지침",
+      "shortTitle": "비교광고 심사지침",
+      "authority": "공정거래위원회",
+      "sourceType": "OFFICIAL_GUIDELINE",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/비교표시ㆍ광고에관한심사지침",
+      "effectiveDate": "2012-08-21",
+      "version": "공정거래위원회예규 제153호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00",
+      "pack": "GENERAL_ADVERTISING",
+      "sections": [
+        {
+          "id": "section-3-general-principles",
+          "article": null,
+          "paragraph": null,
+          "section": "Ⅲ. 일반원칙",
+          "heading": "비교표시·광고의 일반원칙",
+          "text": "비교표시·광고는 소비자에게 사업자나 상품에 관한 유용하고 정확한 정보제공을 목적으로 행하는 것이어야 하며, 소비자를 속이거나 소비자로 하여금 잘못 알게 할 우려가 없도록 하여야 한다. 비교표시·광고는 그 비교대상 및 비교기준이 명확하여야 하며 비교내용 및 비교방법이 적정하여야 한다. 비교표시·광고는 법령에 의한 시험·조사기관이나 사업자와 독립적으로 경영되는 시험·조사기관에서 학술적 또는 산업계 등에서 일반적으로 인정된 방법 등 객관적이고 타당한 방법으로 실시한 시험·조사 결과에 의하여 실증된 사실에 근거하여야 한다.",
+          "metadata": {
+            "topics": [
+              "비교 광고",
+              "비교 대상",
+              "비교 기준",
+              "객관적 실증",
+              "우월성 주장"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
