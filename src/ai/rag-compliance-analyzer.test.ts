@@ -43,6 +43,7 @@ describe('RagComplianceAnalyzer', () => {
           citationAssertions: [],
           requiredEvidence: ['시험 결과'],
           suggestedRewrites: ['업무 효율 개선을 지원합니다.'],
+          resolutionType: 'PROVIDE_EVIDENCE',
         }));
       },
     };
