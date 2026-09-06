@@ -1,0 +1,186 @@
+{
+  "pack": "GENERAL_FOOD",
+  "documents": [
+    {
+      "id": "food-labeling-advertising-act-2025",
+      "title": "식품 등의 표시·광고에 관한 법률",
+      "shortTitle": "식품표시광고법",
+      "authority": "식품의약품안전처",
+      "sourceType": "LAW",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "effectiveDate": "2025-09-19",
+      "version": "법률 제20826호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00",
+      "pack": "GENERAL_FOOD",
+      "sections": [
+        {
+          "id": "article-8-paragraph-1-item-1",
+          "article": "제8조",
+          "paragraph": "제1항",
+          "section": "제1호",
+          "heading": "질병 예방·치료 효능으로 인식할 우려가 있는 표시·광고",
+          "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 질병의 예방·치료에 효능이 있는 것으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다.",
+          "metadata": {
+            "topics": ["질병 예방 치료", "질병 효능", "일반식품", "부당 광고"]
+          }
+        },
+        {
+          "id": "article-8-paragraph-1-item-2",
+          "article": "제8조",
+          "paragraph": "제1항",
+          "section": "제2호",
+          "heading": "식품을 의약품으로 인식할 우려가 있는 표시·광고",
+          "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 식품등을 의약품으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다.",
+          "metadata": {
+            "topics": ["의약품 오인", "의약품 효능", "일반식품", "부당 광고"]
+          }
+        },
+        {
+          "id": "article-8-paragraph-1-item-3",
+          "article": "제8조",
+          "paragraph": "제1항",
+          "section": "제3호",
+          "heading": "건강기능식품이 아닌 식품의 오인 우려 표시·광고",
+          "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 건강기능식품이 아닌 것을 건강기능식품으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다.",
+          "metadata": {
+            "topics": [
+              "건강기능식품 오인",
+              "신체 기능",
+              "일반식품",
+              "소비자 오인"
+            ]
+          }
+        },
+        {
+          "id": "article-8-paragraph-1-items-4-5",
+          "article": "제8조",
+          "paragraph": "제1항",
+          "section": "제4호·제5호",
+          "heading": "거짓·과장 또는 소비자 기만 표시·광고",
+          "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 거짓·과장된 표시 또는 광고나 소비자를 기만하는 표시 또는 광고를 하여서는 아니 된다.",
+          "metadata": {
+            "topics": ["거짓 과장", "소비자 기만", "소비자 오인", "체험기"]
+          }
+        },
+        {
+          "id": "article-9-paragraphs-1-2",
+          "article": "제9조",
+          "paragraph": "제1항·제2항",
+          "section": null,
+          "heading": "표시 또는 광고 내용의 실증",
+          "text": "식품등에 표시를 하거나 식품등을 광고한 자는 자기가 한 표시 또는 광고에 대하여 실증할 수 있어야 한다. 식품의약품안전처장은 제8조제1항을 위반할 우려가 있어 실증이 필요하다고 인정하는 경우 실증자료 제출을 요청할 수 있다.",
+          "metadata": {
+            "topics": ["실증", "객관적 근거", "시험 조사", "거짓 과장"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-labeling-advertising-enforcement-decree-2025",
+      "title": "식품 등의 표시·광고에 관한 법률 시행령",
+      "shortTitle": "식품표시광고법 시행령",
+      "authority": "식품의약품안전처",
+      "sourceType": "ENFORCEMENT_DECREE",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률시행령",
+      "effectiveDate": "2025-09-19",
+      "version": "대통령령 제35734호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00",
+      "pack": "GENERAL_FOOD",
+      "sections": [
+        {
+          "id": "article-3",
+          "article": "제3조",
+          "paragraph": "제1항·제2항",
+          "section": null,
+          "heading": "부당한 표시 또는 광고의 내용",
+          "text": "법 제8조제1항에 따른 부당한 표시 또는 광고의 구체적인 내용은 별표 1과 같다. 그 밖에 부당한 표시 또는 광고의 내용에 관한 세부적인 사항은 식품의약품안전처장이 정하여 고시한다.",
+          "metadata": {
+            "topics": [
+              "부당 광고",
+              "세부 기준",
+              "별표 1",
+              "식품의약품안전처 고시"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "food-labeling-advertising-enforcement-rule-2026",
+      "title": "식품 등의 표시·광고에 관한 법률 시행규칙",
+      "shortTitle": "식품표시광고법 시행규칙",
+      "authority": "식품의약품안전처",
+      "sourceType": "ENFORCEMENT_RULE",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률시행규칙",
+      "effectiveDate": "2026-01-01",
+      "version": "총리령 제2004호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00",
+      "pack": "GENERAL_FOOD",
+      "sections": [
+        {
+          "id": "article-9-paragraph-1",
+          "article": "제9조",
+          "paragraph": "제1항",
+          "section": null,
+          "heading": "실증방법 등",
+          "text": "표시 또는 광고에 대하여 실증하기 위하여 제출해야 하는 자료는 시험 또는 조사 결과, 전문가 견해, 학술문헌 및 그 밖에 식품의약품안전처장이 실증을 위하여 필요하다고 인정하는 자료이다.",
+          "metadata": {
+            "topics": ["실증", "시험 조사", "전문가 견해", "학술문헌"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "unfair-food-labeling-advertising-standard-2025",
+      "title": "식품등의 부당한 표시 또는 광고의 내용 기준",
+      "shortTitle": "식품 부당광고 내용 기준",
+      "authority": "식품의약품안전처",
+      "sourceType": "ADMINISTRATIVE_RULE",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/식품등의부당한표시또는광고의내용기준",
+      "effectiveDate": "2025-12-04",
+      "version": "식품의약품안전처고시 제2025-79호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00",
+      "pack": "GENERAL_FOOD",
+      "sections": [
+        {
+          "id": "article-1",
+          "article": "제1조",
+          "paragraph": null,
+          "section": null,
+          "heading": "목적",
+          "text": "식품표시광고법 제8조와 같은 법 시행령 제3조에 따른 부당한 표시·광고의 구체적인 내용을 예시하여 법 집행의 객관성과 투명성을 확보하고 소비자 보호에 이바지하는 것을 목적으로 한다.",
+          "metadata": {
+            "topics": ["부당 광고", "구체적 기준", "소비자 보호"]
+          }
+        },
+        {
+          "id": "article-2-item-1",
+          "article": "제2조",
+          "paragraph": null,
+          "section": "제1호",
+          "heading": "식품을 의약품으로 인식할 우려가 있는 표시 또는 광고",
+          "text": "식품등을 의약품으로 인식할 우려가 있는 표시 또는 광고에는 한약의 처방명 또는 고시 별표 1의 이와 유사한 명칭을 사용한 표시·광고가 포함된다.",
+          "metadata": {
+            "topics": ["의약품 오인", "한약 처방명", "명칭 오인", "일반식품"]
+          }
+        },
+        {
+          "id": "article-2-item-2",
+          "article": "제2조",
+          "paragraph": null,
+          "section": "제2호",
+          "heading": "건강기능식품이 아닌 것을 오인하게 하는 표시 또는 광고",
+          "text": "건강기능식품이 아닌 것을 건강기능식품으로 인식할 우려가 있는 표시 또는 광고에는 건강기능식품 문구나 도안을 사용한 표시·광고가 포함된다.",
+          "metadata": {
+            "topics": [
+              "건강기능식품 오인",
+              "건강기능식품 문구",
+              "도안",
+              "일반식품"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
