@@ -3,9 +3,8 @@ import type {
   DetectedContentType,
   ExtractedWebContent,
 } from './schemas';
+import { detectGeneralFoodCategory } from '@/src/compliance/packs/general-food/category-detector';
 
-const FOOD_PATTERN =
-  /식품|건강기능|영양|섭취|원재료|혈당|면역력|다이어트|칼로리|음료|간식/;
 const DOCUMENTATION_PATTERN =
   /documentation|developer|api reference|개발자 문서|사용 설명서/i;
 const BLOG_PATTERN = /blog|article|게시일|작성일|뉴스룸/i;
@@ -32,10 +31,6 @@ export function classifyWebContent(content: ExtractedWebContent): {
     .filter(Boolean)
     .join(' ');
 
-  const detectedCategory: DetectedCategory = FOOD_PATTERN.test(searchableText)
-    ? 'GENERAL_FOOD'
-    : 'GENERAL_ADVERTISING';
-
   let detectedContentType: DetectedContentType = 'UNKNOWN';
   if (structuralTypes.includes('SoftwareApplication')) {
     detectedContentType = 'LANDING_PAGE';
@@ -57,13 +52,25 @@ export function classifyWebContent(content: ExtractedWebContent): {
     detectedContentType = 'LANDING_PAGE';
   }
 
-  return {
+  if (
+    detectedContentType === 'BLOG' ||
+    detectedContentType === 'DOCUMENTATION' ||
+    detectedContentType === 'UNKNOWN'
+  ) {
+    return { detectedContentType, detectedCategory: 'UNKNOWN' };
+  }
+
+  const foodDetection = detectGeneralFoodCategory({
+    text: searchableText,
     detectedContentType,
-    detectedCategory:
-      detectedContentType === 'BLOG' ||
-      detectedContentType === 'DOCUMENTATION' ||
-      detectedContentType === 'UNKNOWN'
+    webContent: content,
+  });
+  const detectedCategory: DetectedCategory =
+    foodDetection.disposition === 'MATCH'
+      ? 'GENERAL_FOOD'
+      : foodDetection.disposition === 'UNCERTAIN'
         ? 'UNKNOWN'
-        : detectedCategory,
-  };
+        : 'GENERAL_ADVERTISING';
+
+  return { detectedContentType, detectedCategory };
 }
