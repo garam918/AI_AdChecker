@@ -1,0 +1,272 @@
+[
+  {
+    "id": "blood-sugar-tea",
+    "group": "HIGH_CANDIDATE",
+    "input": "하루 한 잔으로 혈당 관리에 도움을 주는 보리차",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "HIGH_CANDIDATE",
+    "expectedIssueTypes": ["HEALTH_FUNCTIONAL_FOOD_CONFUSION"],
+    "notes": "일반식품 차에 혈당 기능을 직접 연결한 표현"
+  },
+  {
+    "id": "immunity-drink",
+    "group": "HIGH_CANDIDATE",
+    "input": "면역력 개선을 위한 일반식품 음료",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "HIGH_CANDIDATE",
+    "expectedIssueTypes": ["HEALTH_FUNCTIONAL_FOOD_CONFUSION"],
+    "notes": "건강기능식품과 유사한 기능성 인식 가능성"
+  },
+  {
+    "id": "cold-prevention-tea",
+    "group": "HIGH_CANDIDATE",
+    "input": "감기 예방에 좋은 따뜻한 차",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "HIGH_CANDIDATE",
+    "expectedIssueTypes": ["DISEASE_PREVENTION_TREATMENT"],
+    "notes": "질병 예방 효능으로 인식될 수 있는 표현"
+  },
+  {
+    "id": "diabetes-treatment-powder",
+    "group": "HIGH_CANDIDATE",
+    "input": "당뇨 치료에 도움을 주는 일반식품 분말",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "HIGH_CANDIDATE",
+    "expectedIssueTypes": ["DISEASE_PREVENTION_TREATMENT"],
+    "notes": "질병 치료와 일반식품을 연결한 표현"
+  },
+  {
+    "id": "atopy-improvement-snack",
+    "group": "HIGH_CANDIDATE",
+    "input": "아토피 개선에 좋은 어린이 과자",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "HIGH_CANDIDATE",
+    "expectedIssueTypes": ["DISEASE_PREVENTION_TREATMENT"],
+    "notes": "질병 개선과 과자를 연결한 표현"
+  },
+  {
+    "id": "pharmaceutical-enzyme-food",
+    "group": "HIGH_CANDIDATE",
+    "input": "항염 효과가 있는 효소식품",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "HIGH_CANDIDATE",
+    "expectedIssueTypes": ["PHARMACEUTICAL_CONFUSION"],
+    "notes": "의약품 작용을 연상시키는 표현"
+  },
+  {
+    "id": "absolute-fat-reduction",
+    "group": "HIGH_CANDIDATE",
+    "input": "100% 체지방 감소 효과를 보장하는 단백질 식품",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "HIGH_CANDIDATE",
+    "expectedIssueTypes": ["FALSE_EXAGGERATED_CLAIM"],
+    "notes": "절대적 효과를 단정하는 표현"
+  },
+  {
+    "id": "skin-recovery-drink",
+    "group": "HIGH_CANDIDATE",
+    "input": "피부 상태 개선을 돕는 일반식품 음료",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "HIGH_CANDIDATE",
+    "expectedIssueTypes": ["HEALTH_FUNCTIONAL_FOOD_CONFUSION"],
+    "notes": "신체 기능 개선과 일반식품을 연결한 표현"
+  },
+  {
+    "id": "weight-loss-food",
+    "group": "HIGH_CANDIDATE",
+    "input": "체중 감량을 위한 단백질 식품",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "HIGH_CANDIDATE",
+    "expectedIssueTypes": ["HEALTH_FUNCTIONAL_FOOD_CONFUSION"],
+    "notes": "체중 감량 기능을 직접 기대하게 하는 표현"
+  },
+  {
+    "id": "joint-pain-tea",
+    "group": "HIGH_CANDIDATE",
+    "input": "관절 통증 완화에 좋은 일반식품 차",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "HIGH_CANDIDATE",
+    "expectedIssueTypes": ["HEALTH_FUNCTIONAL_FOOD_CONFUSION"],
+    "notes": "관절 통증 완화 기능을 직접 연결한 표현"
+  },
+  {
+    "id": "diabetes-warning",
+    "group": "CONTEXT_DEPENDENT",
+    "input": "일반식품 보리차입니다. 당뇨 환자는 섭취 전 전문가와 상담하세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "CONTEXT_DEPENDENT",
+    "expectedIssueTypes": [],
+    "notes": "질병 단어가 광고 효능이 아니라 주의사항에 등장"
+  },
+  {
+    "id": "consumer-testimonial",
+    "group": "CONTEXT_DEPENDENT",
+    "input": "구매 후기: 이 일반식품 차를 마시고 몸이 훨씬 좋아졌어요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "CONTEXT_DEPENDENT",
+    "expectedIssueTypes": ["CONSUMER_EXPERIENCE_GENERALIZATION"],
+    "notes": "개별 체험담의 일반화 여부는 광고 맥락 검토 필요"
+  },
+  {
+    "id": "before-after-context",
+    "group": "CONTEXT_DEPENDENT",
+    "input": "일반식품 음료 섭취 전후 사진을 확인하세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "CONTEXT_DEPENDENT",
+    "expectedIssueTypes": ["BEFORE_AFTER_RISK"],
+    "notes": "이미지 분석 전 단계의 전후 비교 후보"
+  },
+  {
+    "id": "expert-endorsement-context",
+    "group": "CONTEXT_DEPENDENT",
+    "input": "의사가 추천한 일반식품 차",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "CONTEXT_DEPENDENT",
+    "expectedIssueTypes": ["EXPERT_ENDORSEMENT_RISK"],
+    "notes": "전문가 권위가 보증처럼 쓰였는지 추가 검토 필요"
+  },
+  {
+    "id": "nutrition-sugar-zero",
+    "group": "CONTEXT_DEPENDENT",
+    "input": "식품 유형: 침출차. 영양정보 당류 0g.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "CONTEXT_DEPENDENT",
+    "expectedIssueTypes": [],
+    "notes": "단순 영양정보는 기능성 광고 표현과 구분"
+  },
+  {
+    "id": "negated-expert-endorsement",
+    "group": "CONTEXT_DEPENDENT",
+    "input": "이 일반식품 차는 의사가 추천하지 않았습니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "CONTEXT_DEPENDENT",
+    "expectedIssueTypes": [],
+    "notes": "부정 표현은 전문가 추천 후보에서 제외"
+  },
+  {
+    "id": "negated-before-after",
+    "group": "CONTEXT_DEPENDENT",
+    "input": "일반식품 음료 광고에 전후 사진을 사용하지 않습니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "CONTEXT_DEPENDENT",
+    "expectedIssueTypes": [],
+    "notes": "전후 이미지 미사용 고지는 후보에서 제외"
+  },
+  {
+    "id": "uncertain-health-only",
+    "group": "CONTEXT_DEPENDENT",
+    "input": "혈당 관리와 면역력 개선을 연구합니다.",
+    "expectedCategory": "UNKNOWN",
+    "expectedRiskFamily": "CONTEXT_DEPENDENT",
+    "expectedIssueTypes": [],
+    "notes": "건강 단어만으로 제품을 일반식품으로 분류하지 않음"
+  },
+  {
+    "id": "excluded-health-functional-food",
+    "group": "CONTEXT_DEPENDENT",
+    "input": "건강기능식품 면역력 제품",
+    "expectedCategory": "UNKNOWN",
+    "expectedRiskFamily": "CONTEXT_DEPENDENT",
+    "expectedIssueTypes": [],
+    "notes": "현재 Pack 범위에서 제외된 제품 분류"
+  },
+  {
+    "id": "blood-sugar-saas",
+    "group": "CONTEXT_DEPENDENT",
+    "input": "혈당 관리 SaaS 서비스",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedRiskFamily": "CONTEXT_DEPENDENT",
+    "expectedIssueTypes": [],
+    "notes": "건강 관련 단어가 있어도 소프트웨어는 식품이 아님"
+  },
+  {
+    "id": "barley-tea-taste",
+    "group": "SAFE_CONTEXT",
+    "input": "구수하게 즐기는 무가당 보리차",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "SAFE_CONTEXT",
+    "expectedIssueTypes": [],
+    "notes": "맛과 제품 형태 중심의 표현"
+  },
+  {
+    "id": "coffee-aroma",
+    "group": "SAFE_CONTEXT",
+    "input": "은은한 향과 깔끔한 맛의 원두커피",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "SAFE_CONTEXT",
+    "expectedIssueTypes": [],
+    "notes": "관능 특성 중심의 표현"
+  },
+  {
+    "id": "snack-texture",
+    "group": "SAFE_CONTEXT",
+    "input": "바삭한 식감으로 즐기는 현미 과자",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "SAFE_CONTEXT",
+    "expectedIssueTypes": [],
+    "notes": "식감 중심의 표현"
+  },
+  {
+    "id": "ingredient-list",
+    "group": "SAFE_CONTEXT",
+    "input": "원재료: 볶은 보리 100%",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "SAFE_CONTEXT",
+    "expectedIssueTypes": [],
+    "notes": "구성 원재료 정보"
+  },
+  {
+    "id": "calorie-information",
+    "group": "SAFE_CONTEXT",
+    "input": "영양정보: 1회 제공량당 열량 25kcal",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "SAFE_CONTEXT",
+    "expectedIssueTypes": [],
+    "notes": "단순 영양정보"
+  },
+  {
+    "id": "brewing-instruction",
+    "group": "SAFE_CONTEXT",
+    "input": "티백을 따뜻한 물에 3분간 우려 드세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "SAFE_CONTEXT",
+    "expectedIssueTypes": [],
+    "notes": "섭취·조리 방법 안내"
+  },
+  {
+    "id": "product-type",
+    "group": "SAFE_CONTEXT",
+    "input": "식품 유형: 곡류가공품",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "SAFE_CONTEXT",
+    "expectedIssueTypes": [],
+    "notes": "제품 분류 정보"
+  },
+  {
+    "id": "protein-content",
+    "group": "SAFE_CONTEXT",
+    "input": "단백질 식품으로 1회 제공량당 단백질 10g",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "SAFE_CONTEXT",
+    "expectedIssueTypes": [],
+    "notes": "영양성분 함량 정보"
+  },
+  {
+    "id": "daily-beverage",
+    "group": "SAFE_CONTEXT",
+    "input": "매일 편하게 즐기는 곡물 음료",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "SAFE_CONTEXT",
+    "expectedIssueTypes": [],
+    "notes": "섭취 경험 중심의 일반 표현"
+  },
+  {
+    "id": "warm-tea",
+    "group": "SAFE_CONTEXT",
+    "input": "따뜻하게 즐기는 부드러운 홍차",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedRiskFamily": "SAFE_CONTEXT",
+    "expectedIssueTypes": [],
+    "notes": "맛과 음용 방식 중심의 표현"
+  }
+]
