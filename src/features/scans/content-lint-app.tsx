@@ -40,7 +40,10 @@ import { z } from 'zod';
 
 import { analyzeContent } from '@/src/ai/analyze-content';
 import { analyzeUrl } from '@/src/ai/analyze-url';
-import { AI_SAAS_DEMO_FIXTURE_ID } from '@/src/content/web/fixture-web-content-extractor';
+import {
+  AI_SAAS_DEMO_FIXTURE_ID,
+  GENERAL_FOOD_DEMO_FIXTURE_ID,
+} from '@/src/content/web/fixture-web-content-extractor';
 import type { PageSection } from '@/src/content/web/schemas';
 import type {
   Issue,
@@ -93,6 +96,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 
 export const DEMO_TEXT = '업무 시간을 70% 줄여주는 국내 최고의 AI 서비스';
+const FOOD_DEMO_PRESETS = [
+  {
+    label: '혈당·면역 표현',
+    text: '매일 한 잔으로 혈당 관리와 면역력 개선',
+  },
+  {
+    label: '감기 예방 표현',
+    text: '감기 예방에 좋은 따뜻한 차',
+  },
+  {
+    label: '일반 제품 표현',
+    text: '구수하게 즐기는 무가당 보리차',
+  },
+] as const;
 
 const textProgressStages = [
   '콘텐츠 분석',
@@ -403,7 +420,7 @@ export function ContentLintApp() {
           </div>
           <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-xs">
             <span className="size-1.5 rounded-full bg-emerald-500" />
-            General Advertising
+            Auto Detect · Advertising + Food
           </span>
         </header>
 
@@ -436,6 +453,11 @@ export function ContentLintApp() {
               onAnalyzeUrl={() => void runUrlAnalysis({ url: inputUrl })}
               onAnalyzeDemoUrl={() =>
                 void runUrlAnalysis({ fixtureId: AI_SAAS_DEMO_FIXTURE_ID })
+              }
+              onAnalyzeFoodDemoUrl={() =>
+                void runUrlAnalysis({
+                  fixtureId: GENERAL_FOOD_DEMO_FIXTURE_ID,
+                })
               }
             />
           )}
@@ -672,6 +694,7 @@ function NewScan({
   onAnalyze,
   onAnalyzeUrl,
   onAnalyzeDemoUrl,
+  onAnalyzeFoodDemoUrl,
 }: {
   text: string;
   setText: (value: string) => void;
@@ -682,6 +705,7 @@ function NewScan({
   onAnalyze: () => void;
   onAnalyzeUrl: () => void;
   onAnalyzeDemoUrl: () => void;
+  onAnalyzeFoodDemoUrl: () => void;
 }) {
   const tooLong = text.length > 2000;
   const urlError = getUrlValidationError(url);
@@ -721,14 +745,24 @@ function NewScan({
               >
                 웹사이트 또는 상품 상세페이지 URL
               </label>
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-lg border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                onClick={onAnalyzeDemoUrl}
-              >
-                <Sparkles /> AI SaaS 데모 페이지 분석
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                  onClick={onAnalyzeDemoUrl}
+                >
+                  <Sparkles /> AI SaaS 데모
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                  onClick={onAnalyzeFoodDemoUrl}
+                >
+                  <Sparkles /> 일반식품 데모
+                </Button>
+              </div>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
               <div className="flex items-center gap-3">
@@ -777,8 +811,23 @@ function NewScan({
                 className="rounded-lg border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                 onClick={() => setText(DEMO_TEXT)}
               >
-                <Sparkles /> Demo Example
+                <Sparkles /> AI SaaS 데모
               </Button>
+            </div>
+            <div
+              className="mb-4 flex flex-wrap gap-2"
+              aria-label="일반식품 데모 문구"
+            >
+              {FOOD_DEMO_PRESETS.map((preset) => (
+                <button
+                  key={preset.text}
+                  type="button"
+                  onClick={() => setText(preset.text)}
+                  className="rounded-full border border-emerald-200 bg-emerald-50/70 px-3 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100"
+                >
+                  {preset.label}
+                </button>
+              ))}
             </div>
             <Textarea
               id="scan-text"
@@ -792,7 +841,7 @@ function NewScan({
               <span className={tooLong ? 'text-red-600' : 'text-slate-400'}>
                 {tooLong
                   ? '2,000자 이하로 입력해 주세요.'
-                  : '한국어 광고 문구 · General Advertising'}
+                  : '한국어 광고 문구 · 카테고리 자동 감지'}
               </span>
               <span
                 className={
@@ -988,6 +1037,26 @@ function ScanResult({
               ? '현재 적용 규칙과 공식 규정 검색 기준에서 높은 위험 표현이 발견되지 않았습니다.'
               : '게시 전에 확인이 필요한 표현을 찾았습니다.'}
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Badge
+              variant="outline"
+              className="border-slate-200 bg-white text-slate-700"
+            >
+              Detected Category · {formatCategory(result.detectedCategory)}
+            </Badge>
+            {result.activePacks.map((packId) => (
+              <Badge
+                key={packId}
+                className={
+                  packId === 'GENERAL_FOOD'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-indigo-100 text-indigo-800'
+                }
+              >
+                {formatPack(packId)} Pack
+              </Badge>
+            ))}
+          </div>
         </div>
         <div className="flex gap-2">
           {isWeb && (
@@ -1008,33 +1077,27 @@ function ScanResult({
           </Button>
         </div>
       </section>
-      <section
-        className={`grid gap-3 sm:grid-cols-2 ${isWeb ? 'xl:grid-cols-5' : 'xl:grid-cols-3'}`}
-      >
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <SummaryMetric
           label="Detected"
           value={formatContentType(result.detectedContentType)}
           icon={ScanText}
         />
-        {isWeb && (
-          <SummaryMetric
-            label="Category"
-            value={formatCategory(result.detectedCategory)}
-            icon={Layers3}
-          />
-        )}
+        <SummaryMetric
+          label="Category"
+          value={formatCategory(result.detectedCategory)}
+          icon={Layers3}
+        />
         <SummaryMetric
           label="Overall Risk"
           value={<RiskBadge severity={result.overallRisk} />}
           icon={ShieldAlert}
         />
-        {isWeb && (
-          <SummaryMetric
-            label="Claims Found"
-            value={`${result.claims.length} Claims`}
-            icon={ScanText}
-          />
-        )}
+        <SummaryMetric
+          label="Claims Found"
+          value={`${result.claims.length} Claims`}
+          icon={ScanText}
+        />
         <SummaryMetric
           label={isWeb ? 'Issues' : 'Findings'}
           value={`${result.issues.length} Risks Found`}
@@ -1068,6 +1131,8 @@ function ScanResult({
         />
       ) : isLow ? (
         <LowRiskResult text={analyzedText} onNewScan={onNewScan} />
+      ) : result.issues.length === 0 ? (
+        <ReviewRequiredEmptyState text={analyzedText} onNewScan={onNewScan} />
       ) : (
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
           <div className="min-w-0 space-y-6">
@@ -1148,6 +1213,9 @@ function ScanResult({
           )}
         </div>
       )}
+      <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-500">
+        본 결과는 공식 심의나 법률 자문을 대체하지 않는 사전 점검 정보입니다.
+      </p>
     </div>
   );
 }
@@ -1252,7 +1320,7 @@ function WebScanResultBody({
             <RiskBadge severity={result.overallRisk} />
             <p className="mt-4 text-sm leading-6 text-slate-600">
               {result.overallRisk === 'LOW'
-                ? '현재 지원하는 General Advertising 규칙에서 우선 검토할 Claim을 찾지 못했습니다.'
+                ? '현재 적용된 Compliance Pack에서 우선 검토할 Claim을 찾지 못했습니다.'
                 : '현재 활성화된 Compliance Pack만으로 판단하지 않고 추가 검토 대상으로 남겼습니다.'}
             </p>
           </CardContent>
@@ -1499,6 +1567,9 @@ function IssueInspector({
   const sources = result.sources.filter((source) =>
     issue.regulationSourceIds.includes(source.id),
   );
+  const enforcementCases = result.enforcementCases.filter((item) =>
+    issue.similarEnforcementCaseIds.includes(item.id),
+  );
   const claim = result.claims.find(
     (candidate) => candidate.id === issue.claimId,
   );
@@ -1511,6 +1582,10 @@ function IssueInspector({
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-semibold text-slate-950">Issue Inspector</h2>
           <RiskBadge severity={issue.severity} compact />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Badge variant="outline">{formatIssueType(issue.category)}</Badge>
+          <Badge variant="outline">{formatPack(issue.packId)} Pack</Badge>
         </div>
       </div>
       <div className="max-h-[calc(100vh-11rem)] space-y-6 overflow-y-auto px-5 py-5">
@@ -1541,20 +1616,27 @@ function IssueInspector({
             </p>
           )}
         </InspectorSection>
-        <InspectorSection title="Required Evidence">
-          <ul className="grid grid-cols-2 gap-2">
-            {issue.requiredEvidence.map((evidence) => (
-              <li
-                key={evidence}
-                className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600"
-              >
-                <span className="size-1.5 rounded-full bg-slate-400" />
-                {evidence}
-              </li>
-            ))}
-          </ul>
+        <InspectorSection title="권장 조치">
+          <p className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm font-medium text-indigo-900">
+            {formatResolutionType(issue.resolutionType)}
+          </p>
         </InspectorSection>
-        <InspectorSection title="Related Regulation">
+        {issue.requiredEvidence.length > 0 && (
+          <InspectorSection title="Required Evidence">
+            <ul className="grid grid-cols-2 gap-2">
+              {issue.requiredEvidence.map((evidence) => (
+                <li
+                  key={evidence}
+                  className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600"
+                >
+                  <span className="size-1.5 rounded-full bg-slate-400" />
+                  {evidence}
+                </li>
+              ))}
+            </ul>
+          </InspectorSection>
+        )}
+        <InspectorSection title="관련 규정">
           <div className="space-y-3">
             {sources.map((source) => (
               <div
@@ -1614,6 +1696,45 @@ function IssueInspector({
             )}
           </div>
         </InspectorSection>
+        {enforcementCases.length > 0 && (
+          <InspectorSection title="유사 식약처 적발 사례">
+            <div className="space-y-3">
+              {enforcementCases.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-xl border border-amber-100 bg-amber-50/60 p-4"
+                >
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <Badge className="bg-amber-100 text-amber-800">
+                      MFDS ENFORCEMENT EXAMPLE
+                    </Badge>
+                    <span className="text-xs text-amber-800">
+                      {item.publishedAt}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800">
+                    “{item.problematicExpression}”
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-slate-600">
+                    {item.description}
+                  </p>
+                  <a
+                    href={item.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 hover:text-indigo-800"
+                  >
+                    식약처 공식 자료 확인 <ExternalLink className="size-3" />
+                  </a>
+                </div>
+              ))}
+              <p className="text-xs leading-5 text-slate-500">
+                유사 사례는 참고 정보이며, 위의 관련 규정을 대신하는 법적 근거가
+                아닙니다.
+              </p>
+            </div>
+          </InspectorSection>
+        )}
         <InspectorSection title="Suggested Rewrite">
           <div className="space-y-2">
             {issue.suggestedRewrites.map((rewrite) => (
@@ -1715,6 +1836,43 @@ function LowRiskResult({
   );
 }
 
+function ReviewRequiredEmptyState({
+  text,
+  onNewScan,
+}: {
+  text: string;
+  onNewScan: () => void;
+}) {
+  return (
+    <Card className="border-0 py-0 shadow-[0_16px_50px_rgba(15,23,42,0.06)] ring-1 ring-blue-200">
+      <CardContent className="flex flex-col items-center px-6 py-12 text-center sm:py-16">
+        <span className="grid size-16 place-items-center rounded-2xl bg-blue-50 text-blue-600">
+          <Info className="size-8" />
+        </span>
+        <RiskBadge severity="REVIEW_REQUIRED" />
+        <h2 className="mt-5 text-2xl font-semibold tracking-tight text-slate-950">
+          제품 분류를 먼저 확인해 주세요
+        </h2>
+        <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
+          현재 지원 범위에서 제품 유형을 확정하지 못해 규정 근거가 없는 Issue를
+          만들지 않았습니다. 일반식품 여부와 제품 정보를 확인한 뒤 다시 검사해
+          주세요.
+        </p>
+        <div className="mt-7 w-full max-w-2xl rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-left text-base leading-7 text-slate-700">
+          {text}
+        </div>
+        <Button
+          variant="outline"
+          className="mt-7 h-10 rounded-xl"
+          onClick={onNewScan}
+        >
+          <Plus /> 다른 문구 검사
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 function RiskBadge({
   severity,
   compact = false,
@@ -1792,6 +1950,39 @@ function formatCategory(category: ScanAnalysisResult['detectedCategory']) {
     GENERAL_FOOD: 'General Food',
     UNKNOWN: 'Review Required',
   }[category];
+}
+
+function formatPack(packId: Issue['packId']) {
+  return {
+    GENERAL_ADVERTISING: 'General Advertising',
+    GENERAL_FOOD: 'General Food',
+  }[packId];
+}
+
+function formatResolutionType(resolutionType: Issue['resolutionType']) {
+  return {
+    REMOVE_OR_REWRITE: '효능 표현을 제거하거나 제품 정보 중심으로 수정',
+    VERIFY_PRODUCT_CLASSIFICATION: '제품 분류를 먼저 확인',
+    PROVIDE_EVIDENCE: '표현과 직접 연결되는 객관적 근거 확인',
+    HUMAN_REVIEW: '전체 맥락을 포함한 추가 검토',
+  }[resolutionType];
+}
+
+function formatIssueType(issueType: string) {
+  return (
+    {
+      DISEASE_PREVENTION_TREATMENT: '질병 예방·치료 표현',
+      HEALTH_FUNCTIONAL_FOOD_CONFUSION: '건강기능식품 오인 우려',
+      PHARMACEUTICAL_CONFUSION: '의약품 오인 우려',
+      FALSE_EXAGGERATED_CLAIM: '거짓·과장 표현',
+      CONSUMER_EXPERIENCE_GENERALIZATION: '체험담 일반화',
+      BEFORE_AFTER_RISK: '전후 비교 맥락',
+      EXPERT_ENDORSEMENT_RISK: '전문가 권위 표현',
+      EVIDENCE_REQUIRED: '객관적 근거 필요',
+      COMPARATIVE_CLAIM: '비교·우월 표현',
+      CONDITION_DISCLOSURE: '조건 표시 확인',
+    }[issueType] ?? issueType.replaceAll('_', ' ')
+  );
 }
 
 function formatSectionType(type: PageSection['type']) {
