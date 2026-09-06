@@ -74,6 +74,7 @@ export function runGeneralAdvertisingDemoRules(input: string, scanId: string) {
         id: `${scanId}-issue-${issues.length + 1}`,
         scanId,
         claimId,
+        packId: 'GENERAL_ADVERTISING',
         severity: 'HIGH',
         category: rule.category,
         originalText,
@@ -85,6 +86,8 @@ export function runGeneralAdvertisingDemoRules(input: string, scanId: string) {
           '데모 분석기는 공식 규정 코퍼스와 연결되지 않습니다.',
         suggestedRewrites: rule.suggestedRewrites,
         requiredEvidence: rule.requiredEvidence,
+        resolutionType: 'PROVIDE_EVIDENCE',
+        similarEnforcementCaseIds: [],
       });
     }
   }
