@@ -6,11 +6,14 @@ import type {
   ExtractedWebContent,
 } from '@/src/content/web/schemas';
 import type { CompliancePackId } from '@/src/compliance/regulatory/schemas';
+import type { ProductIdentity } from '@/src/compliance/product-authorization/schemas';
 
 export type PackContentInput = {
   text: string;
   detectedContentType: DetectedContentType;
   webContent?: ExtractedWebContent;
+  categoryHint?: DetectedCategory;
+  productIdentity?: ProductIdentity;
 };
 
 export type PackCategoryDetection = {
