@@ -2,10 +2,12 @@ import { z } from 'zod';
 
 import { ClaimSchema } from '@/src/compliance/core/schemas';
 import { RegulationChunkSchema } from '@/src/compliance/regulatory/schemas';
+import { ProductAuthorizationResolutionSchema } from '@/src/compliance/product-authorization/schemas';
 
 export const ComplianceFindingSchema = z
   .object({
     claimId: z.string().min(1),
+    disposition: z.enum(['ISSUE', 'PASS']).default('ISSUE'),
     severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'REVIEW_REQUIRED']),
     issueType: z.string().min(1),
     explanation: z.string().min(1),
@@ -54,6 +56,7 @@ export const ComplianceFindingSchema = z
 
 export const ComplianceReasoningInputSchema = z.object({
   instructions: z.array(z.string().min(1)).min(1),
+  productAuthorization: ProductAuthorizationResolutionSchema.optional(),
   items: z.array(
     z.object({
       claim: ClaimSchema,
@@ -63,7 +66,7 @@ export const ComplianceReasoningInputSchema = z.object({
   ),
 });
 
-export type ComplianceFinding = z.infer<typeof ComplianceFindingSchema>;
+export type ComplianceFinding = z.input<typeof ComplianceFindingSchema>;
 export type ComplianceReasoningInput = z.infer<
   typeof ComplianceReasoningInputSchema
 >;
