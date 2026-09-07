@@ -1,6 +1,22 @@
-import { ScanAnalysisResultSchema } from '../compliance/core/schemas';
+import {
+  ScanAnalysisResultSchema,
+  type AnalysisAudience,
+} from '../compliance/core/schemas';
+import type { ProductIdentity } from '../compliance/product-authorization/schemas';
+import type { DetectedCategory } from '../content/web/schemas';
 
-export async function analyzeUrl(input: { url?: string; fixtureId?: string }) {
+type RegulatedAnalysisCategory = Extract<
+  DetectedCategory,
+  'HEALTH_FUNCTIONAL_FOOD' | 'PHARMACEUTICAL' | 'MEDICAL_DEVICE' | 'COSMETIC'
+>;
+
+export async function analyzeUrl(input: {
+  url?: string;
+  fixtureId?: string;
+  audience?: AnalysisAudience;
+  categoryHint?: RegulatedAnalysisCategory;
+  productIdentity?: ProductIdentity;
+}) {
   const response = await fetch('/api/analyze-url', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
