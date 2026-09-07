@@ -4,6 +4,20 @@ import { ContentComplianceScanService } from '@/src/compliance/core/content-comp
 import { generalAdvertisingCompliancePack } from '@/src/compliance/packs/general-advertising/general-advertising-compliance-pack';
 import { generalFoodCompliancePack } from '@/src/compliance/packs/general-food/general-food-compliance-pack';
 import { GeneralFoodReasoningProvider } from '@/src/compliance/packs/general-food/reasoning-provider';
+import { healthFunctionalFoodCompliancePack } from '@/src/compliance/packs/health-functional-food/health-functional-food-compliance-pack';
+import { HealthFunctionalFoodReasoningProvider } from '@/src/compliance/packs/health-functional-food/reasoning-provider';
+import { HealthFunctionalFoodAuthorizationResolver } from '@/src/compliance/product-authorization/health-functional-food-authorization';
+import {
+  CompositeProductAuthorizationResolver,
+  MfdsRegulatedProductAuthorizationResolver,
+} from '@/src/compliance/product-authorization/mfds-regulated-product-authorization';
+import { pharmaceuticalCompliancePack } from '@/src/compliance/packs/pharmaceutical/pharmaceutical-compliance-pack';
+import { medicalDeviceCompliancePack } from '@/src/compliance/packs/medical-device/medical-device-compliance-pack';
+import { cosmeticCompliancePack } from '@/src/compliance/packs/cosmetic/cosmetic-compliance-pack';
+import { RegulatedProductReasoningProvider } from '@/src/compliance/packs/regulated-product/reasoning-provider';
+import { PHARMACEUTICAL_ANALYSIS_INSTRUCTIONS } from '@/src/compliance/packs/pharmaceutical/pharmaceutical-compliance-pack';
+import { MEDICAL_DEVICE_ANALYSIS_INSTRUCTIONS } from '@/src/compliance/packs/medical-device/medical-device-compliance-pack';
+import { COSMETIC_ANALYSIS_INSTRUCTIONS } from '@/src/compliance/packs/cosmetic/cosmetic-compliance-pack';
 import { InMemoryRegulationRepository } from '@/src/compliance/regulatory/in-memory-regulation-repository';
 import { LocalEnforcementCaseRepository } from '@/src/compliance/regulatory/local-enforcement-case-repository';
 import { LocalProcessedRegulationLoader } from '@/src/compliance/regulatory/local-processed-regulation-loader';
@@ -32,6 +46,63 @@ export function createGeneralFoodRagComplianceAnalyzer(options?: {
   });
 }
 
+export function createHealthFunctionalFoodRagComplianceAnalyzer(options?: {
+  includeDebug?: boolean;
+}) {
+  return new RagComplianceAnalyzer({
+    corpusLoader: new LocalProcessedRegulationLoader('HEALTH_FUNCTIONAL_FOOD'),
+    repository: new InMemoryRegulationRepository(),
+    reasoningProvider: new HealthFunctionalFoodReasoningProvider(),
+    pack: healthFunctionalFoodCompliancePack,
+    includeDebug: options?.includeDebug ?? false,
+  });
+}
+
+export function createPharmaceuticalRagComplianceAnalyzer(options?: {
+  includeDebug?: boolean;
+}) {
+  return new RagComplianceAnalyzer({
+    corpusLoader: new LocalProcessedRegulationLoader('PHARMACEUTICAL'),
+    repository: new InMemoryRegulationRepository(),
+    reasoningProvider: new RegulatedProductReasoningProvider(
+      'PHARMACEUTICAL',
+      PHARMACEUTICAL_ANALYSIS_INSTRUCTIONS,
+    ),
+    pack: pharmaceuticalCompliancePack,
+    includeDebug: options?.includeDebug ?? false,
+  });
+}
+
+export function createMedicalDeviceRagComplianceAnalyzer(options?: {
+  includeDebug?: boolean;
+}) {
+  return new RagComplianceAnalyzer({
+    corpusLoader: new LocalProcessedRegulationLoader('MEDICAL_DEVICE'),
+    repository: new InMemoryRegulationRepository(),
+    reasoningProvider: new RegulatedProductReasoningProvider(
+      'MEDICAL_DEVICE',
+      MEDICAL_DEVICE_ANALYSIS_INSTRUCTIONS,
+    ),
+    pack: medicalDeviceCompliancePack,
+    includeDebug: options?.includeDebug ?? false,
+  });
+}
+
+export function createCosmeticRagComplianceAnalyzer(options?: {
+  includeDebug?: boolean;
+}) {
+  return new RagComplianceAnalyzer({
+    corpusLoader: new LocalProcessedRegulationLoader('COSMETIC'),
+    repository: new InMemoryRegulationRepository(),
+    reasoningProvider: new RegulatedProductReasoningProvider(
+      'COSMETIC',
+      COSMETIC_ANALYSIS_INSTRUCTIONS,
+    ),
+    pack: cosmeticCompliancePack,
+    includeDebug: options?.includeDebug ?? false,
+  });
+}
+
 export const regulatoryAnalyzer = createRagComplianceAnalyzer({
   includeDebug: process.env.NODE_ENV === 'development',
 });
@@ -40,6 +111,25 @@ export const generalFoodRegulatoryAnalyzer =
   createGeneralFoodRagComplianceAnalyzer({
     includeDebug: process.env.NODE_ENV === 'development',
   });
+
+export const healthFunctionalFoodRegulatoryAnalyzer =
+  createHealthFunctionalFoodRagComplianceAnalyzer({
+    includeDebug: process.env.NODE_ENV === 'development',
+  });
+
+export const pharmaceuticalRegulatoryAnalyzer =
+  createPharmaceuticalRagComplianceAnalyzer({
+    includeDebug: process.env.NODE_ENV === 'development',
+  });
+
+export const medicalDeviceRegulatoryAnalyzer =
+  createMedicalDeviceRagComplianceAnalyzer({
+    includeDebug: process.env.NODE_ENV === 'development',
+  });
+
+export const cosmeticRegulatoryAnalyzer = createCosmeticRagComplianceAnalyzer({
+  includeDebug: process.env.NODE_ENV === 'development',
+});
 
 export const contentComplianceScanService = new ContentComplianceScanService(
   [
@@ -51,6 +141,35 @@ export const contentComplianceScanService = new ContentComplianceScanService(
       pack: generalFoodCompliancePack,
       analyzer: generalFoodRegulatoryAnalyzer,
     },
+    {
+      pack: healthFunctionalFoodCompliancePack,
+      analyzer: healthFunctionalFoodRegulatoryAnalyzer,
+    },
+    {
+      pack: pharmaceuticalCompliancePack,
+      analyzer: pharmaceuticalRegulatoryAnalyzer,
+    },
+    {
+      pack: medicalDeviceCompliancePack,
+      analyzer: medicalDeviceRegulatoryAnalyzer,
+    },
+    {
+      pack: cosmeticCompliancePack,
+      analyzer: cosmeticRegulatoryAnalyzer,
+    },
   ],
   new LocalEnforcementCaseRepository(),
+  new CompositeProductAuthorizationResolver(
+    new HealthFunctionalFoodAuthorizationResolver(
+      process.env.FOOD_SAFETY_KOREA_API_KEY,
+    ),
+    new MfdsRegulatedProductAuthorizationResolver(
+      process.env.DATA_GO_KR_SERVICE_KEY,
+      {
+        PHARMACEUTICAL: process.env.MFDS_DRUG_PRODUCT_API_URL,
+        MEDICAL_DEVICE: process.env.MFDS_MEDICAL_DEVICE_PRODUCT_API_URL,
+        COSMETIC: process.env.MFDS_COSMETIC_PRODUCT_API_URL,
+      },
+    ),
+  ),
 );
