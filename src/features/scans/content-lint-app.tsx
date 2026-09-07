@@ -11,6 +11,7 @@ import {
 import {
   ArrowLeft,
   ArrowRight,
+  Building2,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -26,6 +27,7 @@ import {
   ExternalLink,
   Layers3,
   Link2,
+  ListChecks,
   LoaderCircle,
   PlaySquare,
   Plus,
@@ -33,6 +35,7 @@ import {
   ScanText,
   ShieldAlert,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   TriangleAlert,
 } from 'lucide-react';
@@ -46,6 +49,7 @@ import {
 } from '@/src/content/web/fixture-web-content-extractor';
 import type { PageSection } from '@/src/content/web/schemas';
 import type {
+  AnalysisAudience,
   Issue,
   ScanAnalysisResult,
   Severity,
@@ -96,6 +100,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 
 export const DEMO_TEXT = '업무 시간을 70% 줄여주는 국내 최고의 AI 서비스';
+const HEALTH_FUNCTIONAL_FOOD_DEMO_TEXT =
+  '건강기능식품으로 감기 예방과 면역력 강화에 도움을 드립니다.';
 const FOOD_DEMO_PRESETS = [
   {
     label: '혈당·면역 표현',
@@ -135,6 +141,22 @@ const webMcpInputSchema = z.object({
 });
 
 type View = 'dashboard' | 'new-scan' | 'progress' | 'result';
+type AnalysisCategory =
+  | 'AUTO'
+  | 'HEALTH_FUNCTIONAL_FOOD'
+  | 'PHARMACEUTICAL'
+  | 'MEDICAL_DEVICE'
+  | 'COSMETIC';
+
+const ANALYSIS_CATEGORY_OPTIONS: Array<{
+  value: Exclude<AnalysisCategory, 'AUTO'>;
+  label: string;
+}> = [
+  { value: 'HEALTH_FUNCTIONAL_FOOD', label: '건강기능식품' },
+  { value: 'PHARMACEUTICAL', label: '의약품' },
+  { value: 'MEDICAL_DEVICE', label: '의료기기' },
+  { value: 'COSMETIC', label: '화장품' },
+];
 
 const navItems: Array<{
   id: View | null;
@@ -152,6 +174,13 @@ export function ContentLintApp() {
   const [inputText, setInputText] = useState('');
   const [inputUrl, setInputUrl] = useState('');
   const [scanTab, setScanTab] = useState<'text' | 'url'>('text');
+  const [analysisAudience, setAnalysisAudience] =
+    useState<AnalysisAudience>('CONSUMER');
+  const [analysisCategory, setAnalysisCategory] =
+    useState<AnalysisCategory>('AUTO');
+  const [productName, setProductName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [reportNumber, setReportNumber] = useState('');
   const [analyzedText, setAnalyzedText] = useState('');
   const [result, setResult] = useState<ScanAnalysisResult | null>(null);
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
@@ -171,42 +200,60 @@ export function ContentLintApp() {
     [activeIssueId, result],
   );
 
-  const runAnalysis = useCallback(async (value: string) => {
-    const normalizedText = value.trim();
-    if (!normalizedText) return;
+  const runAnalysis = useCallback(
+    async (value: string, audience = analysisAudience) => {
+      const normalizedText = value.trim();
+      if (!normalizedText) return;
 
-    setAnalyzedText(normalizedText);
-    setInputText(normalizedText);
-    setAnalysisError(null);
-    setDraftNotice(null);
-    setActiveProgressStages(textProgressStages);
-    setLastUrlRequest(undefined);
-    setProgressStage(0);
-    setView('progress');
+      setAnalyzedText(normalizedText);
+      setInputText(normalizedText);
+      setAnalysisError(null);
+      setDraftNotice(null);
+      setActiveProgressStages(textProgressStages);
+      setLastUrlRequest(undefined);
+      setProgressStage(0);
+      setView('progress');
 
-    try {
-      const pendingResult = analyzeContent(normalizedText);
+      try {
+        const pendingResult = analyzeContent(
+          normalizedText,
+          audience,
+          buildRegulatedProductOptions(
+            analysisCategory,
+            productName,
+            companyName,
+            reportNumber,
+          ),
+        );
 
-      for (let index = 0; index < textProgressStages.length; index += 1) {
-        setProgressStage(index);
-        await delay(320);
+        for (let index = 0; index < textProgressStages.length; index += 1) {
+          setProgressStage(index);
+          await delay(320);
+        }
+
+        const nextResult = await pendingResult;
+        const firstIssue = nextResult.issues[0] ?? null;
+        setResult(nextResult);
+        setActiveIssueId(firstIssue?.id ?? null);
+        setSelectedRewrite(firstIssue?.suggestedRewrites[0] ?? '');
+        setView('result');
+        return nextResult;
+      } catch (error) {
+        setAnalysisError(
+          error instanceof Error
+            ? error.message
+            : '분석 결과를 검증하지 못했습니다. 다시 시도해 주세요.',
+        );
       }
-
-      const nextResult = await pendingResult;
-      const firstIssue = nextResult.issues[0] ?? null;
-      setResult(nextResult);
-      setActiveIssueId(firstIssue?.id ?? null);
-      setSelectedRewrite(firstIssue?.suggestedRewrites[0] ?? '');
-      setView('result');
-      return nextResult;
-    } catch (error) {
-      setAnalysisError(
-        error instanceof Error
-          ? error.message
-          : '분석 결과를 검증하지 못했습니다. 다시 시도해 주세요.',
-      );
-    }
-  }, []);
+    },
+    [
+      analysisAudience,
+      analysisCategory,
+      companyName,
+      productName,
+      reportNumber,
+    ],
+  );
 
   const runUrlAnalysis = useCallback(
     async (request: { url?: string; fixtureId?: string }) => {
@@ -220,7 +267,16 @@ export function ContentLintApp() {
       setView('progress');
 
       try {
-        const pendingResult = analyzeUrl(request);
+        const pendingResult = analyzeUrl({
+          ...request,
+          audience: analysisAudience,
+          ...buildRegulatedProductOptions(
+            analysisCategory,
+            productName,
+            companyName,
+            reportNumber,
+          ),
+        });
         for (let index = 0; index < urlProgressStages.length; index += 1) {
           setProgressStage(index);
           await delay(320);
@@ -241,7 +297,13 @@ export function ContentLintApp() {
         );
       }
     },
-    [],
+    [
+      analysisAudience,
+      analysisCategory,
+      companyName,
+      productName,
+      reportNumber,
+    ],
   );
 
   useEffect(() => {
@@ -420,7 +482,7 @@ export function ContentLintApp() {
           </div>
           <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-xs">
             <span className="size-1.5 rounded-full bg-emerald-500" />
-            Auto Detect · Advertising + Food
+            Auto Detect · Advertising + Food + Regulated Products
           </span>
         </header>
 
@@ -449,6 +511,24 @@ export function ContentLintApp() {
               setUrl={setInputUrl}
               activeTab={scanTab}
               setActiveTab={setScanTab}
+              audience={analysisAudience}
+              setAudience={setAnalysisAudience}
+              category={analysisCategory}
+              setCategory={setAnalysisCategory}
+              productName={productName}
+              setProductName={setProductName}
+              companyName={companyName}
+              setCompanyName={setCompanyName}
+              reportNumber={reportNumber}
+              setReportNumber={setReportNumber}
+              onUseHealthFunctionalFoodDemo={() => {
+                setAnalysisCategory('HEALTH_FUNCTIONAL_FOOD');
+                setProductName('건강기능식품 데모 제품');
+                setCompanyName('');
+                setReportNumber('');
+                setInputText(HEALTH_FUNCTIONAL_FOOD_DEMO_TEXT);
+                setScanTab('text');
+              }}
               onAnalyze={() => void runAnalysis(inputText)}
               onAnalyzeUrl={() => void runUrlAnalysis({ url: inputUrl })}
               onAnalyzeDemoUrl={() =>
@@ -501,6 +581,10 @@ export function ContentLintApp() {
               onNewScan={() => {
                 setInputText('');
                 setInputUrl('');
+                setAnalysisCategory('AUTO');
+                setProductName('');
+                setCompanyName('');
+                setReportNumber('');
                 setResult(null);
                 setView('new-scan');
               }}
@@ -691,6 +775,17 @@ function NewScan({
   setUrl,
   activeTab,
   setActiveTab,
+  audience,
+  setAudience,
+  category,
+  setCategory,
+  productName,
+  setProductName,
+  companyName,
+  setCompanyName,
+  reportNumber,
+  setReportNumber,
+  onUseHealthFunctionalFoodDemo,
   onAnalyze,
   onAnalyzeUrl,
   onAnalyzeDemoUrl,
@@ -702,6 +797,17 @@ function NewScan({
   setUrl: (value: string) => void;
   activeTab: 'text' | 'url';
   setActiveTab: (value: 'text' | 'url') => void;
+  audience: AnalysisAudience;
+  setAudience: (value: AnalysisAudience) => void;
+  category: AnalysisCategory;
+  setCategory: (value: AnalysisCategory) => void;
+  productName: string;
+  setProductName: (value: string) => void;
+  companyName: string;
+  setCompanyName: (value: string) => void;
+  reportNumber: string;
+  setReportNumber: (value: string) => void;
+  onUseHealthFunctionalFoodDemo: () => void;
   onAnalyze: () => void;
   onAnalyzeUrl: () => void;
   onAnalyzeDemoUrl: () => void;
@@ -709,6 +815,7 @@ function NewScan({
 }) {
   const tooLong = text.length > 2000;
   const urlError = getUrlValidationError(url);
+  const productIdentityLabels = getProductIdentityLabels(category);
   return (
     <div className="mx-auto max-w-4xl">
       <p className="mb-2 text-sm font-medium text-indigo-600">New analysis</p>
@@ -720,6 +827,147 @@ function NewScan({
         정리합니다.
       </p>
       <Card className="mt-8 gap-0 border-0 py-0 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-slate-200">
+        <div className="border-b border-slate-200 px-6 py-6 sm:px-8">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">검사 목적</p>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              분석 기준과 위험도는 동일하며, 선택한 목적에 맞게 결과와 조치
+              방법을 보여드립니다.
+            </p>
+          </div>
+          <div
+            className="mt-4 grid gap-3 sm:grid-cols-2"
+            role="radiogroup"
+            aria-label="검사 목적 선택"
+          >
+            <AudienceOption
+              audience="CONSUMER"
+              selected={audience === 'CONSUMER'}
+              icon={ShoppingBag}
+              title="광고를 보는 소비자"
+              description="주의할 표현과 구매 전 확인할 정보를 봅니다."
+              onSelect={setAudience}
+            />
+            <AudienceOption
+              audience="BUSINESS"
+              selected={audience === 'BUSINESS'}
+              icon={Building2}
+              title="광고를 만드는 기업·판매자"
+              description="관련 법령, 수정안과 필요한 증빙을 봅니다."
+              onSelect={setAudience}
+            />
+          </div>
+        </div>
+        <div className="border-b border-slate-200 px-6 py-6 sm:px-8">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+            <div>
+              <p className="text-sm font-semibold text-slate-800">제품 유형</p>
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                규제 제품은 식약처 공식 품목정보가 확인될 때만 허가·심사 범위와
+                광고 표현을 대조합니다.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 rounded-lg border-teal-200 text-teal-700 hover:bg-teal-50"
+              onClick={onUseHealthFunctionalFoodDemo}
+            >
+              <Sparkles /> 건기식 데모
+            </Button>
+          </div>
+          <div
+            className="mt-4 flex flex-wrap gap-2"
+            role="radiogroup"
+            aria-label="제품 유형 선택"
+          >
+            <label
+              className={`cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition ${
+                category === 'AUTO'
+                  ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
+                  : 'border-slate-200 bg-white text-slate-600'
+              }`}
+            >
+              <input
+                className="sr-only"
+                type="radio"
+                name="analysis-category"
+                checked={category === 'AUTO'}
+                onChange={() => setCategory('AUTO')}
+              />
+              자동 감지
+            </label>
+            {ANALYSIS_CATEGORY_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className={`cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition ${
+                  category === option.value
+                    ? 'border-teal-300 bg-teal-50 text-teal-800'
+                    : 'border-slate-200 bg-white text-slate-600'
+                }`}
+              >
+                <input
+                  className="sr-only"
+                  type="radio"
+                  name="analysis-category"
+                  checked={category === option.value}
+                  onChange={() => setCategory(option.value)}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+          {category !== 'AUTO' && productIdentityLabels && (
+            <div className="mt-4 rounded-xl border border-teal-100 bg-teal-50/40 p-4">
+              <div className="grid gap-3 md:grid-cols-3">
+                <label
+                  className="text-xs font-semibold text-slate-700"
+                  htmlFor="regulated-product-name"
+                >
+                  제품명
+                  <Input
+                    id="regulated-product-name"
+                    value={productName}
+                    onChange={(event) => setProductName(event.target.value)}
+                    placeholder="공식 품목정보의 제품명"
+                    className="mt-2 bg-white font-normal"
+                  />
+                </label>
+                <label
+                  className="text-xs font-semibold text-slate-700"
+                  htmlFor="regulated-company-name"
+                >
+                  {productIdentityLabels.companyLabel}
+                  <Input
+                    id="regulated-company-name"
+                    value={companyName}
+                    onChange={(event) => setCompanyName(event.target.value)}
+                    placeholder="선택 입력"
+                    className="mt-2 bg-white font-normal"
+                  />
+                </label>
+                <label
+                  className="text-xs font-semibold text-slate-700"
+                  htmlFor="regulated-report-number"
+                >
+                  {productIdentityLabels.numberLabel}
+                  <Input
+                    id="regulated-report-number"
+                    value={reportNumber}
+                    onChange={(event) => setReportNumber(event.target.value)}
+                    placeholder="가장 정확한 조회 키"
+                    className="mt-2 bg-white font-normal"
+                  />
+                </label>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-teal-800">
+                {productIdentityLabels.numberLabel}가 있으면 우선 사용합니다.
+                제품을 확정하지 못하면 허가·심사 범위를 추정하지 않고 추가
+                검토로 표시합니다.
+              </p>
+            </div>
+          )}
+        </div>
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as 'text' | 'url')}
@@ -813,6 +1061,14 @@ function NewScan({
               >
                 <Sparkles /> AI SaaS 데모
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-lg border-teal-200 text-teal-700 hover:bg-teal-50"
+                onClick={onUseHealthFunctionalFoodDemo}
+              >
+                <Sparkles /> 건기식 데모
+              </Button>
             </div>
             <div
               className="mb-4 flex flex-wrap gap-2"
@@ -870,6 +1126,57 @@ function NewScan({
         JavaScript 렌더링, 이미지·동영상 검사는 지원하지 않습니다.
       </div>
     </div>
+  );
+}
+
+function AudienceOption({
+  audience,
+  selected,
+  icon: Icon,
+  title,
+  description,
+  onSelect,
+}: {
+  audience: AnalysisAudience;
+  selected: boolean;
+  icon: ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  onSelect: (audience: AnalysisAudience) => void;
+}) {
+  return (
+    <label
+      className={`flex items-start gap-3 rounded-xl border p-4 text-left transition ${
+        selected
+          ? 'border-indigo-300 bg-indigo-50/70 ring-2 ring-indigo-100'
+          : 'cursor-pointer border-slate-200 bg-white hover:border-slate-300'
+      }`}
+    >
+      <input
+        type="radio"
+        name="analysis-audience"
+        value={audience}
+        checked={selected}
+        onChange={() => onSelect(audience)}
+        className="sr-only"
+      />
+      <span
+        className={`grid size-10 shrink-0 place-items-center rounded-lg ${
+          selected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
+        }`}
+      >
+        <Icon className="size-4.5" />
+      </span>
+      <span>
+        <span className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+          {title}
+          {selected && <Check className="size-4 text-indigo-600" />}
+        </span>
+        <span className="mt-1 block text-xs leading-5 text-slate-500">
+          {description}
+        </span>
+      </span>
+    </label>
   );
 }
 
@@ -1000,6 +1307,7 @@ function ScanResult({
 }) {
   const isLow = result.overallRisk === 'LOW';
   const isWeb = result.inputType === 'URL' && Boolean(result.webContent);
+  const isBusiness = result.audience === 'BUSINESS';
   return (
     <div className="space-y-6">
       <section className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
@@ -1035,9 +1343,25 @@ function ScanResult({
           <p className="mt-2 text-base text-slate-500">
             {isLow
               ? '현재 적용 규칙과 공식 규정 검색 기준에서 높은 위험 표현이 발견되지 않았습니다.'
-              : '게시 전에 확인이 필요한 표현을 찾았습니다.'}
+              : isBusiness
+                ? '게시 전에 조치가 필요한 표현과 관련 검토 기준을 정리했습니다.'
+                : '주의해서 확인할 필요가 있는 광고 표현을 찾았습니다.'}
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Badge
+              className={
+                isBusiness
+                  ? 'bg-violet-100 text-violet-800'
+                  : 'bg-sky-100 text-sky-800'
+              }
+            >
+              {isBusiness ? (
+                <Building2 className="size-3" />
+              ) : (
+                <ShoppingBag className="size-3" />
+              )}
+              {isBusiness ? '기업·판매자용 결과' : '소비자용 결과'}
+            </Badge>
             <Badge
               variant="outline"
               className="border-slate-200 bg-white text-slate-700"
@@ -1050,7 +1374,15 @@ function ScanResult({
                 className={
                   packId === 'GENERAL_FOOD'
                     ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-indigo-100 text-indigo-800'
+                    : packId === 'HEALTH_FUNCTIONAL_FOOD'
+                      ? 'bg-teal-100 text-teal-800'
+                      : packId === 'PHARMACEUTICAL'
+                        ? 'bg-rose-100 text-rose-800'
+                        : packId === 'MEDICAL_DEVICE'
+                          ? 'bg-cyan-100 text-cyan-800'
+                          : packId === 'COSMETIC'
+                            ? 'bg-fuchsia-100 text-fuchsia-800'
+                            : 'bg-indigo-100 text-indigo-800'
                 }
               >
                 {formatPack(packId)} Pack
@@ -1116,8 +1448,14 @@ function ScanResult({
           ))}
         </div>
       )}
+      {result.productAuthorization && (
+        <ProductAuthorizationCard result={result} />
+      )}
       {process.env.NODE_ENV === 'development' && result.debug && (
         <RetrievalDebugPanel debug={result.debug} />
+      )}
+      {isBusiness && result.issues.length > 0 && (
+        <BusinessActionPlan result={result} />
       )}
       {isWeb && result.webContent ? (
         <WebScanResultBody
@@ -1130,7 +1468,11 @@ function ScanResult({
           copied={copied}
         />
       ) : isLow ? (
-        <LowRiskResult text={analyzedText} onNewScan={onNewScan} />
+        <LowRiskResult
+          text={analyzedText}
+          audience={result.audience}
+          onNewScan={onNewScan}
+        />
       ) : result.issues.length === 0 ? (
         <ReviewRequiredEmptyState text={analyzedText} onNewScan={onNewScan} />
       ) : (
@@ -1185,6 +1527,13 @@ function ScanResult({
                       <span className="block line-clamp-2 text-sm leading-6 text-slate-500">
                         {issue.explanation}
                       </span>
+                      {isBusiness && (
+                        <span className="mt-2 block text-xs font-medium text-violet-700">
+                          검토 기준 ·{' '}
+                          {formatPrimaryLegalBasis(issue, result) ??
+                            '공식 근거 추가 확인 필요'}
+                        </span>
+                      )}
                     </span>
                     <ChevronRight className="mt-2 size-4 shrink-0 text-slate-400" />
                   </button>
@@ -1214,8 +1563,217 @@ function ScanResult({
         </div>
       )}
       <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-500">
-        본 결과는 공식 심의나 법률 자문을 대체하지 않는 사전 점검 정보입니다.
+        {isBusiness
+          ? '표시된 법령은 잠재적 검토 기준입니다. 개별 광고의 위법 여부를 확정하는 법률 자문이나 공식 심의를 대체하지 않습니다.'
+          : '본 결과는 공식 심의나 법률 자문을 대체하지 않는 사전 점검 정보입니다.'}
       </p>
+    </div>
+  );
+}
+
+function ProductAuthorizationCard({ result }: { result: ScanAnalysisResult }) {
+  const authorization = result.productAuthorization!;
+  const product = authorization.selectedProduct;
+  const verified = authorization.status === 'VERIFIED' && Boolean(product);
+  const display = getAuthorizationDisplay(result.detectedCategory);
+  const statusLabel = {
+    VERIFIED: '허가정보 연결됨',
+    NOT_FOUND: '일치 제품 없음',
+    AMBIGUOUS: '제품 확정 필요',
+    UNAVAILABLE: '조회 미완료',
+  }[authorization.status];
+
+  return (
+    <Card className="gap-0 border-0 py-0 shadow-sm ring-1 ring-teal-200">
+      <CardHeader className="border-b border-teal-100 bg-teal-50/60 px-6 py-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-950">
+              <ShieldCheck className="size-4 text-teal-700" /> 공식 품목정보
+              기반 분석
+            </CardTitle>
+            <CardDescription className="mt-1">
+              {display.description}
+            </CardDescription>
+          </div>
+          <Badge
+            className={
+              verified
+                ? 'bg-teal-100 text-teal-800'
+                : 'bg-blue-100 text-blue-800'
+            }
+          >
+            {verified ? <CheckCircle2 /> : <Info />} {statusLabel}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="px-6 py-5">
+        <p className="text-sm leading-6 text-slate-600">
+          {authorization.message}
+        </p>
+        {product ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <AuthorizationField label="제품명" value={product.productName} />
+            <AuthorizationField
+              label={display.companyLabel}
+              value={product.companyName}
+            />
+            <AuthorizationField
+              label={display.numberLabel}
+              value={product.reportNumber}
+            />
+            <AuthorizationField
+              label="제품 유형"
+              value={product.productType || product.productForm}
+            />
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 md:col-span-2">
+              <p className="text-xs font-semibold text-slate-400">
+                {display.scopeLabel}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-800">
+                {product.primaryFunctionality || '정보 없음 — 추가 확인 필요'}
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 md:col-span-2">
+              <p className="text-xs font-semibold text-slate-400">
+                {display.methodLabel}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-800">
+                {product.intakeMethod || '정보 없음 — 추가 확인 필요'}
+              </p>
+            </div>
+          </div>
+        ) : authorization.candidates.length > 0 ? (
+          <div className="mt-4 space-y-2">
+            {authorization.candidates.slice(0, 3).map((candidate) => (
+              <div
+                key={`${candidate.reportNumber}-${candidate.productName}`}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+              >
+                <span className="font-semibold">{candidate.productName}</span>
+                <span className="ml-2 text-slate-500">
+                  {candidate.companyName} · {candidate.reportNumber}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <a
+          href={authorization.sourceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-teal-800 hover:text-teal-900"
+        >
+          {display.sourceLinkLabel} <ExternalLink className="size-3" />
+        </a>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AuthorizationField({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <p className="text-xs font-semibold text-slate-400">{label}</p>
+      <p className="mt-1 text-sm font-medium leading-6 text-slate-800">
+        {value || '정보 없음'}
+      </p>
+    </div>
+  );
+}
+
+function BusinessActionPlan({ result }: { result: ScanAnalysisResult }) {
+  const rewriteCount = result.issues.filter(
+    (issue) => issue.resolutionType === 'REMOVE_OR_REWRITE',
+  ).length;
+  const evidenceCount = result.issues.filter(
+    (issue) => issue.resolutionType === 'PROVIDE_EVIDENCE',
+  ).length;
+  const reviewCount = result.issues.filter((issue) =>
+    ['VERIFY_PRODUCT_CLASSIFICATION', 'HUMAN_REVIEW'].includes(
+      issue.resolutionType,
+    ),
+  ).length;
+
+  return (
+    <Card className="gap-0 border-0 py-0 shadow-sm ring-1 ring-violet-200">
+      <CardHeader className="border-b border-violet-100 bg-violet-50/60 px-6 py-5">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-950">
+          <ListChecks className="size-4 text-violet-700" /> 게시 전 조치 요약
+        </CardTitle>
+        <CardDescription>
+          위험도가 높은 표현부터 근거를 준비하거나 문구를 수정한 뒤 다시
+          검사하세요.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-6 py-5">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <BusinessActionMetric
+            label="삭제·수정 권고"
+            value={rewriteCount}
+            tone="red"
+          />
+          <BusinessActionMetric
+            label="객관적 근거 필요"
+            value={evidenceCount}
+            tone="amber"
+          />
+          <BusinessActionMetric
+            label="추가 검토 필요"
+            value={reviewCount}
+            tone="blue"
+          />
+        </div>
+        <ol className="mt-5 space-y-3">
+          {result.issues.map((issue, index) => (
+            <li
+              key={issue.id}
+              className="grid gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.7fr)] sm:items-center"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-900">
+                  {index + 1}. “{issue.originalText}”
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {formatPrimaryLegalBasis(issue, result) ??
+                    '검증된 공식 규정 근거를 추가로 확인해야 합니다.'}
+                </p>
+              </div>
+              <p className="rounded-lg bg-violet-50 px-3 py-2 text-xs font-medium leading-5 text-violet-900">
+                {formatResolutionType(issue.resolutionType)}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BusinessActionMetric({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: 'red' | 'amber' | 'blue';
+}) {
+  const className = {
+    red: 'border-red-100 bg-red-50 text-red-800',
+    amber: 'border-amber-100 bg-amber-50 text-amber-800',
+    blue: 'border-blue-100 bg-blue-50 text-blue-800',
+  }[tone];
+  return (
+    <div className={`rounded-xl border px-4 py-3 ${className}`}>
+      <p className="text-xs font-medium">{label}</p>
+      <p className="mt-1 text-xl font-semibold">{value}건</p>
     </div>
   );
 }
@@ -1576,11 +2134,14 @@ function IssueInspector({
   const pageSection = result.webContent?.sections.find(
     (section) => section.id === claim?.sourceSectionId,
   );
+  const isBusiness = result.audience === 'BUSINESS';
   return (
     <aside className="sticky top-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.07)]">
       <div className="border-b border-slate-200 px-5 py-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-semibold text-slate-950">Issue Inspector</h2>
+          <h2 className="font-semibold text-slate-950">
+            {isBusiness ? '판매자 조치 가이드' : 'Issue Inspector'}
+          </h2>
           <RiskBadge severity={issue.severity} compact />
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -1589,7 +2150,9 @@ function IssueInspector({
         </div>
       </div>
       <div className="max-h-[calc(100vh-11rem)] space-y-6 overflow-y-auto px-5 py-5">
-        <InspectorSection title="Original Claim">
+        <InspectorSection
+          title={isBusiness ? '문제가 될 수 있는 표현' : 'Original Claim'}
+        >
           <p className="rounded-xl bg-red-50 px-4 py-3 font-medium leading-6 text-red-900">
             “{issue.originalText}”
           </p>
@@ -1606,7 +2169,7 @@ function IssueInspector({
             </div>
           </InspectorSection>
         )}
-        <InspectorSection title="Reason">
+        <InspectorSection title={isBusiness ? '잠재적 법적 쟁점' : 'Reason'}>
           <p className="text-sm leading-6 text-slate-600">
             {issue.explanation}
           </p>
@@ -1620,9 +2183,16 @@ function IssueInspector({
           <p className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm font-medium text-indigo-900">
             {formatResolutionType(issue.resolutionType)}
           </p>
+          {isBusiness && (
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              {getBusinessActionDetail(issue)}
+            </p>
+          )}
         </InspectorSection>
         {issue.requiredEvidence.length > 0 && (
-          <InspectorSection title="Required Evidence">
+          <InspectorSection
+            title={isBusiness ? '게시 전 준비할 증빙' : 'Required Evidence'}
+          >
             <ul className="grid grid-cols-2 gap-2">
               {issue.requiredEvidence.map((evidence) => (
                 <li
@@ -1636,7 +2206,9 @@ function IssueInspector({
             </ul>
           </InspectorSection>
         )}
-        <InspectorSection title="관련 규정">
+        <InspectorSection
+          title={isBusiness ? '관련 법령·검토 기준' : '관련 규정'}
+        >
           <div className="space-y-3">
             {sources.map((source) => (
               <div
@@ -1645,7 +2217,7 @@ function IssueInspector({
               >
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <Badge className="bg-emerald-100 text-emerald-800">
-                    VERIFIED
+                    {isBusiness ? '출처 확인됨' : 'VERIFIED'}
                   </Badge>
                   <span className="text-xs text-emerald-800">
                     {source.authority}
@@ -1735,7 +2307,9 @@ function IssueInspector({
             </div>
           </InspectorSection>
         )}
-        <InspectorSection title="Suggested Rewrite">
+        <InspectorSection
+          title={isBusiness ? '권장 수정 문구' : 'Suggested Rewrite'}
+        >
           <div className="space-y-2">
             {issue.suggestedRewrites.map((rewrite) => (
               <label
@@ -1802,11 +2376,14 @@ function InspectorSection({
 
 function LowRiskResult({
   text,
+  audience,
   onNewScan,
 }: {
   text: string;
+  audience: AnalysisAudience;
   onNewScan: () => void;
 }) {
+  const isBusiness = audience === 'BUSINESS';
   return (
     <Card className="border-0 py-0 shadow-[0_16px_50px_rgba(15,23,42,0.06)] ring-1 ring-emerald-200">
       <CardContent className="flex flex-col items-center px-6 py-12 text-center sm:py-16">
@@ -1818,8 +2395,9 @@ function LowRiskResult({
           높은 위험 표현이 발견되지 않았습니다
         </h2>
         <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
-          현재 적용 규칙과 공식 규정 검색 기준의 결과입니다. 실제 게시 전에는
-          제품 특성, 근거 자료, 최신 공식 규정을 추가로 확인하세요.
+          {isBusiness
+            ? '현재 지원 범위에서 우선 수정할 표현은 찾지 못했습니다. LOW는 적법 보장이 아니므로 제품 분류, 실제 거래조건, 보유 증빙과 최신 공식 규정을 게시 전에 확인하세요.'
+            : '현재 적용 규칙과 공식 규정 검색 기준의 결과입니다. 실제 구매 전에는 제품 정보, 거래 조건과 공식 안내를 추가로 확인하세요.'}
         </p>
         <div className="mt-7 w-full max-w-2xl rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-left text-base leading-7 text-slate-700">
           {text}
@@ -1855,8 +2433,8 @@ function ReviewRequiredEmptyState({
         </h2>
         <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
           현재 지원 범위에서 제품 유형을 확정하지 못해 규정 근거가 없는 Issue를
-          만들지 않았습니다. 일반식품 여부와 제품 정보를 확인한 뒤 다시 검사해
-          주세요.
+          만들지 않았습니다. 제품 유형과 제품명·공식 품목 식별번호를 확인한 뒤
+          다시 검사해 주세요.
         </p>
         <div className="mt-7 w-full max-w-2xl rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-left text-base leading-7 text-slate-700">
           {text}
@@ -1912,6 +2490,92 @@ function RiskBadge({
   );
 }
 
+function buildRegulatedProductOptions(
+  category: AnalysisCategory,
+  productName: string,
+  companyName: string,
+  reportNumber: string,
+) {
+  if (category === 'AUTO') return undefined;
+  const productIdentity = Object.fromEntries(
+    Object.entries({ productName, companyName, reportNumber }).filter(
+      ([, value]) => value.trim().length > 0,
+    ),
+  );
+  return {
+    categoryHint: category,
+    ...(Object.keys(productIdentity).length > 0 && { productIdentity }),
+  };
+}
+
+function getProductIdentityLabels(category: AnalysisCategory) {
+  if (category === 'AUTO') return null;
+  return {
+    HEALTH_FUNCTIONAL_FOOD: {
+      companyLabel: '제조업소명',
+      numberLabel: '품목제조번호',
+    },
+    PHARMACEUTICAL: {
+      companyLabel: '업체명',
+      numberLabel: '품목기준코드',
+    },
+    MEDICAL_DEVICE: {
+      companyLabel: '업체명',
+      numberLabel: '품목허가·인증·신고번호',
+    },
+    COSMETIC: {
+      companyLabel: '책임판매업자',
+      numberLabel: '기능성 심사·보고번호',
+    },
+  }[category];
+}
+
+function getAuthorizationDisplay(
+  category: ScanAnalysisResult['detectedCategory'],
+) {
+  const displays = {
+    HEALTH_FUNCTIONAL_FOOD: {
+      description:
+        '식품안전나라 품목제조신고의 제품·주된 기능성·섭취조건을 기준으로 대조합니다.',
+      companyLabel: '제조업소',
+      numberLabel: '품목제조번호',
+      scopeLabel: '신고된 주된 기능성',
+      methodLabel: '섭취방법',
+      sourceLinkLabel: '식품안전나라 API 기준 확인',
+    },
+    PHARMACEUTICAL: {
+      description:
+        '식약처 의약품 품목정보의 전문·일반 구분, 효능·효과와 용법·용량을 기준으로 대조합니다.',
+      companyLabel: '업체명',
+      numberLabel: '품목기준코드',
+      scopeLabel: '허가된 효능·효과',
+      methodLabel: '용법·용량',
+      sourceLinkLabel: '식약처 의약품 품목정보 확인',
+    },
+    MEDICAL_DEVICE: {
+      description:
+        '식약처 의료기기 품목정보의 사용목적·성능과 사용방법을 기준으로 대조합니다.',
+      companyLabel: '업체명',
+      numberLabel: '품목허가·인증·신고번호',
+      scopeLabel: '허가된 사용목적·성능',
+      methodLabel: '사용방법',
+      sourceLinkLabel: '식약처 의료기기 품목정보 확인',
+    },
+    COSMETIC: {
+      description:
+        '식약처 기능성화장품 심사·보고 품목정보의 기능성 범위를 기준으로 대조합니다.',
+      companyLabel: '제조·책임판매업자',
+      numberLabel: '기능성 심사·보고번호',
+      scopeLabel: '기능성 심사·보고 범위',
+      methodLabel: '사용방법',
+      sourceLinkLabel: '식약처 기능성화장품 품목정보 확인',
+    },
+  } as const;
+  return category in displays
+    ? displays[category as keyof typeof displays]
+    : displays.HEALTH_FUNCTIONAL_FOOD;
+}
+
 function delay(milliseconds: number) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
@@ -1948,6 +2612,10 @@ function formatCategory(category: ScanAnalysisResult['detectedCategory']) {
   return {
     GENERAL_ADVERTISING: 'General Advertising',
     GENERAL_FOOD: 'General Food',
+    HEALTH_FUNCTIONAL_FOOD: 'Health Functional Food',
+    PHARMACEUTICAL: 'Pharmaceutical',
+    MEDICAL_DEVICE: 'Medical Device',
+    COSMETIC: 'Cosmetic',
     UNKNOWN: 'Review Required',
   }[category];
 }
@@ -1956,16 +2624,44 @@ function formatPack(packId: Issue['packId']) {
   return {
     GENERAL_ADVERTISING: 'General Advertising',
     GENERAL_FOOD: 'General Food',
+    HEALTH_FUNCTIONAL_FOOD: 'Health Functional Food',
+    PHARMACEUTICAL: 'Pharmaceutical',
+    MEDICAL_DEVICE: 'Medical Device',
+    COSMETIC: 'Cosmetic',
   }[packId];
 }
 
 function formatResolutionType(resolutionType: Issue['resolutionType']) {
   return {
     REMOVE_OR_REWRITE: '효능 표현을 제거하거나 제품 정보 중심으로 수정',
-    VERIFY_PRODUCT_CLASSIFICATION: '제품 분류를 먼저 확인',
+    VERIFY_PRODUCT_CLASSIFICATION: '제품 분류·품목 허가정보를 먼저 확인',
     PROVIDE_EVIDENCE: '표현과 직접 연결되는 객관적 근거 확인',
     HUMAN_REVIEW: '전체 맥락을 포함한 추가 검토',
   }[resolutionType];
+}
+
+function formatPrimaryLegalBasis(issue: Issue, result: ScanAnalysisResult) {
+  const source = result.sources.find((candidate) =>
+    issue.regulationSourceIds.includes(candidate.id),
+  );
+  if (!source) return null;
+  const provision = [source.provision, source.heading]
+    .filter(Boolean)
+    .join(' · ');
+  return `${source.shortTitle ?? source.title}${provision ? ` · ${provision}` : ''}`;
+}
+
+function getBusinessActionDetail(issue: Issue) {
+  return {
+    REMOVE_OR_REWRITE:
+      '현재 표현은 근거를 덧붙이는 것만으로 위험이 충분히 줄지 않을 수 있습니다. 게시 전 해당 효능·오인 표현을 제거하거나 확인된 제품 정보 중심으로 바꾸세요.',
+    VERIFY_PRODUCT_CLASSIFICATION:
+      '적용 법령이 제품 분류에 따라 달라질 수 있습니다. 품목 유형과 인허가 상태를 먼저 확인한 뒤 문구를 확정하세요.',
+    PROVIDE_EVIDENCE:
+      '주장과 직접 관련된 객관적 자료를 게시 전에 확보하세요. 자료가 없거나 조건이 광고 문구와 다르면 수치·우월·보장 표현을 완화하거나 제거하세요.',
+    HUMAN_REVIEW:
+      '텍스트만으로 전체 맥락을 확인하기 어렵습니다. 이미지, 배치, 각주와 거래조건을 포함해 담당자 또는 전문가가 최종 검토하세요.',
+  }[issue.resolutionType];
 }
 
 function formatIssueType(issueType: string) {
@@ -1981,6 +2677,18 @@ function formatIssueType(issueType: string) {
       EVIDENCE_REQUIRED: '객관적 근거 필요',
       COMPARATIVE_CLAIM: '비교·우월 표현',
       CONDITION_DISCLOSURE: '조건 표시 확인',
+      PRODUCT_AUTHORIZATION_NOT_VERIFIED: '제품 허가정보 확인 필요',
+      OUTSIDE_AUTHORIZED_FUNCTIONALITY: '허가 기능성 범위 밖 표현',
+      AUTHORIZED_FUNCTIONALITY_OVERSTATEMENT: '허가 기능성 과장 표현',
+      AUTHORIZATION_SCOPE_CLAIM: '허가 효능·성능 범위 표현',
+      ABSOLUTE_SAFETY_OR_EFFECT_CLAIM: '효과·안전성 절대 표현',
+      BEFORE_AFTER_OR_TESTIMONIAL_RISK: '전후 비교·체험담 표현',
+      PHARMACEUTICAL_MISRECOGNITION: '의약품 오인 우려',
+      OBJECTIVE_EFFECT_CLAIM: '객관적 효능 실증 필요',
+      PRESCRIPTION_DRUG_PUBLIC_ADVERTISING: '전문의약품 대중광고 제한',
+      OUTSIDE_AUTHORIZED_SCOPE: '허가·심사 범위 밖 표현',
+      AUTHORIZATION_SCOPE_REQUIRES_REVIEW: '허가범위 원문 확인 필요',
+      AUTHORIZED_SCOPE_OVERSTATEMENT: '허가범위보다 강한 표현',
     }[issueType] ?? issueType.replaceAll('_', ' ')
   );
 }
