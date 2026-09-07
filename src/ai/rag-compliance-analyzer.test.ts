@@ -65,6 +65,31 @@ describe('RagComplianceAnalyzer', () => {
     expect(result.sources).toHaveLength(0);
   });
 
+  it('links omitted free-use conditions to the current deceptive-advertising guidance', async () => {
+    const analyzer = createRagComplianceAnalyzer();
+    const result = await analyzer.analyze('무료로 사용할 수 있습니다');
+
+    expect(result.issues[0]).toMatchObject({
+      severity: 'MEDIUM',
+      category: 'CONDITION_DISCLOSURE',
+      citationStatus: 'VERIFIED',
+    });
+    expect(result.sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: '기만적인 표시·광고 심사지침',
+          section: 'Ⅴ. 세부심사지침',
+          heading: '가격 또는 거래조건의 중요정보',
+        }),
+        expect.objectContaining({
+          title: '표시·광고의 공정화에 관한 법률 시행령',
+          article: '제3조',
+          paragraph: '제2항',
+        }),
+      ]),
+    );
+  });
+
   it.each(evalCases)(
     'matches the deterministic expectation for $id',
     async (evaluationCase) => {
