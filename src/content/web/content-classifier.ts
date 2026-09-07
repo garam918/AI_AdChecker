@@ -4,6 +4,10 @@ import type {
   ExtractedWebContent,
 } from './schemas';
 import { detectGeneralFoodCategory } from '@/src/compliance/packs/general-food/category-detector';
+import { detectHealthFunctionalFoodCategory } from '@/src/compliance/packs/health-functional-food/category-detector';
+import { detectPharmaceuticalCategory } from '@/src/compliance/packs/pharmaceutical/category-detector';
+import { detectMedicalDeviceCategory } from '@/src/compliance/packs/medical-device/category-detector';
+import { detectCosmeticCategory } from '@/src/compliance/packs/cosmetic/category-detector';
 
 const DOCUMENTATION_PATTERN =
   /documentation|developer|api reference|개발자 문서|사용 설명서/i;
@@ -65,12 +69,40 @@ export function classifyWebContent(content: ExtractedWebContent): {
     detectedContentType,
     webContent: content,
   });
+  const healthFunctionalFoodDetection = detectHealthFunctionalFoodCategory({
+    text: searchableText,
+    detectedContentType,
+    webContent: content,
+  });
+  const detections = [
+    detectPharmaceuticalCategory({
+      text: searchableText,
+      detectedContentType,
+      webContent: content,
+    }),
+    detectMedicalDeviceCategory({
+      text: searchableText,
+      detectedContentType,
+      webContent: content,
+    }),
+    detectCosmeticCategory({
+      text: searchableText,
+      detectedContentType,
+      webContent: content,
+    }),
+    healthFunctionalFoodDetection,
+    foodDetection,
+  ];
+  const match = detections
+    .filter((detection) => detection.disposition === 'MATCH')
+    .sort((left, right) => right.confidence - left.confidence)[0];
+  const uncertain = detections
+    .filter((detection) => detection.disposition === 'UNCERTAIN')
+    .sort((left, right) => right.confidence - left.confidence)[0];
   const detectedCategory: DetectedCategory =
-    foodDetection.disposition === 'MATCH'
-      ? 'GENERAL_FOOD'
-      : foodDetection.disposition === 'UNCERTAIN'
-        ? 'UNKNOWN'
-        : 'GENERAL_ADVERTISING';
+    uncertain && (!match || uncertain.confidence > match.confidence)
+      ? 'UNKNOWN'
+      : (match?.category ?? 'GENERAL_ADVERTISING');
 
   return { detectedContentType, detectedCategory };
 }
