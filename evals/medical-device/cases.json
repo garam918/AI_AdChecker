@@ -1,0 +1,14 @@
+[
+  {
+    "id": "outside-permit-scope",
+    "input": "의료기기로 디스크를 완치합니다.",
+    "expectedCategory": "MEDICAL_DEVICE",
+    "expectedIssueTypes": ["PRODUCT_AUTHORIZATION_NOT_VERIFIED"]
+  },
+  {
+    "id": "expert-guarantee",
+    "input": "의료기기 전문의가 효과를 보증합니다.",
+    "expectedCategory": "MEDICAL_DEVICE",
+    "expectedIssueTypes": ["EXPERT_ENDORSEMENT_RISK"]
+  }
+]
