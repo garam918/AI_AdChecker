@@ -42,7 +42,7 @@ export function detectGeneralFoodCategory(
       category: 'UNKNOWN',
       confidence: 0.96,
       disposition: 'UNCERTAIN',
-      reasons: ['현재 Pack 범위에서 제외된 제품 유형 신호가 있습니다.'],
+      reasons: ['일반식품과 다른 규제 제품 유형 신호가 있습니다.'],
     };
   }
 
