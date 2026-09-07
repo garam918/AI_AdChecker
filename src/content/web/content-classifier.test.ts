@@ -48,4 +48,27 @@ describe('classifyWebContent', () => {
       detectedCategory: 'UNKNOWN',
     });
   });
+
+  it.each([
+    ['의약품 상세', '일반의약품으로 두통 완화에 사용합니다.', 'PHARMACEUTICAL'],
+    [
+      '의료기기 상세',
+      '식약처 허가 의료기기로 통증 완화에 사용합니다.',
+      'MEDICAL_DEVICE',
+    ],
+    ['화장품 상세', '기능성 화장품으로 미백 개선에 도움을 줍니다.', 'COSMETIC'],
+  ] as const)(
+    'classifies %s into its regulated pack',
+    (title, text, category) => {
+      const content = extract(`
+      <html><head><title>${title}</title></head>
+      <body><main class="hero"><h1>${text}</h1></main></body></html>
+    `);
+
+      expect(classifyWebContent(content)).toEqual({
+        detectedContentType: 'LANDING_PAGE',
+        detectedCategory: category,
+      });
+    },
+  );
 });
