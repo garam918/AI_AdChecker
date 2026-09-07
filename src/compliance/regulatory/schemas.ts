@@ -12,6 +12,10 @@ export const RegulationSourceTypeSchema = z.enum([
 export const CompliancePackIdSchema = z.enum([
   'GENERAL_ADVERTISING',
   'GENERAL_FOOD',
+  'HEALTH_FUNCTIONAL_FOOD',
+  'PHARMACEUTICAL',
+  'MEDICAL_DEVICE',
+  'COSMETIC',
 ]);
 
 export const RegulationDocumentSchema = z.object({
