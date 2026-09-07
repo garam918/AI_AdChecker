@@ -1,0 +1,14 @@
+[
+  {
+    "id": "medicinal-misrecognition",
+    "input": "화장품으로 여드름을 치료합니다.",
+    "expectedCategory": "COSMETIC",
+    "expectedIssueTypes": ["PHARMACEUTICAL_MISRECOGNITION"]
+  },
+  {
+    "id": "functional-scope",
+    "input": "기능성 화장품으로 미백 개선에 도움을 줍니다.",
+    "expectedCategory": "COSMETIC",
+    "expectedIssueTypes": ["PRODUCT_AUTHORIZATION_NOT_VERIFIED"]
+  }
+]
