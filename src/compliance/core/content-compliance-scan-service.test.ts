@@ -53,6 +53,34 @@ describe('ContentComplianceScanService', () => {
     expect(result.issues).toEqual([]);
   });
 
+  it('routes explicit health functional food input and never invents authorization', async () => {
+    const result = await contentComplianceScanService.analyzeContent({
+      text: '건강기능식품으로 감기 예방과 면역력 강화',
+      detectedContentType: 'ADVERTISEMENT_TEXT',
+      categoryHint: 'HEALTH_FUNCTIONAL_FOOD',
+      productIdentity: { productName: '건강기능식품 데모 제품' },
+    });
+
+    expect(result.detectedCategory).toBe('HEALTH_FUNCTIONAL_FOOD');
+    expect(result.activePacks).toEqual(
+      expect.arrayContaining(['GENERAL_ADVERTISING', 'HEALTH_FUNCTIONAL_FOOD']),
+    );
+    expect(result.productAuthorization?.status).toBe('UNAVAILABLE');
+    expect(result.productAuthorization?.selectedProduct).toBeNull();
+    expect(result.issues.map((issue) => issue.category)).toEqual(
+      expect.arrayContaining([
+        'DISEASE_PREVENTION_TREATMENT',
+        'PRODUCT_AUTHORIZATION_NOT_VERIFIED',
+      ]),
+    );
+    expect(result.notices.map((notice) => notice.code)).toEqual(
+      expect.arrayContaining([
+        'PRODUCT_AUTHORIZATION_UNAVAILABLE',
+        'PRIOR_REVIEW_REQUIRED',
+      ]),
+    );
+  });
+
   it('deduplicates only the same issue type, expression and source set', () => {
     const base = createIssue();
     const duplicate: Issue = {
