@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+import {
+  AnalysisAudienceSchema,
+  ScanAnalysisResultSchema,
+} from '@/src/compliance/core/schemas';
+import { ProductIdentitySchema } from '@/src/compliance/product-authorization/schemas';
 import { DEMO_FIXTURE_IDS } from '@/src/content/web/fixture-web-content-extractor';
 import { WebExtractionError } from '@/src/content/web/web-extraction-error';
 import {
@@ -12,6 +17,16 @@ const RequestSchema = z
   .object({
     url: z.string().trim().min(1).max(2048).optional(),
     fixtureId: z.enum(DEMO_FIXTURE_IDS).optional(),
+    audience: AnalysisAudienceSchema.default('CONSUMER'),
+    categoryHint: z
+      .enum([
+        'HEALTH_FUNCTIONAL_FOOD',
+        'PHARMACEUTICAL',
+        'MEDICAL_DEVICE',
+        'COSMETIC',
+      ])
+      .optional(),
+    productIdentity: ProductIdentitySchema.optional(),
   })
   .refine((input) => Boolean(input.url) !== Boolean(input.fixtureId), {
     message: 'URL 또는 demo fixture 하나만 지정해야 합니다.',
@@ -23,12 +38,24 @@ export async function POST(request: Request) {
     if (input.url) {
       const url = validatePublicHttpUrl(input.url);
       return Response.json(
-        await urlComplianceScanService.analyze({ url: url.toString() }),
+        ScanAnalysisResultSchema.parse({
+          ...(await urlComplianceScanService.analyze({
+            url: url.toString(),
+            categoryHint: input.categoryHint,
+            productIdentity: input.productIdentity,
+          })),
+          audience: input.audience,
+        }),
       );
     }
     return Response.json(
-      await urlComplianceScanService.analyze({
-        fixtureId: input.fixtureId!,
+      ScanAnalysisResultSchema.parse({
+        ...(await urlComplianceScanService.analyze({
+          fixtureId: input.fixtureId!,
+          categoryHint: input.categoryHint,
+          productIdentity: input.productIdentity,
+        })),
+        audience: input.audience,
       }),
     );
   } catch (error) {
