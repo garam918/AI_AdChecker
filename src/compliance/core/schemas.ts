@@ -6,6 +6,7 @@ import {
   ExtractedWebContentSchema,
 } from '@/src/content/web/schemas';
 import { EnforcementCaseSchema } from '@/src/compliance/regulatory/enforcement-case-schemas';
+import { ProductAuthorizationResolutionSchema } from '@/src/compliance/product-authorization/schemas';
 
 import {
   CompliancePackIdSchema,
@@ -18,6 +19,8 @@ export const SeveritySchema = z.enum([
   'HIGH',
   'REVIEW_REQUIRED',
 ]);
+
+export const AnalysisAudienceSchema = z.enum(['CONSUMER', 'BUSINESS']);
 
 export const ScanStatusSchema = z.enum([
   'PENDING',
@@ -123,6 +126,7 @@ export const AnalysisDebugSchema = z.object({
 export const ScanSchema = z.object({
   id: z.string().min(1),
   inputType: z.enum(['TEXT', 'URL']),
+  audience: AnalysisAudienceSchema.default('CONSUMER'),
   inputText: z.string().min(1).nullable(),
   inputUrl: z.url().nullable(),
   detectedContentType: DetectedContentTypeSchema,
@@ -136,6 +140,7 @@ export const ScanSchema = z.object({
 export const ScanAnalysisResultSchema = z
   .object({
     inputType: z.enum(['TEXT', 'URL']).default('TEXT'),
+    audience: AnalysisAudienceSchema.default('CONSUMER'),
     detectedContentType: DetectedContentTypeSchema,
     detectedCategory: DetectedCategorySchema,
     overallRisk: SeveritySchema,
@@ -144,11 +149,20 @@ export const ScanAnalysisResultSchema = z
     sources: z.array(RegulationSourceSchema),
     enforcementCases: z.array(EnforcementCaseSchema).default([]),
     activePacks: z.array(CompliancePackIdSchema).default([]),
+    productAuthorization: ProductAuthorizationResolutionSchema.optional(),
     webContent: ExtractedWebContentSchema.optional(),
     notices: z
       .array(
         z.object({
-          code: z.enum(['CONTENT_TRUNCATED', 'UNKNOWN_CATEGORY']),
+          code: z.enum([
+            'CONTENT_TRUNCATED',
+            'UNKNOWN_CATEGORY',
+            'PRODUCT_AUTHORIZATION_REQUIRED',
+            'PRODUCT_AUTHORIZATION_NOT_FOUND',
+            'PRODUCT_AUTHORIZATION_AMBIGUOUS',
+            'PRODUCT_AUTHORIZATION_UNAVAILABLE',
+            'PRIOR_REVIEW_REQUIRED',
+          ]),
           message: z.string().min(1),
         }),
       )
@@ -216,6 +230,7 @@ export const ScanAnalysisResultSchema = z
   });
 
 export type Severity = z.infer<typeof SeveritySchema>;
+export type AnalysisAudience = z.infer<typeof AnalysisAudienceSchema>;
 export type CitationStatus = z.infer<typeof CitationStatusSchema>;
 export type ClaimImportance = z.infer<typeof ClaimImportanceSchema>;
 export type ClaimSignal = z.infer<typeof ClaimSignalSchema>;
