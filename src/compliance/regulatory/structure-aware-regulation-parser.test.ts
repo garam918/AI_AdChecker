@@ -16,8 +16,8 @@ describe('StructureAwareRegulationParser', () => {
       chunk.id.endsWith('section-3-general-principles'),
     );
 
-    expect(parsed.documents).toHaveLength(4);
-    expect(parsed.chunks).toHaveLength(6);
+    expect(parsed.documents).toHaveLength(5);
+    expect(parsed.chunks).toHaveLength(12);
     expect(articleChunk).toMatchObject({
       article: '제5조',
       paragraph: '제1항',
@@ -27,6 +27,22 @@ describe('StructureAwareRegulationParser', () => {
       article: null,
       section: 'Ⅲ. 일반원칙',
       metadata: { authority: '공정거래위원회' },
+    });
+    expect(
+      parsed.chunks.find((chunk) => chunk.id.endsWith('article-3-paragraph-2')),
+    ).toMatchObject({
+      article: '제3조',
+      paragraph: '제2항',
+      heading: '기만적인 표시·광고',
+      metadata: { effectiveDate: '2026-07-01' },
+    });
+    expect(
+      parsed.chunks.find((chunk) =>
+        chunk.id.endsWith('section-5-price-conditions'),
+      ),
+    ).toMatchObject({
+      section: 'Ⅴ. 세부심사지침',
+      metadata: { sourceType: 'OFFICIAL_GUIDELINE' },
     });
   });
 
