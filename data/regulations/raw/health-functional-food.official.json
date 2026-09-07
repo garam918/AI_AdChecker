@@ -1,0 +1,182 @@
+{
+  "pack": "HEALTH_FUNCTIONAL_FOOD",
+  "documents": [
+    {
+      "id": "hff-food-labeling-advertising-act-2025",
+      "title": "식품 등의 표시·광고에 관한 법률",
+      "shortTitle": "식품표시광고법",
+      "authority": "식품의약품안전처",
+      "sourceType": "LAW",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "effectiveDate": "2025-09-19",
+      "version": "법률 제20826호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00",
+      "pack": "HEALTH_FUNCTIONAL_FOOD",
+      "sections": [
+        {
+          "id": "article-4-paragraph-1-item-3",
+          "article": "제4조",
+          "paragraph": "제1항",
+          "section": "제3호",
+          "heading": "건강기능식품의 표시사항",
+          "text": "건강기능식품에는 제품명, 내용량 및 원료명, 영업소 명칭 및 소재지, 소비기한 및 보관방법, 섭취량·섭취방법 및 섭취 시 주의사항, 건강기능식품이라는 문자 또는 도안, 질병의 예방 및 치료를 위한 의약품이 아니라는 내용, 기능성에 관한 정보 및 해당 기능성을 나타내는 성분 등의 함유량을 표시하여야 한다.",
+          "metadata": {
+            "topics": [
+              "건강기능식품 표시",
+              "기능성 정보",
+              "섭취방법",
+              "주의사항"
+            ]
+          }
+        },
+        {
+          "id": "article-8-paragraph-1-items-1-2",
+          "article": "제8조",
+          "paragraph": "제1항",
+          "section": "제1호·제2호",
+          "heading": "질병 예방·치료 및 의약품 오인 우려 표시·광고",
+          "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 질병의 예방·치료에 효능이 있는 것으로 인식할 우려가 있는 표시 또는 광고와 식품등을 의약품으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다.",
+          "metadata": {
+            "topics": [
+              "질병 예방 치료",
+              "질병 효능",
+              "의약품 오인",
+              "건강기능식품"
+            ]
+          }
+        },
+        {
+          "id": "article-8-paragraph-1-items-4-5",
+          "article": "제8조",
+          "paragraph": "제1항",
+          "section": "제4호·제5호",
+          "heading": "거짓·과장 또는 소비자 기만 표시·광고",
+          "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 거짓·과장된 표시 또는 광고나 소비자를 기만하는 표시 또는 광고를 하여서는 아니 된다.",
+          "metadata": {
+            "topics": [
+              "거짓 과장",
+              "소비자 기만",
+              "기능성 범위",
+              "품목제조신고"
+            ]
+          }
+        },
+        {
+          "id": "article-9-paragraphs-1-2",
+          "article": "제9조",
+          "paragraph": "제1항·제2항",
+          "section": null,
+          "heading": "표시 또는 광고 내용의 실증",
+          "text": "식품등에 표시를 하거나 식품등을 광고한 자는 자기가 한 표시 또는 광고에 대하여 실증할 수 있어야 한다. 식품의약품안전처장은 제8조제1항을 위반할 우려가 있어 실증이 필요하다고 인정하는 경우 실증자료 제출을 요청할 수 있다.",
+          "metadata": {
+            "topics": ["실증", "객관적 근거", "시험 조사", "거짓 과장"]
+          }
+        },
+        {
+          "id": "article-10-paragraph-1",
+          "article": "제10조",
+          "paragraph": "제1항",
+          "section": null,
+          "heading": "표시 또는 광고의 자율심의",
+          "text": "식품등에 관하여 표시 또는 광고하려는 자는 법에서 정한 표시사항만을 그대로 표시·광고하는 경우를 제외하고 자율심의기구로부터 미리 심의를 받아야 한다.",
+          "metadata": {
+            "topics": [
+              "자율심의",
+              "사전 심의",
+              "건강기능식품 광고",
+              "게시 전 확인"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "hff-food-labeling-advertising-enforcement-rule-2026",
+      "title": "식품 등의 표시·광고에 관한 법률 시행규칙",
+      "shortTitle": "식품표시광고법 시행규칙",
+      "authority": "식품의약품안전처",
+      "sourceType": "ENFORCEMENT_RULE",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률시행규칙",
+      "effectiveDate": "2026-01-01",
+      "version": "총리령 제2004호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00",
+      "pack": "HEALTH_FUNCTIONAL_FOOD",
+      "sections": [
+        {
+          "id": "article-9-paragraph-1",
+          "article": "제9조",
+          "paragraph": "제1항",
+          "section": null,
+          "heading": "실증방법 등",
+          "text": "표시 또는 광고에 대하여 실증하기 위하여 제출해야 하는 자료는 시험 또는 조사 결과, 전문가 견해, 학술문헌 및 그 밖에 식품의약품안전처장이 실증을 위하여 필요하다고 인정하는 자료이다.",
+          "metadata": {
+            "topics": ["실증", "시험 조사", "전문가 견해", "학술문헌"]
+          }
+        },
+        {
+          "id": "article-10-item-3",
+          "article": "제10조",
+          "paragraph": null,
+          "section": "제3호",
+          "heading": "표시 또는 광고 심의 대상 건강기능식품",
+          "text": "자율심의기구에 미리 심의를 받아야 하는 표시 또는 광고의 대상에는 건강기능식품이 포함된다.",
+          "metadata": {
+            "topics": [
+              "자율심의",
+              "사전 심의",
+              "건강기능식품 광고",
+              "게시 전 확인"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "health-functional-food-labeling-standard-2025",
+      "title": "건강기능식품의 표시기준",
+      "shortTitle": "건강기능식품 표시기준",
+      "authority": "식품의약품안전처",
+      "sourceType": "ADMINISTRATIVE_RULE",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/건강기능식품의표시기준",
+      "effectiveDate": "2025-08-29",
+      "version": "식품의약품안전처고시 제2025-61호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00",
+      "pack": "HEALTH_FUNCTIONAL_FOOD",
+      "sections": [
+        {
+          "id": "article-4-items-1-10",
+          "article": "제4조",
+          "paragraph": null,
+          "section": "제1호부터 제10호",
+          "heading": "건강기능식품 표시사항",
+          "text": "건강기능식품에는 건강기능식품 표시 또는 도안, 제품명, 업소명 및 소재지, 소비기한 및 보관방법, 내용량, 영양정보, 기능정보, 섭취량·섭취방법 및 섭취 시 주의사항, 원료명 및 함량, 질병의 예방 및 치료를 위한 의약품이 아니라는 내용의 표현을 표시하여야 한다.",
+          "metadata": {
+            "topics": [
+              "건강기능식품 표시",
+              "기능정보",
+              "섭취방법",
+              "의약품 아님"
+            ]
+          }
+        },
+        {
+          "id": "article-6-item-2",
+          "article": "제6조",
+          "paragraph": null,
+          "section": "제2호",
+          "heading": "제품명 표시 기준",
+          "text": "제품명은 품목제조신고서 또는 수입신고서에 기재한 명칭을 표시하여야 하며, 기준·규격에서 정한 기능성 원료 명칭 또는 식품의약품안전처장이 인정한 명칭을 사용하여야 한다. 부당한 표시 또는 광고에 해당하거나 다른 건강기능식품과 오인·혼동할 수 있는 표현을 포함해서는 아니 된다.",
+          "metadata": {
+            "topics": [
+              "제품명",
+              "품목제조신고",
+              "기능성 원료",
+              "기능성 범위",
+              "오인 혼동"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
