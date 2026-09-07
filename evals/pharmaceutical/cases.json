@@ -1,0 +1,16 @@
+[
+  {
+    "id": "rx-public-ad",
+    "input": "전문의약품으로 두통을 완치합니다.",
+    "productIdentity": { "productName": "예시 전문의약품" },
+    "expectedCategory": "PHARMACEUTICAL",
+    "expectedIssueTypes": ["PRODUCT_AUTHORIZATION_NOT_VERIFIED"],
+    "notes": "실제 전문의약품 대중광고 제한은 공식 품목정보에서 전문의약품 분류가 확인될 때 평가한다."
+  },
+  {
+    "id": "absolute-safety",
+    "input": "일반의약품이며 부작용이 전혀 없습니다.",
+    "expectedCategory": "PHARMACEUTICAL",
+    "expectedIssueTypes": ["ABSOLUTE_SAFETY_OR_EFFECT_CLAIM"]
+  }
+]
