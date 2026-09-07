@@ -113,6 +113,7 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
 
     const rawFindings = await this.dependencies.reasoningProvider.analyze({
       instructions: [...this.pack.analysisInstructions],
+      productAuthorization: preparedInput.productAuthorization,
       items: reasoningItems,
     });
     const findings = rawFindings.map((finding) =>
@@ -153,6 +154,7 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
       debug.selectedSourceChunkIds.push(...verifiedChunkIds);
 
       const hasVerifiedCitation = verifiedChunkIds.length > 0;
+      if (finding.disposition === 'PASS') continue;
       issues.push({
         id: `${scanId}-issue-${issues.length + 1}`,
         scanId,
@@ -186,6 +188,7 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
       issues: deduplicatedIssues,
       sources: [...sourceMap.values()],
       activePacks: [this.pack.metadata.id],
+      productAuthorization: preparedInput.productAuthorization,
       ...(this.dependencies.includeDebug && { debug }),
     });
   }
