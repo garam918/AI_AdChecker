@@ -44,17 +44,79 @@
       ]
     },
     {
-      "id": "fair-labeling-advertising-enforcement-decree-2025",
+      "id": "fair-labeling-advertising-enforcement-decree-2026",
       "title": "표시·광고의 공정화에 관한 법률 시행령",
       "shortTitle": "표시광고법 시행령",
       "authority": "공정거래위원회",
       "sourceType": "ENFORCEMENT_DECREE",
       "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률시행령",
-      "effectiveDate": "2025-10-01",
-      "version": "대통령령 제35811호",
-      "retrievedAt": "2026-09-06T00:00:00+09:00",
+      "effectiveDate": "2026-07-01",
+      "version": "대통령령 제36416호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00",
       "pack": "GENERAL_ADVERTISING",
       "sections": [
+        {
+          "id": "article-3-paragraph-1",
+          "article": "제3조",
+          "paragraph": "제1항",
+          "section": null,
+          "heading": "거짓·과장의 표시·광고",
+          "text": "법 제3조제1항제1호에 따른 거짓·과장의 표시·광고는 사실과 다르게 표시·광고하거나 사실을 지나치게 부풀려 표시·광고하는 것으로 한다.",
+          "metadata": {
+            "topics": [
+              "거짓",
+              "과장",
+              "사실과 다름",
+              "과도한 부풀림",
+              "소비자 오인"
+            ]
+          }
+        },
+        {
+          "id": "article-3-paragraph-2",
+          "article": "제3조",
+          "paragraph": "제2항",
+          "section": null,
+          "heading": "기만적인 표시·광고",
+          "text": "법 제3조제1항제2호에 따른 기만적인 표시·광고는 사실을 은폐하거나 축소하는 등의 방법으로 표시·광고하는 것으로 한다.",
+          "metadata": {
+            "topics": [
+              "기만",
+              "사실 은폐",
+              "사실 축소",
+              "중요 조건 누락",
+              "소비자 오인"
+            ]
+          }
+        },
+        {
+          "id": "article-3-paragraph-3",
+          "article": "제3조",
+          "paragraph": "제3항",
+          "section": null,
+          "heading": "부당하게 비교하는 표시·광고",
+          "text": "법 제3조제1항제3호에 따른 부당하게 비교하는 표시·광고는 비교 대상 및 기준을 분명하게 밝히지 아니하거나 객관적인 근거 없이 자기 또는 자기의 상품이나 용역(이하 \"상품등\"이라 한다)을 다른 사업자 또는 사업자단체(이하 \"사업자등\"이라 한다)나 다른 사업자등의 상품등과 비교하여 우량 또는 유리하다고 표시·광고하는 것으로 한다.",
+          "metadata": {
+            "topics": [
+              "비교 광고",
+              "비교 대상",
+              "비교 기준",
+              "객관적 근거",
+              "우월성 주장"
+            ]
+          }
+        },
+        {
+          "id": "article-3-paragraph-4",
+          "article": "제3조",
+          "paragraph": "제4항",
+          "section": null,
+          "heading": "비방적인 표시·광고",
+          "text": "법 제3조제1항제4호에 따른 비방적인 표시·광고는 다른 사업자등 또는 다른 사업자등의 상품등에 관하여 객관적인 근거가 없는 내용으로 표시·광고하여 비방하거나 불리한 사실만을 표시·광고하여 비방하는 것으로 한다.",
+          "metadata": {
+            "topics": ["비방", "객관적 근거", "경쟁 사업자", "불리한 사실"]
+          }
+        },
         {
           "id": "article-4-paragraph-1",
           "article": "제4조",
@@ -118,15 +180,15 @@
       ]
     },
     {
-      "id": "comparative-advertising-review-guideline-2012",
+      "id": "comparative-advertising-review-guideline-2016",
       "title": "비교표시·광고에 관한 심사지침",
       "shortTitle": "비교광고 심사지침",
       "authority": "공정거래위원회",
       "sourceType": "OFFICIAL_GUIDELINE",
       "sourceUrl": "https://www.law.go.kr/행정규칙/비교표시ㆍ광고에관한심사지침",
-      "effectiveDate": "2012-08-21",
-      "version": "공정거래위원회예규 제153호",
-      "retrievedAt": "2026-09-06T00:00:00+09:00",
+      "effectiveDate": "2016-12-23",
+      "version": "공정거래위원회예규 제269호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00",
       "pack": "GENERAL_ADVERTISING",
       "sections": [
         {
@@ -143,6 +205,56 @@
               "비교 기준",
               "객관적 실증",
               "우월성 주장"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "deceptive-advertising-review-guideline-2025",
+      "title": "기만적인 표시·광고 심사지침",
+      "shortTitle": "기만광고 심사지침",
+      "authority": "공정거래위원회",
+      "sourceType": "OFFICIAL_GUIDELINE",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/기만적인표시ㆍ광고심사지침",
+      "effectiveDate": "2025-10-30",
+      "version": "공정거래위원회예규 제488호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00",
+      "pack": "GENERAL_ADVERTISING",
+      "sections": [
+        {
+          "id": "section-4-general-principles",
+          "article": null,
+          "paragraph": null,
+          "section": "Ⅳ. 일반원칙",
+          "heading": "기만적인 표시·광고의 종합 판단",
+          "text": "기만적인 표시·광고를 심사할 때에는 특정 정보가 은폐·누락·축소되었다는 사실만으로 곧바로 부당한 표시·광고에 해당하는 것이 아니라, 은폐·누락·축소한 사실이 소비자의 구매선택에 중요한 영향을 미치는 것인지, 광고내용의 전후 맥락과 광고 전체 내용상 보통의 주의력을 가진 일반 소비자가 사업자나 상품에 대하여 그릇된 정보나 사실과 다른 인식을 가질 우려가 있는지, 이를 통해서 소비자의 합리적인 의사결정이 저해될 우려가 있는지 등을 종합적으로 고려하여 판단한다.",
+          "metadata": {
+            "topics": [
+              "기만",
+              "구매선택",
+              "전체적 인상",
+              "일반 소비자",
+              "합리적 의사결정",
+              "소비자 오인"
+            ]
+          }
+        },
+        {
+          "id": "section-5-price-conditions",
+          "article": null,
+          "paragraph": null,
+          "section": "Ⅴ. 세부심사지침",
+          "heading": "가격 또는 거래조건의 중요정보",
+          "text": "제품 등의 가격 또는 거래조건에 관한 중요정보의 전부 또는 일부를 은폐하거나 누락하여 표시·광고하는 경우 기만적인 표시·광고행위에 해당할 수 있다.",
+          "metadata": {
+            "topics": [
+              "기만",
+              "가격",
+              "거래조건",
+              "중요 조건 누락",
+              "무료 표시",
+              "소비자 오인"
             ]
           }
         }
