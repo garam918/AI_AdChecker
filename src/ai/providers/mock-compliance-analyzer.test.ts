@@ -46,6 +46,16 @@ describe('MockComplianceAnalyzer', () => {
     expect(result.issues).toHaveLength(0);
   });
 
+  it('defaults to the consumer audience and accepts a business audience', async () => {
+    const result = await analyzer.analyze(DEMO_INPUT);
+
+    expect(result.audience).toBe('CONSUMER');
+    expect(
+      ScanAnalysisResultSchema.parse({ ...result, audience: 'BUSINESS' })
+        .audience,
+    ).toBe('BUSINESS');
+  });
+
   it('rejects malformed analysis output at the schema boundary', () => {
     const invalidResult = {
       detectedContentType: 'ADVERTISEMENT_TEXT',
