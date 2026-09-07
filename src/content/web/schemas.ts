@@ -69,6 +69,10 @@ export const DetectedContentTypeSchema = z.enum([
 export const DetectedCategorySchema = z.enum([
   'GENERAL_ADVERTISING',
   'GENERAL_FOOD',
+  'HEALTH_FUNCTIONAL_FOOD',
+  'PHARMACEUTICAL',
+  'MEDICAL_DEVICE',
+  'COSMETIC',
   'UNKNOWN',
 ]);
 
