@@ -42,6 +42,10 @@ export class GeneralAdvertisingCompliancePack implements CompliancePackDefinitio
   readonly appliesToCategories = [
     'GENERAL_ADVERTISING',
     'GENERAL_FOOD',
+    'HEALTH_FUNCTIONAL_FOOD',
+    'PHARMACEUTICAL',
+    'MEDICAL_DEVICE',
+    'COSMETIC',
   ] as const;
   private readonly queryBuilder = new RegulatoryQueryBuilder();
   private readonly pageClaimExtractor = new PageClaimExtractor();
