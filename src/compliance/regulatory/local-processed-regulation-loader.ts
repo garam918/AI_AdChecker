@@ -1,17 +1,20 @@
-import processedGeneralAdvertisingCorpus from '@/data/regulations/processed/general-advertising.chunks.json';
-import processedGeneralFoodCorpus from '@/data/regulations/processed/general-food.chunks.json';
-import rawHealthFunctionalFoodCorpus from '@/data/regulations/raw/health-functional-food.official.json';
-import rawPharmaceuticalCorpus from '@/data/regulations/raw/pharmaceutical.official.json';
-import rawMedicalDeviceCorpus from '@/data/regulations/raw/medical-device.official.json';
-import rawCosmeticCorpus from '@/data/regulations/raw/cosmetic.official.json';
-
+import storedIndex from '@/data/regulations/processed/rag-index.json';
 import type { ProcessedRegulationLoader } from './ingestion';
 import {
+  RegulationSearchIndexSchema,
+  type RegulationSearchIndex,
+} from './regulation-search-index';
+import {
   ProcessedRegulationCorpusSchema,
-  RawRegulationCorpusSchema,
   type CompliancePackId,
 } from './schemas';
-import { StructureAwareRegulationParser } from './structure-aware-regulation-parser';
+
+let validatedIndex: RegulationSearchIndex | undefined;
+
+export function loadLocalRegulationIndex() {
+  validatedIndex ??= RegulationSearchIndexSchema.parse(storedIndex);
+  return validatedIndex;
+}
 
 export class LocalProcessedRegulationLoader implements ProcessedRegulationLoader {
   constructor(
@@ -19,35 +22,18 @@ export class LocalProcessedRegulationLoader implements ProcessedRegulationLoader
   ) {}
 
   async load() {
-    const rawCorpus = rawCorpora[this.packId as keyof typeof rawCorpora];
-    if (rawCorpus) {
-      const parsed = new StructureAwareRegulationParser().parse(
-        RawRegulationCorpusSchema.parse(rawCorpus),
-      );
-      return ProcessedRegulationCorpusSchema.parse({
-        generatedFrom: `data/regulations/raw/${rawFileNames[this.packId as keyof typeof rawFileNames]}`,
-        schemaVersion: 1,
-        ...parsed,
-      });
-    }
-    return ProcessedRegulationCorpusSchema.parse(
-      this.packId === 'GENERAL_FOOD'
-        ? processedGeneralFoodCorpus
-        : processedGeneralAdvertisingCorpus,
+    const index = loadLocalRegulationIndex();
+    const chunks = index.chunks.filter(
+      (chunk) => chunk.metadata.pack === this.packId,
     );
+    const documentIds = new Set(chunks.map((chunk) => chunk.documentId));
+    return ProcessedRegulationCorpusSchema.parse({
+      generatedFrom: 'data/regulations/processed/rag-index.json',
+      schemaVersion: 1,
+      documents: index.documents.filter((document) =>
+        documentIds.has(document.id),
+      ),
+      chunks,
+    });
   }
 }
-
-const rawCorpora = {
-  HEALTH_FUNCTIONAL_FOOD: rawHealthFunctionalFoodCorpus,
-  PHARMACEUTICAL: rawPharmaceuticalCorpus,
-  MEDICAL_DEVICE: rawMedicalDeviceCorpus,
-  COSMETIC: rawCosmeticCorpus,
-};
-
-const rawFileNames = {
-  HEALTH_FUNCTIONAL_FOOD: 'health-functional-food.official.json',
-  PHARMACEUTICAL: 'pharmaceutical.official.json',
-  MEDICAL_DEVICE: 'medical-device.official.json',
-  COSMETIC: 'cosmetic.official.json',
-};
