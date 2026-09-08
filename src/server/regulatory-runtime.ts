@@ -20,7 +20,27 @@ import { MEDICAL_DEVICE_ANALYSIS_INSTRUCTIONS } from '@/src/compliance/packs/med
 import { COSMETIC_ANALYSIS_INSTRUCTIONS } from '@/src/compliance/packs/cosmetic/cosmetic-compliance-pack';
 import { InMemoryRegulationRepository } from '@/src/compliance/regulatory/in-memory-regulation-repository';
 import { LocalEnforcementCaseRepository } from '@/src/compliance/regulatory/local-enforcement-case-repository';
-import { LocalProcessedRegulationLoader } from '@/src/compliance/regulatory/local-processed-regulation-loader';
+import {
+  LocalProcessedRegulationLoader,
+  loadLocalRegulationIndex,
+} from '@/src/compliance/regulatory/local-processed-regulation-loader';
+import {
+  IndexedSemanticRegulationSearch,
+  type SemanticRegulationSearch,
+} from '@/src/compliance/regulatory/semantic-regulation-search';
+import { createEmbeddingProviderFromEnv } from './rag-embedding-provider';
+
+// Read runtime secrets only when handling a request; no network call during import/build.
+const configuredSemanticSearch: SemanticRegulationSearch = {
+  async search(query, candidates) {
+    const provider = createEmbeddingProviderFromEnv();
+    if (!provider) return [];
+    return new IndexedSemanticRegulationSearch(
+      loadLocalRegulationIndex(),
+      provider,
+    ).search(query, candidates);
+  },
+};
 
 export function createRagComplianceAnalyzer(options?: {
   includeDebug?: boolean;
@@ -28,6 +48,7 @@ export function createRagComplianceAnalyzer(options?: {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader(),
     repository: new InMemoryRegulationRepository(),
+    semanticSearch: configuredSemanticSearch,
     reasoningProvider: new MockRagReasoningProvider(),
     pack: generalAdvertisingCompliancePack,
     includeDebug: options?.includeDebug ?? false,
@@ -40,6 +61,7 @@ export function createGeneralFoodRagComplianceAnalyzer(options?: {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader('GENERAL_FOOD'),
     repository: new InMemoryRegulationRepository(),
+    semanticSearch: configuredSemanticSearch,
     reasoningProvider: new GeneralFoodReasoningProvider(),
     pack: generalFoodCompliancePack,
     includeDebug: options?.includeDebug ?? false,
@@ -52,6 +74,7 @@ export function createHealthFunctionalFoodRagComplianceAnalyzer(options?: {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader('HEALTH_FUNCTIONAL_FOOD'),
     repository: new InMemoryRegulationRepository(),
+    semanticSearch: configuredSemanticSearch,
     reasoningProvider: new HealthFunctionalFoodReasoningProvider(),
     pack: healthFunctionalFoodCompliancePack,
     includeDebug: options?.includeDebug ?? false,
@@ -64,6 +87,7 @@ export function createPharmaceuticalRagComplianceAnalyzer(options?: {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader('PHARMACEUTICAL'),
     repository: new InMemoryRegulationRepository(),
+    semanticSearch: configuredSemanticSearch,
     reasoningProvider: new RegulatedProductReasoningProvider(
       'PHARMACEUTICAL',
       PHARMACEUTICAL_ANALYSIS_INSTRUCTIONS,
@@ -79,6 +103,7 @@ export function createMedicalDeviceRagComplianceAnalyzer(options?: {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader('MEDICAL_DEVICE'),
     repository: new InMemoryRegulationRepository(),
+    semanticSearch: configuredSemanticSearch,
     reasoningProvider: new RegulatedProductReasoningProvider(
       'MEDICAL_DEVICE',
       MEDICAL_DEVICE_ANALYSIS_INSTRUCTIONS,
@@ -94,6 +119,7 @@ export function createCosmeticRagComplianceAnalyzer(options?: {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader('COSMETIC'),
     repository: new InMemoryRegulationRepository(),
+    semanticSearch: configuredSemanticSearch,
     reasoningProvider: new RegulatedProductReasoningProvider(
       'COSMETIC',
       COSMETIC_ANALYSIS_INSTRUCTIONS,
