@@ -90,6 +90,49 @@ describe('RagComplianceAnalyzer', () => {
     );
   });
 
+  it.each(['ISSUE', 'PASS'] as const)(
+    'does not accept %s citing a real but unretrieved provision',
+    async (disposition) => {
+      const repository = new InMemoryRegulationRepository();
+      repository.findRelevantChunks = async () => [];
+      const analyzer = new RagComplianceAnalyzer({
+        corpusLoader: new LocalProcessedRegulationLoader(),
+        repository,
+        includeDebug: true,
+        reasoningProvider: {
+          async analyze(input) {
+            return input.items.map(({ claim }) => ({
+              claimId: claim.id,
+              disposition,
+              severity: 'HIGH',
+              issueType: 'EVIDENCE_REQUIRED',
+              explanation: '근거 없는 단정',
+              sourceChunkIds: [
+                'fair-labeling-advertising-act-2025:article-5-paragraph-1',
+              ],
+              citationAssertions: [
+                {
+                  chunkId:
+                    'fair-labeling-advertising-act-2025:article-5-paragraph-1',
+                  article: '제5조',
+                },
+              ],
+              requiredEvidence: [],
+              suggestedRewrites: ['검증되지 않은 수정안'],
+            }));
+          },
+        },
+      });
+      const result = await analyzer.analyze('업무 시간을 70% 줄여드립니다');
+      expect(result.overallRisk).toBe('REVIEW_REQUIRED');
+      expect(result.sources).toHaveLength(0);
+      expect(result.issues[0].explanation).not.toContain('근거 없는 단정');
+      expect(result.debug?.rejectedCitations[0].reason).toBe(
+        'CHUNK_NOT_RETRIEVED',
+      );
+    },
+  );
+
   it.each(evalCases)(
     'matches the deterministic expectation for $id',
     async (evaluationCase) => {
