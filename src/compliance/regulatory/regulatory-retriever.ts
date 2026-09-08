@@ -1,4 +1,6 @@
+import { rankWithBm25 } from './bm25-search';
 import type { RegulationRepository } from './ingestion';
+import type { SemanticRegulationSearch } from './semantic-regulation-search';
 import {
   RetrievalHitSchema,
   RetrievalOptionsSchema,
@@ -6,81 +8,61 @@ import {
   type RetrievalOptions,
 } from './schemas';
 
-const STOP_WORDS = new Set([
-  '광고',
-  '광고의',
-  '광고를',
-  '표시',
-  '일반',
-  '검토',
-  '주장',
-  '유형',
-]);
-
-const SOURCE_BOOST = {
-  LAW: 0.1,
-  ENFORCEMENT_DECREE: 0.08,
-  ENFORCEMENT_RULE: 0.075,
-  ADMINISTRATIVE_RULE: 0.07,
-  OFFICIAL_GUIDELINE: 0.06,
-  OFFICIAL_CASE: 0.04,
-} as const;
-
 export class RegulatoryRetriever {
-  constructor(private readonly repository: RegulationRepository) {}
+  constructor(
+    private readonly repository: RegulationRepository,
+    private readonly semanticSearch?: SemanticRegulationSearch,
+  ) {}
 
   async retrieve(
     query: string,
     options: RetrievalOptions,
   ): Promise<RetrievalHit[]> {
     const parsedOptions = RetrievalOptionsSchema.parse(options);
+    if (!query.trim()) return [];
     const candidates = await this.repository.findRelevantChunks(
       query,
       parsedOptions,
     );
-    const queryTerms = tokenize(query);
+    const lexical = rankWithBm25(query, candidates).filter(
+      (hit) => hit.score >= parsedOptions.minimumScore,
+    );
+    if (!this.semanticSearch)
+      return lexical
+        .slice(0, parsedOptions.maxResults)
+        .map((hit) => RetrievalHitSchema.parse(hit));
 
-    return candidates
-      .map((chunk) => {
-        const topicText = chunk.metadata.topics.join(' ').toLowerCase();
-        const matchedTerms = queryTerms.filter(
-          (term) =>
-            chunk.normalizedText.includes(term) || topicText.includes(term),
-        );
-        const lexicalScore =
-          queryTerms.length > 0 ? matchedTerms.length / queryTerms.length : 0;
-        const topicMatches = matchedTerms.filter((term) =>
-          topicText.includes(term),
-        ).length;
-        const topicBoost = Math.min(0.25, topicMatches * 0.045);
-        const sourceBoost =
-          matchedTerms.length > 0 ? SOURCE_BOOST[chunk.metadata.sourceType] : 0;
-        const score = Math.min(
-          1,
-          lexicalScore * 0.72 + topicBoost + sourceBoost,
-        );
-
-        return RetrievalHitSchema.parse({
-          chunk,
-          score: Number(score.toFixed(4)),
-          matchedTerms,
+    // Filter applicability before vector ranking, not after cutting the top results.
+    const semantic = (
+      await this.semanticSearch.search(query, candidates)
+    ).filter((hit) => hit.score >= Math.max(0.3, parsedOptions.minimumScore));
+    if (!semantic.length)
+      return lexical
+        .slice(0, parsedOptions.maxResults)
+        .map((hit) => RetrievalHitSchema.parse(hit));
+    const combined = new Map<string, RetrievalHit>();
+    const matchedTermsById = new Map(
+      lexical.map((hit) => [hit.chunk.id, hit.matchedTerms]),
+    );
+    const candidateLimit = Math.max(20, parsedOptions.maxResults * 2);
+    for (const list of [
+      lexical.slice(0, candidateLimit),
+      semantic.slice(0, candidateLimit),
+    ]) {
+      list.forEach((hit, position) => {
+        const existing = combined.get(hit.chunk.id);
+        // Reciprocal rank fusion. This score orders sources; it is never legal probability.
+        const contribution = 61 / (60 + position + 1) / 2;
+        combined.set(hit.chunk.id, {
+          chunk: hit.chunk,
+          score: (existing?.score ?? 0) + contribution,
+          matchedTerms: matchedTermsById.get(hit.chunk.id) ?? [],
         });
-      })
-      .filter((hit) => hit.score >= parsedOptions.minimumScore)
+      });
+    }
+    return [...combined.values()]
       .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
-      .slice(0, parsedOptions.maxResults);
+      .slice(0, parsedOptions.maxResults)
+      .map((hit) => RetrievalHitSchema.parse(hit));
   }
-}
-
-function tokenize(value: string) {
-  return [
-    ...new Set(
-      value
-        .normalize('NFKC')
-        .toLowerCase()
-        .split(/[^\p{L}\p{N}.%]+/u)
-        .map((term) => term.trim())
-        .filter((term) => term.length >= 2 && !STOP_WORDS.has(term)),
-    ),
-  ];
 }
