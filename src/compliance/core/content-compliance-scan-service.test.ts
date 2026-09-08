@@ -43,6 +43,24 @@ describe('ContentComplianceScanService', () => {
     );
   });
 
+  it('retrieves and cites a disease provision for the full Korean diabetes name', async () => {
+    const result = await contentComplianceScanService.analyze(
+      '일반식품인 이 음료는 당뇨병을 치료합니다',
+    );
+    expect(result.overallRisk).toBe('HIGH');
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: 'DISEASE_PREVENTION_TREATMENT',
+          citationStatus: 'VERIFIED',
+        }),
+      ]),
+    );
+    expect(result.sources.map((source) => source.chunkId)).toContain(
+      'food-labeling-advertising-act-2025:article-8-paragraph-1-item-1',
+    );
+  });
+
   it('returns a low-risk result for descriptive food copy', async () => {
     const result = await contentComplianceScanService.analyze(
       '구수하게 즐기는 무가당 보리차',
