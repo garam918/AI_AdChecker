@@ -49,4 +49,35 @@ describe('CitationValidator', () => {
       document: { title: '표시·광고의 공정화에 관한 법률' },
     });
   });
+
+  it('rejects a real provision that was not retrieved for this claim', async () => {
+    const result = await validator.validate(
+      [{ chunkId: validChunkId, article: '제5조' }],
+      {
+        allowedChunkIds: new Set(),
+        pack: 'GENERAL_ADVERTISING',
+        effectiveAt: '2026-09-08',
+      },
+    );
+    expect(result.verified).toHaveLength(0);
+    expect(result.rejected[0].reason).toBe('CHUNK_NOT_RETRIEVED');
+  });
+
+  it('rejects inapplicable dates and categories even for an allowed ID', async () => {
+    for (const [pack, effectiveAt, reason] of [
+      ['GENERAL_FOOD', '2026-09-08', 'PACK_MISMATCH'],
+      ['GENERAL_ADVERTISING', '1900-01-01', 'NOT_EFFECTIVE'],
+    ] as const) {
+      const result = await validator.validate(
+        [{ chunkId: validChunkId, article: '제5조' }],
+        {
+          allowedChunkIds: new Set([validChunkId]),
+          pack,
+          effectiveAt,
+        },
+      );
+      expect(result.verified).toHaveLength(0);
+      expect(result.rejected[0].reason).toBe(reason);
+    }
+  });
 });
