@@ -7,12 +7,17 @@
   },
   "scripts": {
     "dev": "vinext dev",
+    "prebuild": "npm run rag:check",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "rag:index": "vite-node --config vitest.config.ts scripts/build-regulatory-index.ts",
+    "rag:check": "npm run rag:index -- --check",
+    "rag:query": "vite-node --config vitest.config.ts scripts/query-regulatory-index.ts",
+    "rag:eval": "vitest run src/compliance/regulatory/retrieval-evaluation.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
@@ -53,6 +58,7 @@
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vite": "8.0.13",
+    "vite-node": "3.2.4",
     "vitest": "3.2.4",
     "wrangler": "4.92.0"
   },
