@@ -1,0 +1,81 @@
+[
+  {
+    "id": "advertising-substantiation",
+    "query": "실증자료는 표시 광고 내용과 직접 관련 있어야 한다",
+    "pack": "GENERAL_ADVERTISING",
+    "effectiveAt": "2026-09-08",
+    "expectedChunkIds": [
+      "advertising-substantiation-operation-2015:section-4-relevance"
+    ]
+  },
+  {
+    "id": "comparative-criteria",
+    "query": "비교대상과 비교기준을 명확하게 제시해야 하는가",
+    "pack": "GENERAL_ADVERTISING",
+    "effectiveAt": "2026-09-08",
+    "expectedChunkIds": [
+      "comparative-advertising-review-guideline-2016:section-3-general-principles"
+    ]
+  },
+  {
+    "id": "hidden-price-conditions",
+    "query": "무료 가격 거래조건의 중요정보 은폐 누락",
+    "pack": "GENERAL_ADVERTISING",
+    "effectiveAt": "2026-09-08",
+    "expectedChunkIds": [
+      "deceptive-advertising-review-guideline-2025:section-5-price-conditions"
+    ]
+  },
+  {
+    "id": "food-disease-treatment",
+    "query": "질병의 예방이나 치료에 효능이 있는 식품",
+    "pack": "GENERAL_FOOD",
+    "effectiveAt": "2026-09-08",
+    "expectedChunkIds": [
+      "food-labeling-advertising-act-2025:article-8-paragraph-1-item-1"
+    ]
+  },
+  {
+    "id": "food-drug-confusion",
+    "query": "식품을 의약품으로 인식할 우려가 있는 표시",
+    "pack": "GENERAL_FOOD",
+    "effectiveAt": "2026-09-08",
+    "expectedChunkIds": [
+      "food-labeling-advertising-act-2025:article-8-paragraph-1-item-2"
+    ]
+  },
+  {
+    "id": "food-functional-confusion",
+    "query": "건강기능식품이 아닌 것을 건강기능식품으로 오인",
+    "pack": "GENERAL_FOOD",
+    "effectiveAt": "2026-09-08",
+    "expectedChunkIds": [
+      "food-labeling-advertising-act-2025:article-8-paragraph-1-item-3"
+    ]
+  },
+  {
+    "id": "food-evidence-methods",
+    "query": "실증 시험 조사 방법 객관적 타당한 방법",
+    "pack": "GENERAL_FOOD",
+    "effectiveAt": "2026-09-08",
+    "expectedChunkIds": [
+      "food-labeling-advertising-enforcement-rule-2026:article-9-paragraph-1"
+    ]
+  },
+  {
+    "id": "out-of-corpus",
+    "query": "quasar neutrino astrophysics",
+    "pack": "GENERAL_ADVERTISING",
+    "effectiveAt": "2026-09-08",
+    "expectedChunkIds": [],
+    "expectEmpty": true
+  },
+  {
+    "id": "before-corpus-effective-dates",
+    "query": "질병 예방 치료 식품 의약품",
+    "pack": "GENERAL_FOOD",
+    "effectiveAt": "1900-01-01",
+    "expectedChunkIds": [],
+    "expectEmpty": true
+  }
+]
