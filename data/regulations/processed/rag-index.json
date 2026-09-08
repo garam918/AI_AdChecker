@@ -1,0 +1,1609 @@
+{
+  "schemaVersion": 1,
+  "corpusHash": "26f85fd865f83540e56107583f7eb0e605c6f3c7775bd2d2ee1fb3955b19db85",
+  "sourceFiles": [
+    "data/regulations/raw/cosmetic.official.json",
+    "data/regulations/raw/general-advertising.official.json",
+    "data/regulations/raw/general-food.official.json",
+    "data/regulations/raw/health-functional-food.official.json",
+    "data/regulations/raw/medical-device.official.json",
+    "data/regulations/raw/pharmaceutical.official.json"
+  ],
+  "provenance": "EXISTING_CURATED_CORPUS",
+  "documents": [
+    {
+      "id": "cosmetics-act-2026",
+      "title": "화장품법",
+      "shortTitle": "화장품법",
+      "authority": "식품의약품안전처",
+      "sourceType": "LAW",
+      "sourceUrl": "https://www.law.go.kr/법령/화장품법",
+      "effectiveDate": "2026-04-02",
+      "version": "법률 제20901호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00"
+    },
+    {
+      "id": "cosmetics-act-enforcement-rule-2026",
+      "title": "화장품법 시행규칙",
+      "shortTitle": "화장품법 시행규칙",
+      "authority": "식품의약품안전처",
+      "sourceType": "ENFORCEMENT_RULE",
+      "sourceUrl": "https://www.law.go.kr/법령/화장품법시행규칙",
+      "effectiveDate": "2026-04-02",
+      "version": "총리령 제2109호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00"
+    },
+    {
+      "id": "fair-labeling-advertising-act-2025",
+      "title": "표시·광고의 공정화에 관한 법률",
+      "shortTitle": "표시광고법",
+      "authority": "공정거래위원회",
+      "sourceType": "LAW",
+      "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률",
+      "effectiveDate": "2025-01-21",
+      "version": "법률 제20712호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00"
+    },
+    {
+      "id": "fair-labeling-advertising-enforcement-decree-2026",
+      "title": "표시·광고의 공정화에 관한 법률 시행령",
+      "shortTitle": "표시광고법 시행령",
+      "authority": "공정거래위원회",
+      "sourceType": "ENFORCEMENT_DECREE",
+      "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률시행령",
+      "effectiveDate": "2026-07-01",
+      "version": "대통령령 제36416호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00"
+    },
+    {
+      "id": "advertising-substantiation-operation-2015",
+      "title": "표시·광고 실증에 관한 운영",
+      "shortTitle": "광고 실증 운영고시",
+      "authority": "공정거래위원회",
+      "sourceType": "ADMINISTRATIVE_RULE",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/표시ㆍ광고실증에관한운영",
+      "effectiveDate": "2015-10-23",
+      "version": "공정거래위원회고시 제2015-15호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00"
+    },
+    {
+      "id": "comparative-advertising-review-guideline-2016",
+      "title": "비교표시·광고에 관한 심사지침",
+      "shortTitle": "비교광고 심사지침",
+      "authority": "공정거래위원회",
+      "sourceType": "OFFICIAL_GUIDELINE",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/비교표시ㆍ광고에관한심사지침",
+      "effectiveDate": "2016-12-23",
+      "version": "공정거래위원회예규 제269호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00"
+    },
+    {
+      "id": "deceptive-advertising-review-guideline-2025",
+      "title": "기만적인 표시·광고 심사지침",
+      "shortTitle": "기만광고 심사지침",
+      "authority": "공정거래위원회",
+      "sourceType": "OFFICIAL_GUIDELINE",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/기만적인표시ㆍ광고심사지침",
+      "effectiveDate": "2025-10-30",
+      "version": "공정거래위원회예규 제488호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00"
+    },
+    {
+      "id": "food-labeling-advertising-act-2025",
+      "title": "식품 등의 표시·광고에 관한 법률",
+      "shortTitle": "식품표시광고법",
+      "authority": "식품의약품안전처",
+      "sourceType": "LAW",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "effectiveDate": "2025-09-19",
+      "version": "법률 제20826호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00"
+    },
+    {
+      "id": "food-labeling-advertising-enforcement-decree-2025",
+      "title": "식품 등의 표시·광고에 관한 법률 시행령",
+      "shortTitle": "식품표시광고법 시행령",
+      "authority": "식품의약품안전처",
+      "sourceType": "ENFORCEMENT_DECREE",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률시행령",
+      "effectiveDate": "2025-09-19",
+      "version": "대통령령 제35734호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00"
+    },
+    {
+      "id": "food-labeling-advertising-enforcement-rule-2026",
+      "title": "식품 등의 표시·광고에 관한 법률 시행규칙",
+      "shortTitle": "식품표시광고법 시행규칙",
+      "authority": "식품의약품안전처",
+      "sourceType": "ENFORCEMENT_RULE",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률시행규칙",
+      "effectiveDate": "2026-01-01",
+      "version": "총리령 제2004호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00"
+    },
+    {
+      "id": "unfair-food-labeling-advertising-standard-2025",
+      "title": "식품등의 부당한 표시 또는 광고의 내용 기준",
+      "shortTitle": "식품 부당광고 내용 기준",
+      "authority": "식품의약품안전처",
+      "sourceType": "ADMINISTRATIVE_RULE",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/식품등의부당한표시또는광고의내용기준",
+      "effectiveDate": "2025-12-04",
+      "version": "식품의약품안전처고시 제2025-79호",
+      "retrievedAt": "2026-09-06T00:00:00+09:00"
+    },
+    {
+      "id": "hff-food-labeling-advertising-act-2025",
+      "title": "식품 등의 표시·광고에 관한 법률",
+      "shortTitle": "식품표시광고법",
+      "authority": "식품의약품안전처",
+      "sourceType": "LAW",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "effectiveDate": "2025-09-19",
+      "version": "법률 제20826호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00"
+    },
+    {
+      "id": "hff-food-labeling-advertising-enforcement-rule-2026",
+      "title": "식품 등의 표시·광고에 관한 법률 시행규칙",
+      "shortTitle": "식품표시광고법 시행규칙",
+      "authority": "식품의약품안전처",
+      "sourceType": "ENFORCEMENT_RULE",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률시행규칙",
+      "effectiveDate": "2026-01-01",
+      "version": "총리령 제2004호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00"
+    },
+    {
+      "id": "health-functional-food-labeling-standard-2025",
+      "title": "건강기능식품의 표시기준",
+      "shortTitle": "건강기능식품 표시기준",
+      "authority": "식품의약품안전처",
+      "sourceType": "ADMINISTRATIVE_RULE",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/건강기능식품의표시기준",
+      "effectiveDate": "2025-08-29",
+      "version": "식품의약품안전처고시 제2025-61호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00"
+    },
+    {
+      "id": "medical-devices-act-2026",
+      "title": "의료기기법",
+      "shortTitle": "의료기기법",
+      "authority": "식품의약품안전처",
+      "sourceType": "LAW",
+      "sourceUrl": "https://www.law.go.kr/법령/의료기기법",
+      "effectiveDate": "2026-07-01",
+      "version": "법률 제21263호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00"
+    },
+    {
+      "id": "pharmaceutical-affairs-act-2026",
+      "title": "약사법",
+      "shortTitle": "약사법",
+      "authority": "식품의약품안전처",
+      "sourceType": "LAW",
+      "sourceUrl": "https://www.law.go.kr/법령/약사법",
+      "effectiveDate": "2026-06-21",
+      "version": "법률 제21109호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00"
+    },
+    {
+      "id": "pharmaceutical-safety-rule-2026",
+      "title": "의약품 등의 안전에 관한 규칙",
+      "shortTitle": "의약품안전규칙",
+      "authority": "식품의약품안전처",
+      "sourceType": "ENFORCEMENT_RULE",
+      "sourceUrl": "https://www.law.go.kr/법령/의약품등의안전에관한규칙",
+      "effectiveDate": "2026-03-05",
+      "version": "총리령 제2100호",
+      "retrievedAt": "2026-09-07T00:00:00+09:00"
+    }
+  ],
+  "chunks": [
+    {
+      "id": "cosmetics-act-2026:article-13-paragraph-1-item-1",
+      "documentId": "cosmetics-act-2026",
+      "article": "제13조",
+      "paragraph": "제1항",
+      "section": "제1호",
+      "heading": "의약품 오인 우려 표시·광고 금지",
+      "text": "영업자 또는 판매자는 화장품을 의약품으로 잘못 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다.",
+      "normalizedText": "제13조 제1항 제1호 의약품 오인 우려 표시·광고 금지 영업자 또는 판매자는 화장품을 의약품으로 잘못 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다. 화장품 광고 의약품 오인 질병 치료 소비자 오인",
+      "sourceUrl": "https://www.law.go.kr/법령/화장품법",
+      "metadata": {
+        "pack": "COSMETIC",
+        "documentTitle": "화장품법",
+        "shortTitle": "화장품법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-04-02",
+        "topics": ["화장품 광고", "의약품 오인", "질병 치료", "소비자 오인"]
+      }
+    },
+    {
+      "id": "cosmetics-act-2026:article-13-paragraph-1-item-2",
+      "documentId": "cosmetics-act-2026",
+      "article": "제13조",
+      "paragraph": "제1항",
+      "section": "제2호",
+      "heading": "기능성화장품 오인 및 심사결과와 다른 광고 금지",
+      "text": "영업자 또는 판매자는 기능성화장품이 아닌 화장품을 기능성화장품으로 잘못 인식할 우려가 있거나 기능성화장품의 안전성·유효성에 관한 심사결과와 다른 내용의 표시 또는 광고를 하여서는 아니 된다.",
+      "normalizedText": "제13조 제1항 제2호 기능성화장품 오인 및 심사결과와 다른 광고 금지 영업자 또는 판매자는 기능성화장품이 아닌 화장품을 기능성화장품으로 잘못 인식할 우려가 있거나 기능성화장품의 안전성·유효성에 관한 심사결과와 다른 내용의 표시 또는 광고를 하여서는 아니 된다. 화장품 광고 기능성 심사 범위 기능성화장품 허가 범위 소비자 오인",
+      "sourceUrl": "https://www.law.go.kr/법령/화장품법",
+      "metadata": {
+        "pack": "COSMETIC",
+        "documentTitle": "화장품법",
+        "shortTitle": "화장품법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-04-02",
+        "topics": [
+          "화장품 광고",
+          "기능성 심사 범위",
+          "기능성화장품",
+          "허가 범위",
+          "소비자 오인"
+        ]
+      }
+    },
+    {
+      "id": "cosmetics-act-2026:article-13-paragraph-1-item-4",
+      "documentId": "cosmetics-act-2026",
+      "article": "제13조",
+      "paragraph": "제1항",
+      "section": "제4호",
+      "heading": "사실과 다른 기만·오인 광고 금지",
+      "text": "영업자 또는 판매자는 그 밖에 사실과 다르게 소비자를 속이거나 소비자가 잘못 인식하도록 할 우려가 있는 표시 또는 광고를 하여서는 아니 된다.",
+      "normalizedText": "제13조 제1항 제4호 사실과 다른 기만·오인 광고 금지 영업자 또는 판매자는 그 밖에 사실과 다르게 소비자를 속이거나 소비자가 잘못 인식하도록 할 우려가 있는 표시 또는 광고를 하여서는 아니 된다. 화장품 광고 거짓 과장 소비자 오인 전문가 보증 추천 전후 비교 체험담",
+      "sourceUrl": "https://www.law.go.kr/법령/화장품법",
+      "metadata": {
+        "pack": "COSMETIC",
+        "documentTitle": "화장품법",
+        "shortTitle": "화장품법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-04-02",
+        "topics": [
+          "화장품 광고",
+          "거짓 과장",
+          "소비자 오인",
+          "전문가 보증 추천",
+          "전후 비교",
+          "체험담"
+        ]
+      }
+    },
+    {
+      "id": "cosmetics-act-2026:article-14-paragraphs-1-3",
+      "documentId": "cosmetics-act-2026",
+      "article": "제14조",
+      "paragraph": "제1항부터 제3항",
+      "section": null,
+      "heading": "표시·광고 내용의 실증",
+      "text": "영업자 및 판매자는 자기가 행한 표시·광고 중 사실과 관련한 사항을 실증할 수 있어야 한다. 식품의약품안전처장은 소비자를 속이거나 잘못 인식하게 할 우려가 있는지를 판단하기 위해 관련 자료 제출을 요청할 수 있으며, 요청받은 자는 원칙적으로 요청받은 날부터 15일 이내에 실증자료를 제출하여야 한다.",
+      "normalizedText": "제14조 제1항부터 제3항 표시·광고 내용의 실증 영업자 및 판매자는 자기가 행한 표시·광고 중 사실과 관련한 사항을 실증할 수 있어야 한다. 식품의약품안전처장은 소비자를 속이거나 잘못 인식하게 할 우려가 있는지를 판단하기 위해 관련 자료 제출을 요청할 수 있으며, 요청받은 자는 원칙적으로 요청받은 날부터 15일 이내에 실증자료를 제출하여야 한다. 화장품 광고 표시 광고 실증 객관적 근거 시험자료 거짓 과장",
+      "sourceUrl": "https://www.law.go.kr/법령/화장품법",
+      "metadata": {
+        "pack": "COSMETIC",
+        "documentTitle": "화장품법",
+        "shortTitle": "화장품법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-04-02",
+        "topics": [
+          "화장품 광고",
+          "표시 광고 실증",
+          "객관적 근거",
+          "시험자료",
+          "거짓 과장"
+        ]
+      }
+    },
+    {
+      "id": "cosmetics-act-enforcement-rule-2026:article-23-paragraph-1",
+      "documentId": "cosmetics-act-enforcement-rule-2026",
+      "article": "제23조",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "표시·광고 실증 대상",
+      "text": "화장품 포장 또는 화장품 광고 매체·수단에 의한 표시·광고 중 사실과 다르게 소비자를 속이거나 소비자가 잘못 인식하게 할 우려가 있어 식품의약품안전처장이 실증이 필요하다고 인정하는 표시·광고는 실증 대상이 된다.",
+      "normalizedText": "제23조 제1항 표시·광고 실증 대상 화장품 포장 또는 화장품 광고 매체·수단에 의한 표시·광고 중 사실과 다르게 소비자를 속이거나 소비자가 잘못 인식하게 할 우려가 있어 식품의약품안전처장이 실증이 필요하다고 인정하는 표시·광고는 실증 대상이 된다. 화장품 광고 표시 광고 실증 객관적 근거 소비자 오인",
+      "sourceUrl": "https://www.law.go.kr/법령/화장품법시행규칙",
+      "metadata": {
+        "pack": "COSMETIC",
+        "documentTitle": "화장품법 시행규칙",
+        "shortTitle": "화장품법 시행규칙",
+        "authority": "식품의약품안전처",
+        "sourceType": "ENFORCEMENT_RULE",
+        "effectiveDate": "2026-04-02",
+        "topics": [
+          "화장품 광고",
+          "표시 광고 실증",
+          "객관적 근거",
+          "소비자 오인"
+        ]
+      }
+    },
+    {
+      "id": "cosmetics-act-enforcement-rule-2026:article-23-paragraph-2-item-1",
+      "documentId": "cosmetics-act-enforcement-rule-2026",
+      "article": "제23조",
+      "paragraph": "제2항",
+      "section": "제1호",
+      "heading": "화장품 표시·광고 실증자료의 범위",
+      "text": "화장품 표시·광고의 실증자료 중 시험결과는 인체 적용시험 자료, 인체 외 시험 자료 또는 같은 수준 이상의 조사자료여야 한다.",
+      "normalizedText": "제23조 제2항 제1호 화장품 표시·광고 실증자료의 범위 화장품 표시·광고의 실증자료 중 시험결과는 인체 적용시험 자료, 인체 외 시험 자료 또는 같은 수준 이상의 조사자료여야 한다. 화장품 광고 표시 광고 실증 객관적 근거 인체 적용시험 시험자료",
+      "sourceUrl": "https://www.law.go.kr/법령/화장품법시행규칙",
+      "metadata": {
+        "pack": "COSMETIC",
+        "documentTitle": "화장품법 시행규칙",
+        "shortTitle": "화장품법 시행규칙",
+        "authority": "식품의약품안전처",
+        "sourceType": "ENFORCEMENT_RULE",
+        "effectiveDate": "2026-04-02",
+        "topics": [
+          "화장품 광고",
+          "표시 광고 실증",
+          "객관적 근거",
+          "인체 적용시험",
+          "시험자료"
+        ]
+      }
+    },
+    {
+      "id": "fair-labeling-advertising-act-2025:article-3-paragraph-1",
+      "documentId": "fair-labeling-advertising-act-2025",
+      "article": "제3조",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "부당한 표시·광고 행위의 금지",
+      "text": "사업자등은 소비자를 속이거나 소비자로 하여금 잘못 알게 할 우려가 있는 표시·광고 행위로서 공정한 거래질서를 해칠 우려가 있는 다음 각 호의 행위를 하거나 다른 사업자등으로 하여금 하게 하여서는 아니 된다. 1. 거짓·과장의 표시·광고 2. 기만적인 표시·광고 3. 부당하게 비교하는 표시·광고 4. 비방적인 표시·광고",
+      "normalizedText": "제3조 제1항 부당한 표시·광고 행위의 금지 사업자등은 소비자를 속이거나 소비자로 하여금 잘못 알게 할 우려가 있는 표시·광고 행위로서 공정한 거래질서를 해칠 우려가 있는 다음 각 호의 행위를 하거나 다른 사업자등으로 하여금 하게 하여서는 아니 된다. 1. 거짓·과장의 표시·광고 2. 기만적인 표시·광고 3. 부당하게 비교하는 표시·광고 4. 비방적인 표시·광고 거짓 과장 기만 부당한 비교 소비자 오인",
+      "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "표시·광고의 공정화에 관한 법률",
+        "shortTitle": "표시광고법",
+        "authority": "공정거래위원회",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-01-21",
+        "topics": ["거짓", "과장", "기만", "부당한 비교", "소비자 오인"]
+      }
+    },
+    {
+      "id": "fair-labeling-advertising-act-2025:article-5-paragraph-1",
+      "documentId": "fair-labeling-advertising-act-2025",
+      "article": "제5조",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "표시·광고 내용의 실증 등",
+      "text": "사업자등은 자기가 한 표시·광고 중 사실과 관련한 사항에 대하여는 실증할 수 있어야 한다.",
+      "normalizedText": "제5조 제1항 표시·광고 내용의 실증 등 사업자등은 자기가 한 표시·광고 중 사실과 관련한 사항에 대하여는 실증할 수 있어야 한다. 실증 사실 관련 사항 객관적 주장 수치 주장 근거 자료",
+      "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "표시·광고의 공정화에 관한 법률",
+        "shortTitle": "표시광고법",
+        "authority": "공정거래위원회",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-01-21",
+        "topics": [
+          "실증",
+          "사실 관련 사항",
+          "객관적 주장",
+          "수치 주장",
+          "근거 자료"
+        ]
+      }
+    },
+    {
+      "id": "fair-labeling-advertising-enforcement-decree-2026:article-3-paragraph-1",
+      "documentId": "fair-labeling-advertising-enforcement-decree-2026",
+      "article": "제3조",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "거짓·과장의 표시·광고",
+      "text": "법 제3조제1항제1호에 따른 거짓·과장의 표시·광고는 사실과 다르게 표시·광고하거나 사실을 지나치게 부풀려 표시·광고하는 것으로 한다.",
+      "normalizedText": "제3조 제1항 거짓·과장의 표시·광고 법 제3조제1항제1호에 따른 거짓·과장의 표시·광고는 사실과 다르게 표시·광고하거나 사실을 지나치게 부풀려 표시·광고하는 것으로 한다. 거짓 과장 사실과 다름 과도한 부풀림 소비자 오인",
+      "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률시행령",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "표시·광고의 공정화에 관한 법률 시행령",
+        "shortTitle": "표시광고법 시행령",
+        "authority": "공정거래위원회",
+        "sourceType": "ENFORCEMENT_DECREE",
+        "effectiveDate": "2026-07-01",
+        "topics": [
+          "거짓",
+          "과장",
+          "사실과 다름",
+          "과도한 부풀림",
+          "소비자 오인"
+        ]
+      }
+    },
+    {
+      "id": "fair-labeling-advertising-enforcement-decree-2026:article-3-paragraph-2",
+      "documentId": "fair-labeling-advertising-enforcement-decree-2026",
+      "article": "제3조",
+      "paragraph": "제2항",
+      "section": null,
+      "heading": "기만적인 표시·광고",
+      "text": "법 제3조제1항제2호에 따른 기만적인 표시·광고는 사실을 은폐하거나 축소하는 등의 방법으로 표시·광고하는 것으로 한다.",
+      "normalizedText": "제3조 제2항 기만적인 표시·광고 법 제3조제1항제2호에 따른 기만적인 표시·광고는 사실을 은폐하거나 축소하는 등의 방법으로 표시·광고하는 것으로 한다. 기만 사실 은폐 사실 축소 중요 조건 누락 소비자 오인",
+      "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률시행령",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "표시·광고의 공정화에 관한 법률 시행령",
+        "shortTitle": "표시광고법 시행령",
+        "authority": "공정거래위원회",
+        "sourceType": "ENFORCEMENT_DECREE",
+        "effectiveDate": "2026-07-01",
+        "topics": [
+          "기만",
+          "사실 은폐",
+          "사실 축소",
+          "중요 조건 누락",
+          "소비자 오인"
+        ]
+      }
+    },
+    {
+      "id": "fair-labeling-advertising-enforcement-decree-2026:article-3-paragraph-3",
+      "documentId": "fair-labeling-advertising-enforcement-decree-2026",
+      "article": "제3조",
+      "paragraph": "제3항",
+      "section": null,
+      "heading": "부당하게 비교하는 표시·광고",
+      "text": "법 제3조제1항제3호에 따른 부당하게 비교하는 표시·광고는 비교 대상 및 기준을 분명하게 밝히지 아니하거나 객관적인 근거 없이 자기 또는 자기의 상품이나 용역(이하 \"상품등\"이라 한다)을 다른 사업자 또는 사업자단체(이하 \"사업자등\"이라 한다)나 다른 사업자등의 상품등과 비교하여 우량 또는 유리하다고 표시·광고하는 것으로 한다.",
+      "normalizedText": "제3조 제3항 부당하게 비교하는 표시·광고 법 제3조제1항제3호에 따른 부당하게 비교하는 표시·광고는 비교 대상 및 기준을 분명하게 밝히지 아니하거나 객관적인 근거 없이 자기 또는 자기의 상품이나 용역(이하 \"상품등\"이라 한다)을 다른 사업자 또는 사업자단체(이하 \"사업자등\"이라 한다)나 다른 사업자등의 상품등과 비교하여 우량 또는 유리하다고 표시·광고하는 것으로 한다. 비교 광고 비교 대상 비교 기준 객관적 근거 우월성 주장",
+      "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률시행령",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "표시·광고의 공정화에 관한 법률 시행령",
+        "shortTitle": "표시광고법 시행령",
+        "authority": "공정거래위원회",
+        "sourceType": "ENFORCEMENT_DECREE",
+        "effectiveDate": "2026-07-01",
+        "topics": [
+          "비교 광고",
+          "비교 대상",
+          "비교 기준",
+          "객관적 근거",
+          "우월성 주장"
+        ]
+      }
+    },
+    {
+      "id": "fair-labeling-advertising-enforcement-decree-2026:article-3-paragraph-4",
+      "documentId": "fair-labeling-advertising-enforcement-decree-2026",
+      "article": "제3조",
+      "paragraph": "제4항",
+      "section": null,
+      "heading": "비방적인 표시·광고",
+      "text": "법 제3조제1항제4호에 따른 비방적인 표시·광고는 다른 사업자등 또는 다른 사업자등의 상품등에 관하여 객관적인 근거가 없는 내용으로 표시·광고하여 비방하거나 불리한 사실만을 표시·광고하여 비방하는 것으로 한다.",
+      "normalizedText": "제3조 제4항 비방적인 표시·광고 법 제3조제1항제4호에 따른 비방적인 표시·광고는 다른 사업자등 또는 다른 사업자등의 상품등에 관하여 객관적인 근거가 없는 내용으로 표시·광고하여 비방하거나 불리한 사실만을 표시·광고하여 비방하는 것으로 한다. 비방 객관적 근거 경쟁 사업자 불리한 사실",
+      "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률시행령",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "표시·광고의 공정화에 관한 법률 시행령",
+        "shortTitle": "표시광고법 시행령",
+        "authority": "공정거래위원회",
+        "sourceType": "ENFORCEMENT_DECREE",
+        "effectiveDate": "2026-07-01",
+        "topics": ["비방", "객관적 근거", "경쟁 사업자", "불리한 사실"]
+      }
+    },
+    {
+      "id": "fair-labeling-advertising-enforcement-decree-2026:article-4-paragraph-1",
+      "documentId": "fair-labeling-advertising-enforcement-decree-2026",
+      "article": "제4조",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "실증방법 등",
+      "text": "사업자등이 법 제5조제1항에 따라 자기가 한 표시·광고 중 사실과 관련한 사항을 실증하기 위하여 시험이나 조사를 하려는 경우에는 다음 각 호의 기준에 따라야 한다. 1. 실증에 사용되는 시험 또는 조사의 방법은 학술적으로 또는 산업계에서 일반적으로 인정된 방법 등 객관적이고 타당한 방법일 것 2. 시험 또는 조사는 법령에 따른 시험·조사기관이나 사업자등과 독립적으로 경영되는 시험·조사기관에서 할 것.",
+      "normalizedText": "제4조 제1항 실증방법 등 사업자등이 법 제5조제1항에 따라 자기가 한 표시·광고 중 사실과 관련한 사항을 실증하기 위하여 시험이나 조사를 하려는 경우에는 다음 각 호의 기준에 따라야 한다. 1. 실증에 사용되는 시험 또는 조사의 방법은 학술적으로 또는 산업계에서 일반적으로 인정된 방법 등 객관적이고 타당한 방법일 것 2. 시험 또는 조사는 법령에 따른 시험·조사기관이나 사업자등과 독립적으로 경영되는 시험·조사기관에서 할 것. 실증 방법 시험 조사 객관적 방법 타당한 방법 독립 기관",
+      "sourceUrl": "https://www.law.go.kr/법령/표시ㆍ광고의공정화에관한법률시행령",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "표시·광고의 공정화에 관한 법률 시행령",
+        "shortTitle": "표시광고법 시행령",
+        "authority": "공정거래위원회",
+        "sourceType": "ENFORCEMENT_DECREE",
+        "effectiveDate": "2026-07-01",
+        "topics": [
+          "실증 방법",
+          "시험",
+          "조사",
+          "객관적 방법",
+          "타당한 방법",
+          "독립 기관"
+        ]
+      }
+    },
+    {
+      "id": "advertising-substantiation-operation-2015:section-2-definitions-1-2",
+      "documentId": "advertising-substantiation-operation-2015",
+      "article": null,
+      "paragraph": null,
+      "section": "Ⅱ. 용어의 정의 제1호·제2호",
+      "heading": "사실과 관련한 사항 및 실증의 정의",
+      "text": "“사실과 관련한 사항”이라 함은 표시·광고에서 주장한 내용 중에서 합리적인 근거나 객관적인 자료 등을 통하여 그 진위여부의 판단이 가능한 내용을 말한다. “실증”이라 함은 표시·광고에서 주장한 내용 중에서 사실과 관련한 사항이 진실임을 합리적인 근거나 객관적인 자료 등을 통하여 증명하는 것을 말한다.",
+      "normalizedText": "ii. 용어의 정의 제1호·제2호 사실과 관련한 사항 및 실증의 정의 “사실과 관련한 사항”이라 함은 표시·광고에서 주장한 내용 중에서 합리적인 근거나 객관적인 자료 등을 통하여 그 진위여부의 판단이 가능한 내용을 말한다. “실증”이라 함은 표시·광고에서 주장한 내용 중에서 사실과 관련한 사항이 진실임을 합리적인 근거나 객관적인 자료 등을 통하여 증명하는 것을 말한다. 사실 관련 사항 실증 합리적 근거 객관적 자료 진위 판단",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/표시ㆍ광고실증에관한운영",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "표시·광고 실증에 관한 운영",
+        "shortTitle": "광고 실증 운영고시",
+        "authority": "공정거래위원회",
+        "sourceType": "ADMINISTRATIVE_RULE",
+        "effectiveDate": "2015-10-23",
+        "topics": [
+          "사실 관련 사항",
+          "실증",
+          "합리적 근거",
+          "객관적 자료",
+          "진위 판단"
+        ]
+      }
+    },
+    {
+      "id": "advertising-substantiation-operation-2015:section-4-relevance",
+      "documentId": "advertising-substantiation-operation-2015",
+      "article": null,
+      "paragraph": null,
+      "section": "Ⅳ. 실증자료의 심사",
+      "heading": "표시·광고 내용과 실증자료의 관련성",
+      "text": "실증자료의 내용은 실증이 요구된 표시·광고 내용과 직접적으로 관계가 있어야 하며, 관련이 없는 자료는 합리적인 근거로 인정되지 않는다.",
+      "normalizedText": "iv. 실증자료의 심사 표시·광고 내용과 실증자료의 관련성 실증자료의 내용은 실증이 요구된 표시·광고 내용과 직접적으로 관계가 있어야 하며, 관련이 없는 자료는 합리적인 근거로 인정되지 않는다. 실증자료 직접 관련성 합리적 근거 증거 적합성",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/표시ㆍ광고실증에관한운영",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "표시·광고 실증에 관한 운영",
+        "shortTitle": "광고 실증 운영고시",
+        "authority": "공정거래위원회",
+        "sourceType": "ADMINISTRATIVE_RULE",
+        "effectiveDate": "2015-10-23",
+        "topics": ["실증자료", "직접 관련성", "합리적 근거", "증거 적합성"]
+      }
+    },
+    {
+      "id": "comparative-advertising-review-guideline-2016:section-3-general-principles",
+      "documentId": "comparative-advertising-review-guideline-2016",
+      "article": null,
+      "paragraph": null,
+      "section": "Ⅲ. 일반원칙",
+      "heading": "비교표시·광고의 일반원칙",
+      "text": "비교표시·광고는 소비자에게 사업자나 상품에 관한 유용하고 정확한 정보제공을 목적으로 행하는 것이어야 하며, 소비자를 속이거나 소비자로 하여금 잘못 알게 할 우려가 없도록 하여야 한다. 비교표시·광고는 그 비교대상 및 비교기준이 명확하여야 하며 비교내용 및 비교방법이 적정하여야 한다. 비교표시·광고는 법령에 의한 시험·조사기관이나 사업자와 독립적으로 경영되는 시험·조사기관에서 학술적 또는 산업계 등에서 일반적으로 인정된 방법 등 객관적이고 타당한 방법으로 실시한 시험·조사 결과에 의하여 실증된 사실에 근거하여야 한다.",
+      "normalizedText": "iii. 일반원칙 비교표시·광고의 일반원칙 비교표시·광고는 소비자에게 사업자나 상품에 관한 유용하고 정확한 정보제공을 목적으로 행하는 것이어야 하며, 소비자를 속이거나 소비자로 하여금 잘못 알게 할 우려가 없도록 하여야 한다. 비교표시·광고는 그 비교대상 및 비교기준이 명확하여야 하며 비교내용 및 비교방법이 적정하여야 한다. 비교표시·광고는 법령에 의한 시험·조사기관이나 사업자와 독립적으로 경영되는 시험·조사기관에서 학술적 또는 산업계 등에서 일반적으로 인정된 방법 등 객관적이고 타당한 방법으로 실시한 시험·조사 결과에 의하여 실증된 사실에 근거하여야 한다. 비교 광고 비교 대상 비교 기준 객관적 실증 우월성 주장",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/비교표시ㆍ광고에관한심사지침",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "비교표시·광고에 관한 심사지침",
+        "shortTitle": "비교광고 심사지침",
+        "authority": "공정거래위원회",
+        "sourceType": "OFFICIAL_GUIDELINE",
+        "effectiveDate": "2016-12-23",
+        "topics": [
+          "비교 광고",
+          "비교 대상",
+          "비교 기준",
+          "객관적 실증",
+          "우월성 주장"
+        ]
+      }
+    },
+    {
+      "id": "deceptive-advertising-review-guideline-2025:section-4-general-principles",
+      "documentId": "deceptive-advertising-review-guideline-2025",
+      "article": null,
+      "paragraph": null,
+      "section": "Ⅳ. 일반원칙",
+      "heading": "기만적인 표시·광고의 종합 판단",
+      "text": "기만적인 표시·광고를 심사할 때에는 특정 정보가 은폐·누락·축소되었다는 사실만으로 곧바로 부당한 표시·광고에 해당하는 것이 아니라, 은폐·누락·축소한 사실이 소비자의 구매선택에 중요한 영향을 미치는 것인지, 광고내용의 전후 맥락과 광고 전체 내용상 보통의 주의력을 가진 일반 소비자가 사업자나 상품에 대하여 그릇된 정보나 사실과 다른 인식을 가질 우려가 있는지, 이를 통해서 소비자의 합리적인 의사결정이 저해될 우려가 있는지 등을 종합적으로 고려하여 판단한다.",
+      "normalizedText": "iv. 일반원칙 기만적인 표시·광고의 종합 판단 기만적인 표시·광고를 심사할 때에는 특정 정보가 은폐·누락·축소되었다는 사실만으로 곧바로 부당한 표시·광고에 해당하는 것이 아니라, 은폐·누락·축소한 사실이 소비자의 구매선택에 중요한 영향을 미치는 것인지, 광고내용의 전후 맥락과 광고 전체 내용상 보통의 주의력을 가진 일반 소비자가 사업자나 상품에 대하여 그릇된 정보나 사실과 다른 인식을 가질 우려가 있는지, 이를 통해서 소비자의 합리적인 의사결정이 저해될 우려가 있는지 등을 종합적으로 고려하여 판단한다. 기만 구매선택 전체적 인상 일반 소비자 합리적 의사결정 소비자 오인",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/기만적인표시ㆍ광고심사지침",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "기만적인 표시·광고 심사지침",
+        "shortTitle": "기만광고 심사지침",
+        "authority": "공정거래위원회",
+        "sourceType": "OFFICIAL_GUIDELINE",
+        "effectiveDate": "2025-10-30",
+        "topics": [
+          "기만",
+          "구매선택",
+          "전체적 인상",
+          "일반 소비자",
+          "합리적 의사결정",
+          "소비자 오인"
+        ]
+      }
+    },
+    {
+      "id": "deceptive-advertising-review-guideline-2025:section-5-price-conditions",
+      "documentId": "deceptive-advertising-review-guideline-2025",
+      "article": null,
+      "paragraph": null,
+      "section": "Ⅴ. 세부심사지침",
+      "heading": "가격 또는 거래조건의 중요정보",
+      "text": "제품 등의 가격 또는 거래조건에 관한 중요정보의 전부 또는 일부를 은폐하거나 누락하여 표시·광고하는 경우 기만적인 표시·광고행위에 해당할 수 있다.",
+      "normalizedText": "v. 세부심사지침 가격 또는 거래조건의 중요정보 제품 등의 가격 또는 거래조건에 관한 중요정보의 전부 또는 일부를 은폐하거나 누락하여 표시·광고하는 경우 기만적인 표시·광고행위에 해당할 수 있다. 기만 가격 거래조건 중요 조건 누락 무료 표시 소비자 오인",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/기만적인표시ㆍ광고심사지침",
+      "metadata": {
+        "pack": "GENERAL_ADVERTISING",
+        "documentTitle": "기만적인 표시·광고 심사지침",
+        "shortTitle": "기만광고 심사지침",
+        "authority": "공정거래위원회",
+        "sourceType": "OFFICIAL_GUIDELINE",
+        "effectiveDate": "2025-10-30",
+        "topics": [
+          "기만",
+          "가격",
+          "거래조건",
+          "중요 조건 누락",
+          "무료 표시",
+          "소비자 오인"
+        ]
+      }
+    },
+    {
+      "id": "food-labeling-advertising-act-2025:article-8-paragraph-1-item-1",
+      "documentId": "food-labeling-advertising-act-2025",
+      "article": "제8조",
+      "paragraph": "제1항",
+      "section": "제1호",
+      "heading": "질병 예방·치료 효능으로 인식할 우려가 있는 표시·광고",
+      "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 질병의 예방·치료에 효능이 있는 것으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다.",
+      "normalizedText": "제8조 제1항 제1호 질병 예방·치료 효능으로 인식할 우려가 있는 표시·광고 누구든지 식품등의 명칭·제조방법·성분 등에 관하여 질병의 예방·치료에 효능이 있는 것으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다. 질병 예방 치료 질병 효능 일반식품 부당 광고",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "metadata": {
+        "pack": "GENERAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률",
+        "shortTitle": "식품표시광고법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-09-19",
+        "topics": ["질병 예방 치료", "질병 효능", "일반식품", "부당 광고"]
+      }
+    },
+    {
+      "id": "food-labeling-advertising-act-2025:article-8-paragraph-1-item-2",
+      "documentId": "food-labeling-advertising-act-2025",
+      "article": "제8조",
+      "paragraph": "제1항",
+      "section": "제2호",
+      "heading": "식품을 의약품으로 인식할 우려가 있는 표시·광고",
+      "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 식품등을 의약품으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다.",
+      "normalizedText": "제8조 제1항 제2호 식품을 의약품으로 인식할 우려가 있는 표시·광고 누구든지 식품등의 명칭·제조방법·성분 등에 관하여 식품등을 의약품으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다. 의약품 오인 의약품 효능 일반식품 부당 광고",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "metadata": {
+        "pack": "GENERAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률",
+        "shortTitle": "식품표시광고법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-09-19",
+        "topics": ["의약품 오인", "의약품 효능", "일반식품", "부당 광고"]
+      }
+    },
+    {
+      "id": "food-labeling-advertising-act-2025:article-8-paragraph-1-item-3",
+      "documentId": "food-labeling-advertising-act-2025",
+      "article": "제8조",
+      "paragraph": "제1항",
+      "section": "제3호",
+      "heading": "건강기능식품이 아닌 식품의 오인 우려 표시·광고",
+      "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 건강기능식품이 아닌 것을 건강기능식품으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다.",
+      "normalizedText": "제8조 제1항 제3호 건강기능식품이 아닌 식품의 오인 우려 표시·광고 누구든지 식품등의 명칭·제조방법·성분 등에 관하여 건강기능식품이 아닌 것을 건강기능식품으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다. 건강기능식품 오인 신체 기능 일반식품 소비자 오인",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "metadata": {
+        "pack": "GENERAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률",
+        "shortTitle": "식품표시광고법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-09-19",
+        "topics": ["건강기능식품 오인", "신체 기능", "일반식품", "소비자 오인"]
+      }
+    },
+    {
+      "id": "food-labeling-advertising-act-2025:article-8-paragraph-1-items-4-5",
+      "documentId": "food-labeling-advertising-act-2025",
+      "article": "제8조",
+      "paragraph": "제1항",
+      "section": "제4호·제5호",
+      "heading": "거짓·과장 또는 소비자 기만 표시·광고",
+      "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 거짓·과장된 표시 또는 광고나 소비자를 기만하는 표시 또는 광고를 하여서는 아니 된다.",
+      "normalizedText": "제8조 제1항 제4호·제5호 거짓·과장 또는 소비자 기만 표시·광고 누구든지 식품등의 명칭·제조방법·성분 등에 관하여 거짓·과장된 표시 또는 광고나 소비자를 기만하는 표시 또는 광고를 하여서는 아니 된다. 거짓 과장 소비자 기만 소비자 오인 체험기",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "metadata": {
+        "pack": "GENERAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률",
+        "shortTitle": "식품표시광고법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-09-19",
+        "topics": ["거짓 과장", "소비자 기만", "소비자 오인", "체험기"]
+      }
+    },
+    {
+      "id": "food-labeling-advertising-act-2025:article-9-paragraphs-1-2",
+      "documentId": "food-labeling-advertising-act-2025",
+      "article": "제9조",
+      "paragraph": "제1항·제2항",
+      "section": null,
+      "heading": "표시 또는 광고 내용의 실증",
+      "text": "식품등에 표시를 하거나 식품등을 광고한 자는 자기가 한 표시 또는 광고에 대하여 실증할 수 있어야 한다. 식품의약품안전처장은 제8조제1항을 위반할 우려가 있어 실증이 필요하다고 인정하는 경우 실증자료 제출을 요청할 수 있다.",
+      "normalizedText": "제9조 제1항·제2항 표시 또는 광고 내용의 실증 식품등에 표시를 하거나 식품등을 광고한 자는 자기가 한 표시 또는 광고에 대하여 실증할 수 있어야 한다. 식품의약품안전처장은 제8조제1항을 위반할 우려가 있어 실증이 필요하다고 인정하는 경우 실증자료 제출을 요청할 수 있다. 실증 객관적 근거 시험 조사 거짓 과장",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "metadata": {
+        "pack": "GENERAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률",
+        "shortTitle": "식품표시광고법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-09-19",
+        "topics": ["실증", "객관적 근거", "시험 조사", "거짓 과장"]
+      }
+    },
+    {
+      "id": "food-labeling-advertising-enforcement-decree-2025:article-3",
+      "documentId": "food-labeling-advertising-enforcement-decree-2025",
+      "article": "제3조",
+      "paragraph": "제1항·제2항",
+      "section": null,
+      "heading": "부당한 표시 또는 광고의 내용",
+      "text": "법 제8조제1항에 따른 부당한 표시 또는 광고의 구체적인 내용은 별표 1과 같다. 그 밖에 부당한 표시 또는 광고의 내용에 관한 세부적인 사항은 식품의약품안전처장이 정하여 고시한다.",
+      "normalizedText": "제3조 제1항·제2항 부당한 표시 또는 광고의 내용 법 제8조제1항에 따른 부당한 표시 또는 광고의 구체적인 내용은 별표 1과 같다. 그 밖에 부당한 표시 또는 광고의 내용에 관한 세부적인 사항은 식품의약품안전처장이 정하여 고시한다. 부당 광고 세부 기준 별표 1 식품의약품안전처 고시",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률시행령",
+      "metadata": {
+        "pack": "GENERAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률 시행령",
+        "shortTitle": "식품표시광고법 시행령",
+        "authority": "식품의약품안전처",
+        "sourceType": "ENFORCEMENT_DECREE",
+        "effectiveDate": "2025-09-19",
+        "topics": ["부당 광고", "세부 기준", "별표 1", "식품의약품안전처 고시"]
+      }
+    },
+    {
+      "id": "food-labeling-advertising-enforcement-rule-2026:article-9-paragraph-1",
+      "documentId": "food-labeling-advertising-enforcement-rule-2026",
+      "article": "제9조",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "실증방법 등",
+      "text": "표시 또는 광고에 대하여 실증하기 위하여 제출해야 하는 자료는 시험 또는 조사 결과, 전문가 견해, 학술문헌 및 그 밖에 식품의약품안전처장이 실증을 위하여 필요하다고 인정하는 자료이다.",
+      "normalizedText": "제9조 제1항 실증방법 등 표시 또는 광고에 대하여 실증하기 위하여 제출해야 하는 자료는 시험 또는 조사 결과, 전문가 견해, 학술문헌 및 그 밖에 식품의약품안전처장이 실증을 위하여 필요하다고 인정하는 자료이다. 실증 시험 조사 전문가 견해 학술문헌",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률시행규칙",
+      "metadata": {
+        "pack": "GENERAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률 시행규칙",
+        "shortTitle": "식품표시광고법 시행규칙",
+        "authority": "식품의약품안전처",
+        "sourceType": "ENFORCEMENT_RULE",
+        "effectiveDate": "2026-01-01",
+        "topics": ["실증", "시험 조사", "전문가 견해", "학술문헌"]
+      }
+    },
+    {
+      "id": "unfair-food-labeling-advertising-standard-2025:article-1",
+      "documentId": "unfair-food-labeling-advertising-standard-2025",
+      "article": "제1조",
+      "paragraph": null,
+      "section": null,
+      "heading": "목적",
+      "text": "식품표시광고법 제8조와 같은 법 시행령 제3조에 따른 부당한 표시·광고의 구체적인 내용을 예시하여 법 집행의 객관성과 투명성을 확보하고 소비자 보호에 이바지하는 것을 목적으로 한다.",
+      "normalizedText": "제1조 목적 식품표시광고법 제8조와 같은 법 시행령 제3조에 따른 부당한 표시·광고의 구체적인 내용을 예시하여 법 집행의 객관성과 투명성을 확보하고 소비자 보호에 이바지하는 것을 목적으로 한다. 부당 광고 구체적 기준 소비자 보호",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/식품등의부당한표시또는광고의내용기준",
+      "metadata": {
+        "pack": "GENERAL_FOOD",
+        "documentTitle": "식품등의 부당한 표시 또는 광고의 내용 기준",
+        "shortTitle": "식품 부당광고 내용 기준",
+        "authority": "식품의약품안전처",
+        "sourceType": "ADMINISTRATIVE_RULE",
+        "effectiveDate": "2025-12-04",
+        "topics": ["부당 광고", "구체적 기준", "소비자 보호"]
+      }
+    },
+    {
+      "id": "unfair-food-labeling-advertising-standard-2025:article-2-item-1",
+      "documentId": "unfair-food-labeling-advertising-standard-2025",
+      "article": "제2조",
+      "paragraph": null,
+      "section": "제1호",
+      "heading": "식품을 의약품으로 인식할 우려가 있는 표시 또는 광고",
+      "text": "식품등을 의약품으로 인식할 우려가 있는 표시 또는 광고에는 한약의 처방명 또는 고시 별표 1의 이와 유사한 명칭을 사용한 표시·광고가 포함된다.",
+      "normalizedText": "제2조 제1호 식품을 의약품으로 인식할 우려가 있는 표시 또는 광고 식품등을 의약품으로 인식할 우려가 있는 표시 또는 광고에는 한약의 처방명 또는 고시 별표 1의 이와 유사한 명칭을 사용한 표시·광고가 포함된다. 의약품 오인 한약 처방명 명칭 오인 일반식품",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/식품등의부당한표시또는광고의내용기준",
+      "metadata": {
+        "pack": "GENERAL_FOOD",
+        "documentTitle": "식품등의 부당한 표시 또는 광고의 내용 기준",
+        "shortTitle": "식품 부당광고 내용 기준",
+        "authority": "식품의약품안전처",
+        "sourceType": "ADMINISTRATIVE_RULE",
+        "effectiveDate": "2025-12-04",
+        "topics": ["의약품 오인", "한약 처방명", "명칭 오인", "일반식품"]
+      }
+    },
+    {
+      "id": "unfair-food-labeling-advertising-standard-2025:article-2-item-2",
+      "documentId": "unfair-food-labeling-advertising-standard-2025",
+      "article": "제2조",
+      "paragraph": null,
+      "section": "제2호",
+      "heading": "건강기능식품이 아닌 것을 오인하게 하는 표시 또는 광고",
+      "text": "건강기능식품이 아닌 것을 건강기능식품으로 인식할 우려가 있는 표시 또는 광고에는 건강기능식품 문구나 도안을 사용한 표시·광고가 포함된다.",
+      "normalizedText": "제2조 제2호 건강기능식품이 아닌 것을 오인하게 하는 표시 또는 광고 건강기능식품이 아닌 것을 건강기능식품으로 인식할 우려가 있는 표시 또는 광고에는 건강기능식품 문구나 도안을 사용한 표시·광고가 포함된다. 건강기능식품 오인 건강기능식품 문구 도안 일반식품",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/식품등의부당한표시또는광고의내용기준",
+      "metadata": {
+        "pack": "GENERAL_FOOD",
+        "documentTitle": "식품등의 부당한 표시 또는 광고의 내용 기준",
+        "shortTitle": "식품 부당광고 내용 기준",
+        "authority": "식품의약품안전처",
+        "sourceType": "ADMINISTRATIVE_RULE",
+        "effectiveDate": "2025-12-04",
+        "topics": ["건강기능식품 오인", "건강기능식품 문구", "도안", "일반식품"]
+      }
+    },
+    {
+      "id": "hff-food-labeling-advertising-act-2025:article-4-paragraph-1-item-3",
+      "documentId": "hff-food-labeling-advertising-act-2025",
+      "article": "제4조",
+      "paragraph": "제1항",
+      "section": "제3호",
+      "heading": "건강기능식품의 표시사항",
+      "text": "건강기능식품에는 제품명, 내용량 및 원료명, 영업소 명칭 및 소재지, 소비기한 및 보관방법, 섭취량·섭취방법 및 섭취 시 주의사항, 건강기능식품이라는 문자 또는 도안, 질병의 예방 및 치료를 위한 의약품이 아니라는 내용, 기능성에 관한 정보 및 해당 기능성을 나타내는 성분 등의 함유량을 표시하여야 한다.",
+      "normalizedText": "제4조 제1항 제3호 건강기능식품의 표시사항 건강기능식품에는 제품명, 내용량 및 원료명, 영업소 명칭 및 소재지, 소비기한 및 보관방법, 섭취량·섭취방법 및 섭취 시 주의사항, 건강기능식품이라는 문자 또는 도안, 질병의 예방 및 치료를 위한 의약품이 아니라는 내용, 기능성에 관한 정보 및 해당 기능성을 나타내는 성분 등의 함유량을 표시하여야 한다. 건강기능식품 표시 기능성 정보 섭취방법 주의사항",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "metadata": {
+        "pack": "HEALTH_FUNCTIONAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률",
+        "shortTitle": "식품표시광고법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-09-19",
+        "topics": ["건강기능식품 표시", "기능성 정보", "섭취방법", "주의사항"]
+      }
+    },
+    {
+      "id": "hff-food-labeling-advertising-act-2025:article-8-paragraph-1-items-1-2",
+      "documentId": "hff-food-labeling-advertising-act-2025",
+      "article": "제8조",
+      "paragraph": "제1항",
+      "section": "제1호·제2호",
+      "heading": "질병 예방·치료 및 의약품 오인 우려 표시·광고",
+      "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 질병의 예방·치료에 효능이 있는 것으로 인식할 우려가 있는 표시 또는 광고와 식품등을 의약품으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다.",
+      "normalizedText": "제8조 제1항 제1호·제2호 질병 예방·치료 및 의약품 오인 우려 표시·광고 누구든지 식품등의 명칭·제조방법·성분 등에 관하여 질병의 예방·치료에 효능이 있는 것으로 인식할 우려가 있는 표시 또는 광고와 식품등을 의약품으로 인식할 우려가 있는 표시 또는 광고를 하여서는 아니 된다. 질병 예방 치료 질병 효능 의약품 오인 건강기능식품",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "metadata": {
+        "pack": "HEALTH_FUNCTIONAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률",
+        "shortTitle": "식품표시광고법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-09-19",
+        "topics": ["질병 예방 치료", "질병 효능", "의약품 오인", "건강기능식품"]
+      }
+    },
+    {
+      "id": "hff-food-labeling-advertising-act-2025:article-8-paragraph-1-items-4-5",
+      "documentId": "hff-food-labeling-advertising-act-2025",
+      "article": "제8조",
+      "paragraph": "제1항",
+      "section": "제4호·제5호",
+      "heading": "거짓·과장 또는 소비자 기만 표시·광고",
+      "text": "누구든지 식품등의 명칭·제조방법·성분 등에 관하여 거짓·과장된 표시 또는 광고나 소비자를 기만하는 표시 또는 광고를 하여서는 아니 된다.",
+      "normalizedText": "제8조 제1항 제4호·제5호 거짓·과장 또는 소비자 기만 표시·광고 누구든지 식품등의 명칭·제조방법·성분 등에 관하여 거짓·과장된 표시 또는 광고나 소비자를 기만하는 표시 또는 광고를 하여서는 아니 된다. 거짓 과장 소비자 기만 기능성 범위 품목제조신고",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "metadata": {
+        "pack": "HEALTH_FUNCTIONAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률",
+        "shortTitle": "식품표시광고법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-09-19",
+        "topics": ["거짓 과장", "소비자 기만", "기능성 범위", "품목제조신고"]
+      }
+    },
+    {
+      "id": "hff-food-labeling-advertising-act-2025:article-9-paragraphs-1-2",
+      "documentId": "hff-food-labeling-advertising-act-2025",
+      "article": "제9조",
+      "paragraph": "제1항·제2항",
+      "section": null,
+      "heading": "표시 또는 광고 내용의 실증",
+      "text": "식품등에 표시를 하거나 식품등을 광고한 자는 자기가 한 표시 또는 광고에 대하여 실증할 수 있어야 한다. 식품의약품안전처장은 제8조제1항을 위반할 우려가 있어 실증이 필요하다고 인정하는 경우 실증자료 제출을 요청할 수 있다.",
+      "normalizedText": "제9조 제1항·제2항 표시 또는 광고 내용의 실증 식품등에 표시를 하거나 식품등을 광고한 자는 자기가 한 표시 또는 광고에 대하여 실증할 수 있어야 한다. 식품의약품안전처장은 제8조제1항을 위반할 우려가 있어 실증이 필요하다고 인정하는 경우 실증자료 제출을 요청할 수 있다. 실증 객관적 근거 시험 조사 거짓 과장",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "metadata": {
+        "pack": "HEALTH_FUNCTIONAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률",
+        "shortTitle": "식품표시광고법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-09-19",
+        "topics": ["실증", "객관적 근거", "시험 조사", "거짓 과장"]
+      }
+    },
+    {
+      "id": "hff-food-labeling-advertising-act-2025:article-10-paragraph-1",
+      "documentId": "hff-food-labeling-advertising-act-2025",
+      "article": "제10조",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "표시 또는 광고의 자율심의",
+      "text": "식품등에 관하여 표시 또는 광고하려는 자는 법에서 정한 표시사항만을 그대로 표시·광고하는 경우를 제외하고 자율심의기구로부터 미리 심의를 받아야 한다.",
+      "normalizedText": "제10조 제1항 표시 또는 광고의 자율심의 식품등에 관하여 표시 또는 광고하려는 자는 법에서 정한 표시사항만을 그대로 표시·광고하는 경우를 제외하고 자율심의기구로부터 미리 심의를 받아야 한다. 자율심의 사전 심의 건강기능식품 광고 게시 전 확인",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률",
+      "metadata": {
+        "pack": "HEALTH_FUNCTIONAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률",
+        "shortTitle": "식품표시광고법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2025-09-19",
+        "topics": ["자율심의", "사전 심의", "건강기능식품 광고", "게시 전 확인"]
+      }
+    },
+    {
+      "id": "hff-food-labeling-advertising-enforcement-rule-2026:article-9-paragraph-1",
+      "documentId": "hff-food-labeling-advertising-enforcement-rule-2026",
+      "article": "제9조",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "실증방법 등",
+      "text": "표시 또는 광고에 대하여 실증하기 위하여 제출해야 하는 자료는 시험 또는 조사 결과, 전문가 견해, 학술문헌 및 그 밖에 식품의약품안전처장이 실증을 위하여 필요하다고 인정하는 자료이다.",
+      "normalizedText": "제9조 제1항 실증방법 등 표시 또는 광고에 대하여 실증하기 위하여 제출해야 하는 자료는 시험 또는 조사 결과, 전문가 견해, 학술문헌 및 그 밖에 식품의약품안전처장이 실증을 위하여 필요하다고 인정하는 자료이다. 실증 시험 조사 전문가 견해 학술문헌",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률시행규칙",
+      "metadata": {
+        "pack": "HEALTH_FUNCTIONAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률 시행규칙",
+        "shortTitle": "식품표시광고법 시행규칙",
+        "authority": "식품의약품안전처",
+        "sourceType": "ENFORCEMENT_RULE",
+        "effectiveDate": "2026-01-01",
+        "topics": ["실증", "시험 조사", "전문가 견해", "학술문헌"]
+      }
+    },
+    {
+      "id": "hff-food-labeling-advertising-enforcement-rule-2026:article-10-item-3",
+      "documentId": "hff-food-labeling-advertising-enforcement-rule-2026",
+      "article": "제10조",
+      "paragraph": null,
+      "section": "제3호",
+      "heading": "표시 또는 광고 심의 대상 건강기능식품",
+      "text": "자율심의기구에 미리 심의를 받아야 하는 표시 또는 광고의 대상에는 건강기능식품이 포함된다.",
+      "normalizedText": "제10조 제3호 표시 또는 광고 심의 대상 건강기능식품 자율심의기구에 미리 심의를 받아야 하는 표시 또는 광고의 대상에는 건강기능식품이 포함된다. 자율심의 사전 심의 건강기능식품 광고 게시 전 확인",
+      "sourceUrl": "https://www.law.go.kr/법령/식품등의표시ㆍ광고에관한법률시행규칙",
+      "metadata": {
+        "pack": "HEALTH_FUNCTIONAL_FOOD",
+        "documentTitle": "식품 등의 표시·광고에 관한 법률 시행규칙",
+        "shortTitle": "식품표시광고법 시행규칙",
+        "authority": "식품의약품안전처",
+        "sourceType": "ENFORCEMENT_RULE",
+        "effectiveDate": "2026-01-01",
+        "topics": ["자율심의", "사전 심의", "건강기능식품 광고", "게시 전 확인"]
+      }
+    },
+    {
+      "id": "health-functional-food-labeling-standard-2025:article-4-items-1-10",
+      "documentId": "health-functional-food-labeling-standard-2025",
+      "article": "제4조",
+      "paragraph": null,
+      "section": "제1호부터 제10호",
+      "heading": "건강기능식품 표시사항",
+      "text": "건강기능식품에는 건강기능식품 표시 또는 도안, 제품명, 업소명 및 소재지, 소비기한 및 보관방법, 내용량, 영양정보, 기능정보, 섭취량·섭취방법 및 섭취 시 주의사항, 원료명 및 함량, 질병의 예방 및 치료를 위한 의약품이 아니라는 내용의 표현을 표시하여야 한다.",
+      "normalizedText": "제4조 제1호부터 제10호 건강기능식품 표시사항 건강기능식품에는 건강기능식품 표시 또는 도안, 제품명, 업소명 및 소재지, 소비기한 및 보관방법, 내용량, 영양정보, 기능정보, 섭취량·섭취방법 및 섭취 시 주의사항, 원료명 및 함량, 질병의 예방 및 치료를 위한 의약품이 아니라는 내용의 표현을 표시하여야 한다. 건강기능식품 표시 기능정보 섭취방법 의약품 아님",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/건강기능식품의표시기준",
+      "metadata": {
+        "pack": "HEALTH_FUNCTIONAL_FOOD",
+        "documentTitle": "건강기능식품의 표시기준",
+        "shortTitle": "건강기능식품 표시기준",
+        "authority": "식품의약품안전처",
+        "sourceType": "ADMINISTRATIVE_RULE",
+        "effectiveDate": "2025-08-29",
+        "topics": ["건강기능식품 표시", "기능정보", "섭취방법", "의약품 아님"]
+      }
+    },
+    {
+      "id": "health-functional-food-labeling-standard-2025:article-6-item-2",
+      "documentId": "health-functional-food-labeling-standard-2025",
+      "article": "제6조",
+      "paragraph": null,
+      "section": "제2호",
+      "heading": "제품명 표시 기준",
+      "text": "제품명은 품목제조신고서 또는 수입신고서에 기재한 명칭을 표시하여야 하며, 기준·규격에서 정한 기능성 원료 명칭 또는 식품의약품안전처장이 인정한 명칭을 사용하여야 한다. 부당한 표시 또는 광고에 해당하거나 다른 건강기능식품과 오인·혼동할 수 있는 표현을 포함해서는 아니 된다.",
+      "normalizedText": "제6조 제2호 제품명 표시 기준 제품명은 품목제조신고서 또는 수입신고서에 기재한 명칭을 표시하여야 하며, 기준·규격에서 정한 기능성 원료 명칭 또는 식품의약품안전처장이 인정한 명칭을 사용하여야 한다. 부당한 표시 또는 광고에 해당하거나 다른 건강기능식품과 오인·혼동할 수 있는 표현을 포함해서는 아니 된다. 제품명 품목제조신고 기능성 원료 기능성 범위 오인 혼동",
+      "sourceUrl": "https://www.law.go.kr/행정규칙/건강기능식품의표시기준",
+      "metadata": {
+        "pack": "HEALTH_FUNCTIONAL_FOOD",
+        "documentTitle": "건강기능식품의 표시기준",
+        "shortTitle": "건강기능식품 표시기준",
+        "authority": "식품의약품안전처",
+        "sourceType": "ADMINISTRATIVE_RULE",
+        "effectiveDate": "2025-08-29",
+        "topics": [
+          "제품명",
+          "품목제조신고",
+          "기능성 원료",
+          "기능성 범위",
+          "오인 혼동"
+        ]
+      }
+    },
+    {
+      "id": "medical-devices-act-2026:article-24-paragraph-1",
+      "documentId": "medical-devices-act-2026",
+      "article": "제24조",
+      "paragraph": "제1항",
+      "section": "제1호부터 제3호",
+      "heading": "허가·인증·신고 범위와 다른 기재 금지",
+      "text": "의료기기의 용기·외장·포장 또는 첨부문서에는 거짓이나 오해할 염려가 있는 사항, 허가 또는 인증을 받거나 신고한 사항과 다른 성능이나 효능 및 효과, 보건위생상 위해가 발생할 우려가 있는 사용방법이나 사용기간을 표시하거나 적어서는 아니 된다.",
+      "normalizedText": "제24조 제1항 제1호부터 제3호 허가·인증·신고 범위와 다른 기재 금지 의료기기의 용기·외장·포장 또는 첨부문서에는 거짓이나 오해할 염려가 있는 사항, 허가 또는 인증을 받거나 신고한 사항과 다른 성능이나 효능 및 효과, 보건위생상 위해가 발생할 우려가 있는 사용방법이나 사용기간을 표시하거나 적어서는 아니 된다. 의료기기 광고 허가 범위 효능 성능 사용목적 거짓 과장",
+      "sourceUrl": "https://www.law.go.kr/법령/의료기기법",
+      "metadata": {
+        "pack": "MEDICAL_DEVICE",
+        "documentTitle": "의료기기법",
+        "shortTitle": "의료기기법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-07-01",
+        "topics": [
+          "의료기기 광고",
+          "허가 범위",
+          "효능 성능",
+          "사용목적",
+          "거짓 과장"
+        ]
+      }
+    },
+    {
+      "id": "medical-devices-act-2026:article-24-paragraph-2-item-1",
+      "documentId": "medical-devices-act-2026",
+      "article": "제24조",
+      "paragraph": "제2항",
+      "section": "제1호",
+      "heading": "명칭·성능·효능·효과 또는 원리의 거짓·과대광고 금지",
+      "text": "누구든지 의료기기의 명칭·제조방법·성능이나 효능 및 효과 또는 그 원리에 관한 거짓 또는 과대광고를 하여서는 아니 된다.",
+      "normalizedText": "제24조 제2항 제1호 명칭·성능·효능·효과 또는 원리의 거짓·과대광고 금지 누구든지 의료기기의 명칭·제조방법·성능이나 효능 및 효과 또는 그 원리에 관한 거짓 또는 과대광고를 하여서는 아니 된다. 의료기기 광고 거짓 과장 거짓 과대광고 효능 성능 절대적 표현 부작용 부정",
+      "sourceUrl": "https://www.law.go.kr/법령/의료기기법",
+      "metadata": {
+        "pack": "MEDICAL_DEVICE",
+        "documentTitle": "의료기기법",
+        "shortTitle": "의료기기법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-07-01",
+        "topics": [
+          "의료기기 광고",
+          "거짓 과장",
+          "거짓 과대광고",
+          "효능 성능",
+          "절대적 표현",
+          "부작용 부정"
+        ]
+      }
+    },
+    {
+      "id": "medical-devices-act-2026:article-24-paragraph-2-item-2",
+      "documentId": "medical-devices-act-2026",
+      "article": "제24조",
+      "paragraph": "제2항",
+      "section": "제2호",
+      "heading": "의료인 등의 보증·추천 오인 광고 금지",
+      "text": "누구든지 의사·치과의사·한의사·수의사 또는 그 밖의 자가 의료기기의 성능이나 효능 및 효과를 보증·추천·공인·지도 또는 인정하거나 사용하고 있는 것으로 오해할 염려가 있는 기사를 사용한 광고를 하여서는 아니 된다.",
+      "normalizedText": "제24조 제2항 제2호 의료인 등의 보증·추천 오인 광고 금지 누구든지 의사·치과의사·한의사·수의사 또는 그 밖의 자가 의료기기의 성능이나 효능 및 효과를 보증·추천·공인·지도 또는 인정하거나 사용하고 있는 것으로 오해할 염려가 있는 기사를 사용한 광고를 하여서는 아니 된다. 의료기기 광고 전문가 보증 추천 의료인 추천 소비자 오인",
+      "sourceUrl": "https://www.law.go.kr/법령/의료기기법",
+      "metadata": {
+        "pack": "MEDICAL_DEVICE",
+        "documentTitle": "의료기기법",
+        "shortTitle": "의료기기법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-07-01",
+        "topics": [
+          "의료기기 광고",
+          "전문가 보증 추천",
+          "의료인 추천",
+          "소비자 오인"
+        ]
+      }
+    },
+    {
+      "id": "medical-devices-act-2026:article-24-paragraph-2-item-3",
+      "documentId": "medical-devices-act-2026",
+      "article": "제24조",
+      "paragraph": "제2항",
+      "section": "제3호",
+      "heading": "암시적 효능·성능 광고 금지",
+      "text": "누구든지 의료기기의 성능이나 효능 및 효과를 암시하는 기사·사진·도안을 사용하거나 그 밖에 암시적인 방법을 사용한 광고를 하여서는 아니 된다.",
+      "normalizedText": "제24조 제2항 제3호 암시적 효능·성능 광고 금지 누구든지 의료기기의 성능이나 효능 및 효과를 암시하는 기사·사진·도안을 사용하거나 그 밖에 암시적인 방법을 사용한 광고를 하여서는 아니 된다. 의료기기 광고 암시적 광고 전후 비교 체험담 효능 성능",
+      "sourceUrl": "https://www.law.go.kr/법령/의료기기법",
+      "metadata": {
+        "pack": "MEDICAL_DEVICE",
+        "documentTitle": "의료기기법",
+        "shortTitle": "의료기기법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-07-01",
+        "topics": [
+          "의료기기 광고",
+          "암시적 광고",
+          "전후 비교",
+          "체험담",
+          "효능 성능"
+        ]
+      }
+    },
+    {
+      "id": "medical-devices-act-2026:article-25-paragraph-1",
+      "documentId": "medical-devices-act-2026",
+      "article": "제25조",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "의료기기 광고의 자율심의",
+      "text": "의료기기를 광고하려는 자가 텔레비전·라디오방송, 신문·인터넷신문·잡지, 인터넷 등 법에서 정한 매체를 이용하여 광고하려는 경우에는 미리 해당 광고가 제24조제2항 및 제3항에 위반되는지 자율심의기구의 심의를 받아야 한다.",
+      "normalizedText": "제25조 제1항 의료기기 광고의 자율심의 의료기기를 광고하려는 자가 텔레비전·라디오방송, 신문·인터넷신문·잡지, 인터넷 등 법에서 정한 매체를 이용하여 광고하려는 경우에는 미리 해당 광고가 제24조제2항 및 제3항에 위반되는지 자율심의기구의 심의를 받아야 한다. 의료기기 광고 사전 심의 광고 자율심의 인터넷 광고 게시 전 확인",
+      "sourceUrl": "https://www.law.go.kr/법령/의료기기법",
+      "metadata": {
+        "pack": "MEDICAL_DEVICE",
+        "documentTitle": "의료기기법",
+        "shortTitle": "의료기기법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-07-01",
+        "topics": [
+          "의료기기 광고",
+          "사전 심의",
+          "광고 자율심의",
+          "인터넷 광고",
+          "게시 전 확인"
+        ]
+      }
+    },
+    {
+      "id": "medical-devices-act-2026:article-25-paragraph-2",
+      "documentId": "medical-devices-act-2026",
+      "article": "제25조",
+      "paragraph": "제2항",
+      "section": null,
+      "heading": "의료기기 광고심의 예외",
+      "text": "허가 또는 인증을 받거나 신고한 내용만으로 구성되는 광고, 수출만을 목적으로 생산하는 의료기기의 외국어 광고, 심의받은 내용과 동일한 외국어 광고, 의료인 등 전문가 집단만을 대상으로 하는 광고 등은 법에서 정한 범위에서 심의를 받지 아니할 수 있다.",
+      "normalizedText": "제25조 제2항 의료기기 광고심의 예외 허가 또는 인증을 받거나 신고한 내용만으로 구성되는 광고, 수출만을 목적으로 생산하는 의료기기의 외국어 광고, 심의받은 내용과 동일한 외국어 광고, 의료인 등 전문가 집단만을 대상으로 하는 광고 등은 법에서 정한 범위에서 심의를 받지 아니할 수 있다. 의료기기 광고 광고 심의 예외 허가 범위 전문가 대상",
+      "sourceUrl": "https://www.law.go.kr/법령/의료기기법",
+      "metadata": {
+        "pack": "MEDICAL_DEVICE",
+        "documentTitle": "의료기기법",
+        "shortTitle": "의료기기법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-07-01",
+        "topics": [
+          "의료기기 광고",
+          "광고 심의 예외",
+          "허가 범위",
+          "전문가 대상"
+        ]
+      }
+    },
+    {
+      "id": "pharmaceutical-affairs-act-2026:article-68-paragraph-1",
+      "documentId": "pharmaceutical-affairs-act-2026",
+      "article": "제68조",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "명칭·제조방법·효능 또는 성능의 거짓·과장광고 금지",
+      "text": "의약품등의 명칭·제조방법·효능이나 성능에 관하여 거짓광고 또는 과장광고를 하지 못한다.",
+      "normalizedText": "제68조 제1항 명칭·제조방법·효능 또는 성능의 거짓·과장광고 금지 의약품등의 명칭·제조방법·효능이나 성능에 관하여 거짓광고 또는 과장광고를 하지 못한다. 의약품 광고 거짓 과장 효능 성능 허가 범위 절대적 표현",
+      "sourceUrl": "https://www.law.go.kr/법령/약사법",
+      "metadata": {
+        "pack": "PHARMACEUTICAL",
+        "documentTitle": "약사법",
+        "shortTitle": "약사법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-06-21",
+        "topics": [
+          "의약품 광고",
+          "거짓 과장",
+          "효능 성능",
+          "허가 범위",
+          "절대적 표현"
+        ]
+      }
+    },
+    {
+      "id": "pharmaceutical-affairs-act-2026:article-68-paragraphs-2-3",
+      "documentId": "pharmaceutical-affairs-act-2026",
+      "article": "제68조",
+      "paragraph": "제2항·제3항",
+      "section": null,
+      "heading": "전문가 보증 오인 및 암시적 효능 광고 금지",
+      "text": "의약품등은 그 효능이나 성능에 관하여 의사·치과의사·한의사·수의사 또는 그 밖의 자가 보증한 것으로 오해할 염려가 있는 기사를 사용하지 못하며, 효능이나 성능을 암시하는 기사·사진·도안이나 그 밖의 암시적 방법을 사용하여 광고하지 못한다.",
+      "normalizedText": "제68조 제2항·제3항 전문가 보증 오인 및 암시적 효능 광고 금지 의약품등은 그 효능이나 성능에 관하여 의사·치과의사·한의사·수의사 또는 그 밖의 자가 보증한 것으로 오해할 염려가 있는 기사를 사용하지 못하며, 효능이나 성능을 암시하는 기사·사진·도안이나 그 밖의 암시적 방법을 사용하여 광고하지 못한다. 의약품 광고 전문가 보증 추천 의료인 추천 암시적 광고 체험담",
+      "sourceUrl": "https://www.law.go.kr/법령/약사법",
+      "metadata": {
+        "pack": "PHARMACEUTICAL",
+        "documentTitle": "약사법",
+        "shortTitle": "약사법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-06-21",
+        "topics": [
+          "의약품 광고",
+          "전문가 보증 추천",
+          "의료인 추천",
+          "암시적 광고",
+          "체험담"
+        ]
+      }
+    },
+    {
+      "id": "pharmaceutical-affairs-act-2026:article-68-paragraph-5",
+      "documentId": "pharmaceutical-affairs-act-2026",
+      "article": "제68조",
+      "paragraph": "제5항",
+      "section": null,
+      "heading": "허가·신고 전 의약품 광고 금지",
+      "text": "법에 따른 허가·변경허가를 받거나 신고·변경신고를 한 후가 아니면 의약품등의 명칭·제조방법·효능이나 성능에 관하여 광고하지 못한다.",
+      "normalizedText": "제68조 제5항 허가·신고 전 의약품 광고 금지 법에 따른 허가·변경허가를 받거나 신고·변경신고를 한 후가 아니면 의약품등의 명칭·제조방법·효능이나 성능에 관하여 광고하지 못한다. 의약품 광고 허가 전 광고 품목허가 허가 범위",
+      "sourceUrl": "https://www.law.go.kr/법령/약사법",
+      "metadata": {
+        "pack": "PHARMACEUTICAL",
+        "documentTitle": "약사법",
+        "shortTitle": "약사법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-06-21",
+        "topics": ["의약품 광고", "허가 전 광고", "품목허가", "허가 범위"]
+      }
+    },
+    {
+      "id": "pharmaceutical-affairs-act-2026:article-68-paragraph-6",
+      "documentId": "pharmaceutical-affairs-act-2026",
+      "article": "제68조",
+      "paragraph": "제6항",
+      "section": "제1호부터 제3호",
+      "heading": "전문의약품 등의 광고 금지",
+      "text": "전문의약품, 전문의약품과 제형·투여 경로 및 단위제형당 주성분 함량이 같은 일반의약품, 원료의약품은 법정 예외를 제외하고 광고하여서는 아니 된다.",
+      "normalizedText": "제68조 제6항 제1호부터 제3호 전문의약품 등의 광고 금지 전문의약품, 전문의약품과 제형·투여 경로 및 단위제형당 주성분 함량이 같은 일반의약품, 원료의약품은 법정 예외를 제외하고 광고하여서는 아니 된다. 의약품 광고 전문의약품 대중광고 광고 금지 전문의약품 원료의약품",
+      "sourceUrl": "https://www.law.go.kr/법령/약사법",
+      "metadata": {
+        "pack": "PHARMACEUTICAL",
+        "documentTitle": "약사법",
+        "shortTitle": "약사법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-06-21",
+        "topics": [
+          "의약품 광고",
+          "전문의약품 대중광고",
+          "광고 금지",
+          "전문의약품",
+          "원료의약품"
+        ]
+      }
+    },
+    {
+      "id": "pharmaceutical-affairs-act-2026:article-68-2-paragraph-1",
+      "documentId": "pharmaceutical-affairs-act-2026",
+      "article": "제68조의2",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "의약품 광고의 심의",
+      "text": "의약품 제조업자·품목허가를 받은 자 또는 수입자가 그 제조 또는 수입한 의약품을 광고하려는 경우에는 총리령으로 정하는 바에 따라 식품의약품안전처장의 심의를 받아야 한다.",
+      "normalizedText": "제68조의2 제1항 의약품 광고의 심의 의약품 제조업자·품목허가를 받은 자 또는 수입자가 그 제조 또는 수입한 의약품을 광고하려는 경우에는 총리령으로 정하는 바에 따라 식품의약품안전처장의 심의를 받아야 한다. 의약품 광고 사전 심의 광고 심의 게시 전 확인",
+      "sourceUrl": "https://www.law.go.kr/법령/약사법",
+      "metadata": {
+        "pack": "PHARMACEUTICAL",
+        "documentTitle": "약사법",
+        "shortTitle": "약사법",
+        "authority": "식품의약품안전처",
+        "sourceType": "LAW",
+        "effectiveDate": "2026-06-21",
+        "topics": ["의약품 광고", "사전 심의", "광고 심의", "게시 전 확인"]
+      }
+    },
+    {
+      "id": "pharmaceutical-safety-rule-2026:article-79-paragraph-1",
+      "documentId": "pharmaceutical-safety-rule-2026",
+      "article": "제79조",
+      "paragraph": "제1항",
+      "section": null,
+      "heading": "의약품 광고심의 대상 매체",
+      "text": "의약품 제조업자, 품목허가를 받은 자 또는 수입자가 신문·인터넷신문·정기간행물, 텔레비전·라디오방송, 인터넷 등 총리령이 정한 매체 또는 수단을 이용하여 의약품 광고를 하려면 광고심의기관의 심의를 받아야 한다.",
+      "normalizedText": "제79조 제1항 의약품 광고심의 대상 매체 의약품 제조업자, 품목허가를 받은 자 또는 수입자가 신문·인터넷신문·정기간행물, 텔레비전·라디오방송, 인터넷 등 총리령이 정한 매체 또는 수단을 이용하여 의약품 광고를 하려면 광고심의기관의 심의를 받아야 한다. 의약품 광고 사전 심의 인터넷 광고 광고 심의",
+      "sourceUrl": "https://www.law.go.kr/법령/의약품등의안전에관한규칙",
+      "metadata": {
+        "pack": "PHARMACEUTICAL",
+        "documentTitle": "의약품 등의 안전에 관한 규칙",
+        "shortTitle": "의약품안전규칙",
+        "authority": "식품의약품안전처",
+        "sourceType": "ENFORCEMENT_RULE",
+        "effectiveDate": "2026-03-05",
+        "topics": ["의약품 광고", "사전 심의", "인터넷 광고", "광고 심의"]
+      }
+    },
+    {
+      "id": "pharmaceutical-safety-rule-2026:appendix-7-absolute-and-side-effects",
+      "documentId": "pharmaceutical-safety-rule-2026",
+      "article": "제79조",
+      "paragraph": "제3항",
+      "section": "별표 7",
+      "heading": "효능 보증·절대적 표현 및 부작용 부정 금지",
+      "text": "의약품등의 효능·효과를 확실히 보증하는 내용이나 최고·최상 등의 절대적 표현을 사용한 광고를 하지 않아야 하며, 부작용이 있는 의약품에 대해서는 부작용을 부정하는 표현 또는 부당하게 안전성을 강조하는 표현을 사용하지 않아야 한다.",
+      "normalizedText": "제79조 제3항 별표 7 효능 보증·절대적 표현 및 부작용 부정 금지 의약품등의 효능·효과를 확실히 보증하는 내용이나 최고·최상 등의 절대적 표현을 사용한 광고를 하지 않아야 하며, 부작용이 있는 의약품에 대해서는 부작용을 부정하는 표현 또는 부당하게 안전성을 강조하는 표현을 사용하지 않아야 한다. 의약품 광고 절대적 표현 부작용 부정 거짓 과장 안전성",
+      "sourceUrl": "https://www.law.go.kr/법령/의약품등의안전에관한규칙",
+      "metadata": {
+        "pack": "PHARMACEUTICAL",
+        "documentTitle": "의약품 등의 안전에 관한 규칙",
+        "shortTitle": "의약품안전규칙",
+        "authority": "식품의약품안전처",
+        "sourceType": "ENFORCEMENT_RULE",
+        "effectiveDate": "2026-03-05",
+        "topics": [
+          "의약품 광고",
+          "절대적 표현",
+          "부작용 부정",
+          "거짓 과장",
+          "안전성"
+        ]
+      }
+    }
+  ],
+  "embedding": null,
+  "entries": [
+    {
+      "chunkId": "cosmetics-act-2026:article-13-paragraph-1-item-1",
+      "contentHash": "16f67f9e61feceec18656948aed4c4ace3fc8ee45882fc48449333ea125a0e53",
+      "embedding": null
+    },
+    {
+      "chunkId": "cosmetics-act-2026:article-13-paragraph-1-item-2",
+      "contentHash": "3bf39f9be351a95f2831d4838382aeeee74a651319828b28809527727a799e4c",
+      "embedding": null
+    },
+    {
+      "chunkId": "cosmetics-act-2026:article-13-paragraph-1-item-4",
+      "contentHash": "42f2e54ba8b3e2b5bfc222d5dad1b904ff7fcb70c266f8fbc38432eaf879da57",
+      "embedding": null
+    },
+    {
+      "chunkId": "cosmetics-act-2026:article-14-paragraphs-1-3",
+      "contentHash": "3bf1a474c1c129f1eb3232f4ca03debcb5b871762aec9f977d90b7b82e7c056c",
+      "embedding": null
+    },
+    {
+      "chunkId": "cosmetics-act-enforcement-rule-2026:article-23-paragraph-1",
+      "contentHash": "0e8dd0aa5b2ffcad9479363533aec20bf31b16e0fe2392efcfea72ed65d4e2ad",
+      "embedding": null
+    },
+    {
+      "chunkId": "cosmetics-act-enforcement-rule-2026:article-23-paragraph-2-item-1",
+      "contentHash": "23a8f11f1ffbd63f3fdf7f8594ad546dec524e0296af49e871169b876a996a74",
+      "embedding": null
+    },
+    {
+      "chunkId": "fair-labeling-advertising-act-2025:article-3-paragraph-1",
+      "contentHash": "a704641f84c1faf563988a880cb9c04ec89f52bd65bd7b17028b764eaf11cb69",
+      "embedding": null
+    },
+    {
+      "chunkId": "fair-labeling-advertising-act-2025:article-5-paragraph-1",
+      "contentHash": "b09e68323cb2330d3a2e4d5b0f55478e2b378b0721a7ca6c05b609a29e58e207",
+      "embedding": null
+    },
+    {
+      "chunkId": "fair-labeling-advertising-enforcement-decree-2026:article-3-paragraph-1",
+      "contentHash": "63ab52ccf3890be91c200a5518330a35ce5e36c297fa5e7cfec7f7a637929b2e",
+      "embedding": null
+    },
+    {
+      "chunkId": "fair-labeling-advertising-enforcement-decree-2026:article-3-paragraph-2",
+      "contentHash": "a00eb4671a7834208f52f3bb13801e6c303041d31471cd9af20245e6e00d1269",
+      "embedding": null
+    },
+    {
+      "chunkId": "fair-labeling-advertising-enforcement-decree-2026:article-3-paragraph-3",
+      "contentHash": "d81591c7c4f55c3ed7dcfd3f7568a13e44f027f6f9d3547083dfc6d094978f19",
+      "embedding": null
+    },
+    {
+      "chunkId": "fair-labeling-advertising-enforcement-decree-2026:article-3-paragraph-4",
+      "contentHash": "b555634fdf0836d9832061d3472ace1657df146ba03243868640f0a9bcdc5dd0",
+      "embedding": null
+    },
+    {
+      "chunkId": "fair-labeling-advertising-enforcement-decree-2026:article-4-paragraph-1",
+      "contentHash": "fccfe6a1858feb20db775da31e758a86826e7e5576ab1e8c32c88b55cfa40062",
+      "embedding": null
+    },
+    {
+      "chunkId": "advertising-substantiation-operation-2015:section-2-definitions-1-2",
+      "contentHash": "a15fd7daf37f20b22957c4972e7571e6980303fd2e556d8aa670d0fa930d9dbb",
+      "embedding": null
+    },
+    {
+      "chunkId": "advertising-substantiation-operation-2015:section-4-relevance",
+      "contentHash": "e7ec55ed16e1943698f88ec20e026776886a16abdbff0bb9d5154e8422989d2a",
+      "embedding": null
+    },
+    {
+      "chunkId": "comparative-advertising-review-guideline-2016:section-3-general-principles",
+      "contentHash": "4b9ce456a96c435d776a953398e192e7e6f9210549fd20f6d78cf282e0f49e70",
+      "embedding": null
+    },
+    {
+      "chunkId": "deceptive-advertising-review-guideline-2025:section-4-general-principles",
+      "contentHash": "8b31e69362428a208d5dc84245c41439a5fa48b86bf6711b13f3a1ade68afa22",
+      "embedding": null
+    },
+    {
+      "chunkId": "deceptive-advertising-review-guideline-2025:section-5-price-conditions",
+      "contentHash": "64d93820d34915bc3c45dcc80a51dd861f9fe2601114b1753e3e74acd5de78bf",
+      "embedding": null
+    },
+    {
+      "chunkId": "food-labeling-advertising-act-2025:article-8-paragraph-1-item-1",
+      "contentHash": "fcc4a2e8c1132321d5eb3211a8fea93978ff76bc501295de7ca712e20fe69c74",
+      "embedding": null
+    },
+    {
+      "chunkId": "food-labeling-advertising-act-2025:article-8-paragraph-1-item-2",
+      "contentHash": "df9857d55750e6f8b76aa5433742b4b9f9905793640c3ea1c936bb67120d6e70",
+      "embedding": null
+    },
+    {
+      "chunkId": "food-labeling-advertising-act-2025:article-8-paragraph-1-item-3",
+      "contentHash": "1c05a7ca1ba8fadb1e94b8f017778c1873d1672538139a883f7191e31af0ce3e",
+      "embedding": null
+    },
+    {
+      "chunkId": "food-labeling-advertising-act-2025:article-8-paragraph-1-items-4-5",
+      "contentHash": "570c5412d70503aacd0157cc17de0e2f6337071f57dd1479fffafe092aeb6ad0",
+      "embedding": null
+    },
+    {
+      "chunkId": "food-labeling-advertising-act-2025:article-9-paragraphs-1-2",
+      "contentHash": "044d9d65a7d7f738acc1f3f396c8a4c23db9e7293551b4a403e900db7d1be5bf",
+      "embedding": null
+    },
+    {
+      "chunkId": "food-labeling-advertising-enforcement-decree-2025:article-3",
+      "contentHash": "dc10e00c24e97129d9570d2f07f6670427adadb0ce3acbb0788bd0d192f925ac",
+      "embedding": null
+    },
+    {
+      "chunkId": "food-labeling-advertising-enforcement-rule-2026:article-9-paragraph-1",
+      "contentHash": "22d3f5718ad3ca035a9525b3b1b5601e9cc25f16a3d03f88a9f797ec28905b16",
+      "embedding": null
+    },
+    {
+      "chunkId": "unfair-food-labeling-advertising-standard-2025:article-1",
+      "contentHash": "98da26e40328afcd551ff9efcc8775096afecc27aa0b37c58ac95123ec176241",
+      "embedding": null
+    },
+    {
+      "chunkId": "unfair-food-labeling-advertising-standard-2025:article-2-item-1",
+      "contentHash": "d8bf8d0ed829f1db6bf93cdd858b92c816e16b386c839b9499a85b646cceeac3",
+      "embedding": null
+    },
+    {
+      "chunkId": "unfair-food-labeling-advertising-standard-2025:article-2-item-2",
+      "contentHash": "07bd0d1b9f14be03948afd5435919129c75267b2c05598d51f9993792cff28bf",
+      "embedding": null
+    },
+    {
+      "chunkId": "hff-food-labeling-advertising-act-2025:article-4-paragraph-1-item-3",
+      "contentHash": "a2ca21192ceccbf5c692892379d31b9cd9dfe4c0f0d1d4d21dfdf0c6a0a52cac",
+      "embedding": null
+    },
+    {
+      "chunkId": "hff-food-labeling-advertising-act-2025:article-8-paragraph-1-items-1-2",
+      "contentHash": "f5dae002755c875d60ecb1d4bfa945bba4362e784116efed8535d5ad90bed623",
+      "embedding": null
+    },
+    {
+      "chunkId": "hff-food-labeling-advertising-act-2025:article-8-paragraph-1-items-4-5",
+      "contentHash": "ef303d4175f1aa5df15776f010ef3d76f0c1e7c72da23ebbed7454cd063f052a",
+      "embedding": null
+    },
+    {
+      "chunkId": "hff-food-labeling-advertising-act-2025:article-9-paragraphs-1-2",
+      "contentHash": "2aa59c2121eb04630e88c5f4221f217159971d965585df774a058ab09cc2d553",
+      "embedding": null
+    },
+    {
+      "chunkId": "hff-food-labeling-advertising-act-2025:article-10-paragraph-1",
+      "contentHash": "332a7a798850d524038c2e1434303512253b665cfd0546954133f83d17d7bf95",
+      "embedding": null
+    },
+    {
+      "chunkId": "hff-food-labeling-advertising-enforcement-rule-2026:article-9-paragraph-1",
+      "contentHash": "87f5bc0335ca3c3f0169a6e74ba3dc86be2b1d34374e1b8ac168d795fbf2cbba",
+      "embedding": null
+    },
+    {
+      "chunkId": "hff-food-labeling-advertising-enforcement-rule-2026:article-10-item-3",
+      "contentHash": "659508356c5f5fcd84169519720368dd43abcbde80df1a977dfa738af17b4355",
+      "embedding": null
+    },
+    {
+      "chunkId": "health-functional-food-labeling-standard-2025:article-4-items-1-10",
+      "contentHash": "0d56e3588e950b2134de8033c9adccf7784492c32b164265faebe3ec16c3e6a1",
+      "embedding": null
+    },
+    {
+      "chunkId": "health-functional-food-labeling-standard-2025:article-6-item-2",
+      "contentHash": "60d39bbf1a533e20da41c94632765995605ad7ae61d74d9a3024722d0f4bb6ba",
+      "embedding": null
+    },
+    {
+      "chunkId": "medical-devices-act-2026:article-24-paragraph-1",
+      "contentHash": "197ef083a44fe2f3a1e200e86911a09b5c5ce8be74fc0ae19d1e433638b22594",
+      "embedding": null
+    },
+    {
+      "chunkId": "medical-devices-act-2026:article-24-paragraph-2-item-1",
+      "contentHash": "8582f73c489b012a6582c42e891bd9361baeda42698c1fc1b50218d176a36693",
+      "embedding": null
+    },
+    {
+      "chunkId": "medical-devices-act-2026:article-24-paragraph-2-item-2",
+      "contentHash": "4e37ee5fc1b25c61904f022c163f076c965b7dca7f4b0b2a3c080138129a7dd8",
+      "embedding": null
+    },
+    {
+      "chunkId": "medical-devices-act-2026:article-24-paragraph-2-item-3",
+      "contentHash": "8e4c9ca2dd03956f681636001bbdf5438da604bcafbb6bd8dfb7e6f2363a957c",
+      "embedding": null
+    },
+    {
+      "chunkId": "medical-devices-act-2026:article-25-paragraph-1",
+      "contentHash": "5f5be622b3c8168f625646839ad53a57818d5693db77570ce8e4ad28bd792c30",
+      "embedding": null
+    },
+    {
+      "chunkId": "medical-devices-act-2026:article-25-paragraph-2",
+      "contentHash": "71ae91fc9dbbc813074b5b1339f3671e9d3c60348ad870ebe2e1ba66b82dca3c",
+      "embedding": null
+    },
+    {
+      "chunkId": "pharmaceutical-affairs-act-2026:article-68-paragraph-1",
+      "contentHash": "b7d775a0c5853ce0218b444e72e61a1780dcaea67555a5561ca0af13197568ad",
+      "embedding": null
+    },
+    {
+      "chunkId": "pharmaceutical-affairs-act-2026:article-68-paragraphs-2-3",
+      "contentHash": "331864774799dfe97ff54048437480373b1d8dff3c13fcce9846b37b115b40c9",
+      "embedding": null
+    },
+    {
+      "chunkId": "pharmaceutical-affairs-act-2026:article-68-paragraph-5",
+      "contentHash": "f505815a9c7f4544c1d256ec8bec1f6c68d6987b033ad9152a088ede91910b97",
+      "embedding": null
+    },
+    {
+      "chunkId": "pharmaceutical-affairs-act-2026:article-68-paragraph-6",
+      "contentHash": "48dbbd06f47ae5c36c7cd2063402e28d8bfdb1d583542db43a26fef804aafc56",
+      "embedding": null
+    },
+    {
+      "chunkId": "pharmaceutical-affairs-act-2026:article-68-2-paragraph-1",
+      "contentHash": "4e4be1b90453a84e367377db197209a8e2ea3cf289a68c5f3a0601d5bb1f4b2e",
+      "embedding": null
+    },
+    {
+      "chunkId": "pharmaceutical-safety-rule-2026:article-79-paragraph-1",
+      "contentHash": "548bb85f058a84a414a45cef540e4594422e27b7da8c81f278417159af0bcbf7",
+      "embedding": null
+    },
+    {
+      "chunkId": "pharmaceutical-safety-rule-2026:appendix-7-absolute-and-side-effects",
+      "contentHash": "117a6d05848f46bda0fff9b7bb82a43aee4e89cc5169d1d738aeb982a67dd19e",
+      "embedding": null
+    }
+  ]
+}
