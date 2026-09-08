@@ -30,7 +30,7 @@ type ResolverConfig = {
   queryKeys: {
     reportNumber: string;
     productName: string;
-    companyName: string;
+    companyName?: string;
   };
 };
 
@@ -52,13 +52,13 @@ const CONFIG: Record<SupportedCategory, Omit<ResolverConfig, 'endpoint'>> = {
   },
   MEDICAL_DEVICE: {
     sourceName: '식품의약품안전처 의료기기 품목허가정보',
-    sourceUrl: 'https://data.mfds.go.kr/',
+    sourceUrl: 'https://www.data.go.kr/data/15057456/openapi.do',
     authorizationType: '품목허가·인증·신고',
     numberLabel: '품목허가번호',
     queryKeys: {
-      reportNumber: 'PRMSN_NO',
-      productName: 'PRDLST_NM',
-      companyName: 'ENTRPS_NM',
+      reportNumber: 'PRDUCT_PRMISN_NO',
+      productName: 'PRDUCT',
+      companyName: 'ENTRPS',
     },
   },
   COSMETIC: {
@@ -67,9 +67,8 @@ const CONFIG: Record<SupportedCategory, Omit<ResolverConfig, 'endpoint'>> = {
     authorizationType: '기능성화장품 심사·보고',
     numberLabel: '심사·보고번호',
     queryKeys: {
-      reportNumber: 'RPT_SEQ',
-      productName: 'PRDLST_NM',
-      companyName: 'RESPONSIBLE_SELLER_NM',
+      reportNumber: 'cosmetic_report_seq',
+      productName: 'item_name',
     },
   },
 };
@@ -254,7 +253,7 @@ function buildRequestUrl(
   } else if (query.productName) {
     url.searchParams.set(config.queryKeys.productName, query.productName);
   }
-  if (query.companyName) {
+  if (query.companyName && config.queryKeys.companyName) {
     url.searchParams.set(config.queryKeys.companyName, query.companyName);
   }
   return url;
@@ -266,15 +265,12 @@ function extractRows(payload: unknown): Array<Record<string, unknown>> {
   const response = asRecord(record.response) ?? record;
   const body = asRecord(response.body) ?? response;
   const items = asRecord(body.items)?.item ?? body.items ?? body.item;
-  if (Array.isArray(items)) return items.flatMap(toRecord);
-  const single = asRecord(items);
-  if (single) return [single];
+  const rows = unwrapRows(items);
+  if (rows.length > 0) return rows;
 
   for (const value of Object.values(body)) {
-    if (Array.isArray(value)) {
-      const rows = value.flatMap(toRecord);
-      if (rows.length > 0) return rows;
-    }
+    const nestedRows = unwrapRows(value);
+    if (nestedRows.length > 0) return nestedRows;
   }
   return [];
 }
@@ -351,14 +347,21 @@ const FIELD_KEYS: Record<
     lastUpdatedAt: ['CHANGE_DATE', 'changeDate', 'LAST_UPDT_DTM'],
   },
   MEDICAL_DEVICE: {
-    licenseNumber: ['ENTRPS_NO', 'entrpsNo', 'BIZRNO'],
-    companyName: ['ENTRPS_NM', 'entrpsNm', 'ENTP_NAME'],
-    reportNumber: ['PRDLST_PRMSN_NO', 'prdlstPrmsnNo', 'PRMSN_NO', 'PERMIT_NO'],
-    productName: ['PRDLST_NM', 'prdlstNm', 'ITEM_NAME'],
-    authorizationDate: ['PRMSN_YMD', 'prmsnYmd', 'PERMIT_DATE'],
-    productForm: ['MDEQ_CLF_NM', 'mdeqClfNm', 'PRDLST_CL_NM'],
+    licenseNumber: ['BRNO', 'ENTRPS_NO', 'entrpsNo', 'BIZRNO'],
+    companyName: ['ENTRPS', 'ENTRPS_NM', 'entrpsNm', 'ENTP_NAME'],
+    reportNumber: [
+      'PRDUCT_PRMISN_NO',
+      'PRDLST_PRMSN_NO',
+      'prdlstPrmsnNo',
+      'PRMSN_NO',
+      'PERMIT_NO',
+    ],
+    productName: ['PRDUCT', 'PRDLST_NM', 'prdlstNm', 'ITEM_NAME'],
+    authorizationDate: ['PRMISN_DT', 'PRMSN_YMD', 'prmsnYmd', 'PERMIT_DATE'],
+    productForm: ['TYPE_NAME', 'MDEQ_CLF_NM', 'mdeqClfNm', 'PRDLST_CL_NM'],
     intakeMethod: ['USE_MTHD_CN', 'useMthdCn', 'USAGE_MTHD'],
     primaryFunctionality: [
+      'USE_PURPS',
       'USE_PURPS_CN',
       'usePurpsCn',
       'PERFORM_CN',
@@ -367,11 +370,18 @@ const FIELD_KEYS: Record<
     intakePrecautions: ['USE_AT', 'useAt', 'CAUTION_CN'],
     productType: ['GRADE', 'grade', 'PRDLST_GRADE', 'MDEQ_DIVS_NM'],
     functionalIngredients: ['MTRAL_CN', 'mtralCn', 'MATERIAL_NAME'],
-    productionStatus: ['PRMSN_STATE_NM', 'prmsnStateNm', 'STATE'],
-    lastUpdatedAt: ['LAST_UPDT_DTM', 'lastUpdtDtm', 'UPDATE_DATE'],
+    productionStatus: [
+      'RTRCN_DSCTN_DIVS_CD',
+      'PRMSN_STATE_NM',
+      'prmsnStateNm',
+      'STATE',
+    ],
+    lastUpdatedAt: ['CHG_DT', 'LAST_UPDT_DTM', 'lastUpdtDtm', 'UPDATE_DATE'],
   },
   COSMETIC: {
     licenseNumber: [
+      'BIZRNO',
+      'ENTP_SEQ',
       'RESPONSIBLE_SELLER_REG_NO',
       'responsibleSellerRegNo',
       'MNFCTR_REG_NO',
@@ -382,23 +392,61 @@ const FIELD_KEYS: Record<
       'MNFCTR_NM',
       'ENTP_NAME',
     ],
-    reportNumber: ['RPT_SEQ', 'rptSeq', 'EXAM_NO', 'REPORT_NO', 'ITEM_SEQ'],
+    reportNumber: [
+      'COSMETIC_REPORT_SEQ',
+      'RPT_SEQ',
+      'rptSeq',
+      'EXAM_NO',
+      'REPORT_NO',
+      'ITEM_SEQ',
+    ],
     productName: ['PRDLST_NM', 'prdlstNm', 'ITEM_NAME'],
     authorizationDate: ['RPT_DE', 'rptDe', 'EXAM_DE', 'REPORT_DATE'],
-    productForm: ['DOSAGE_FORM', 'dosageForm', 'FORM_NM'],
-    intakeMethod: ['USE_MTHD', 'useMthd', 'USAGE_MTHD'],
+    productForm: [
+      'COSMETIC_STD_NAME',
+      'COSMETIC_TARGET_FLAG_NAME',
+      'DOSAGE_FORM',
+      'dosageForm',
+      'FORM_NM',
+    ],
+    intakeMethod: [
+      'USAGE_DOSAGE',
+      'UD_DOC_DATA',
+      'USE_MTHD',
+      'useMthd',
+      'USAGE_MTHD',
+    ],
     primaryFunctionality: [
+      'EE_DOC_DATA',
+      'EE_NAME',
+      'COSMETIC_STD_NAME',
       'FNCLTY_NM',
       'fncltyNm',
       'EXAM_RSLT',
       'FUNCTIONALITY',
       'PRDLST_SE_NM',
     ],
-    intakePrecautions: ['USE_ATNT_MATR', 'useAtntMatr', 'CAUTION_CN'],
-    productType: ['PRDLST_SE_NM', 'prdlstSeNm', 'REPORT_TYPE'],
+    intakePrecautions: [
+      'NB_DOC_DATA',
+      'USE_ATNT_MATR',
+      'useAtntMatr',
+      'CAUTION_CN',
+    ],
+    productType: [
+      'REPORT_FLAG_NAME',
+      'COSMETIC_TARGET_FLAG_NAME',
+      'PRDLST_SE_NM',
+      'prdlstSeNm',
+      'REPORT_TYPE',
+    ],
     functionalIngredients: ['MAIN_INGR_NM', 'mainIngrNm', 'MATERIAL_NAME'],
-    productionStatus: ['STATE_NM', 'stateNm', 'STATE'],
-    lastUpdatedAt: ['LAST_UPDT_DTM', 'lastUpdtDtm', 'UPDATE_DATE'],
+    productionStatus: ['CANCEL_APPROVAL_YN', 'STATE_NM', 'stateNm', 'STATE'],
+    lastUpdatedAt: [
+      'REPORT_DATE',
+      'LAST_UPDT_DTM',
+      'lastUpdtDtm',
+      'UPDATE_DATE',
+    ],
   },
 };
 
@@ -484,9 +532,12 @@ function asRecord(value: unknown) {
     : null;
 }
 
-function toRecord(value: unknown) {
+function unwrapRows(value: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(value)) return value.flatMap(unwrapRows);
   const record = asRecord(value);
-  return record ? [record] : [];
+  if (!record) return [];
+  if ('item' in record) return unwrapRows(record.item);
+  return [record];
 }
 
 function isSupportedCategory(
