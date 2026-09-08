@@ -18,6 +18,7 @@ import type {
   RegulationRepository,
 } from '@/src/compliance/regulatory/ingestion';
 import { RegulatoryRetriever } from '@/src/compliance/regulatory/regulatory-retriever';
+import type { SemanticRegulationSearch } from '@/src/compliance/regulatory/semantic-regulation-search';
 import type {
   RegulationChunk,
   RegulationDocument,
@@ -33,6 +34,7 @@ type RagComplianceAnalyzerDependencies = {
   reasoningProvider: ComplianceReasoningProvider;
   pack?: CompliancePackDefinition;
   includeDebug?: boolean;
+  semanticSearch?: SemanticRegulationSearch;
 };
 
 export class RagComplianceAnalyzer implements ComplianceAnalyzer {
@@ -44,7 +46,10 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
   constructor(
     private readonly dependencies: RagComplianceAnalyzerDependencies,
   ) {
-    this.retriever = new RegulatoryRetriever(dependencies.repository);
+    this.retriever = new RegulatoryRetriever(
+      dependencies.repository,
+      dependencies.semanticSearch,
+    );
     this.citationValidator = new CitationValidator(dependencies.repository);
     this.pack = dependencies.pack ?? generalAdvertisingCompliancePack;
   }
@@ -66,6 +71,9 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
     }
 
     await this.initialize();
+    const effectiveAt = new Date(Date.now() + 9 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
 
     const scanId = `scan-${this.pack.metadata.id.toLowerCase()}-${createStableId(normalizedInput)}`;
     const claims = materializeClaims(preparedInput.claims, scanId);
@@ -90,7 +98,7 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
         const retrievalHits = await this.retriever.retrieve(query, {
           pack: this.pack.metadata.id,
           maxResults: 5,
-          effectiveAt: new Date().toISOString().slice(0, 10),
+          effectiveAt,
           minimumScore: 0.08,
         });
 
@@ -138,6 +146,15 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
 
       const validation = await this.citationValidator.validate(
         finding.citationAssertions,
+        {
+          allowedChunkIds: new Set(
+            reasoningItems
+              .find((item) => item.claim.id === claim.id)!
+              .retrievedChunks.map((chunk) => chunk.id),
+          ),
+          pack: this.pack.metadata.id,
+          effectiveAt,
+        },
       );
       validation.rejected.forEach(({ assertion, reason }) => {
         debug.rejectedCitations.push({
@@ -153,8 +170,9 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
       });
       debug.selectedSourceChunkIds.push(...verifiedChunkIds);
 
-      const hasVerifiedCitation = verifiedChunkIds.length > 0;
-      if (finding.disposition === 'PASS') continue;
+      const hasVerifiedCitation =
+        verifiedChunkIds.length > 0 && validation.rejected.length === 0;
+      if (finding.disposition === 'PASS' && hasVerifiedCitation) continue;
       issues.push({
         id: `${scanId}-issue-${issues.length + 1}`,
         scanId,
@@ -163,7 +181,9 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
         severity: hasVerifiedCitation ? finding.severity : 'REVIEW_REQUIRED',
         category: finding.issueType,
         originalText: claim.text,
-        explanation: finding.explanation,
+        explanation: hasVerifiedCitation
+          ? finding.explanation
+          : '이 표현을 판단할 규정 근거를 충분히 검증하지 못했습니다. 추가 검토가 필요합니다.',
         regulationSourceIds: verifiedChunkIds,
         sourceChunkIds: verifiedChunkIds,
         citationStatus: hasVerifiedCitation ? 'VERIFIED' : 'REVIEW_REQUIRED',
@@ -171,9 +191,13 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
           ? (finding.uncertaintyReason ?? null)
           : (finding.uncertaintyReason ??
             '검증된 공식 규정 출처를 연결하지 못해 추가 검토가 필요합니다.'),
-        suggestedRewrites: finding.suggestedRewrites,
-        requiredEvidence: finding.requiredEvidence,
-        resolutionType: finding.resolutionType,
+        suggestedRewrites: hasVerifiedCitation
+          ? finding.suggestedRewrites
+          : ['관련 규정과 적용 조건을 확인한 뒤 표현을 다시 검토해 주세요.'],
+        requiredEvidence: hasVerifiedCitation ? finding.requiredEvidence : [],
+        resolutionType: hasVerifiedCitation
+          ? finding.resolutionType
+          : 'HUMAN_REVIEW',
         similarEnforcementCaseIds: [],
       });
     }
@@ -200,6 +224,10 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
         .then(async ({ documents, chunks }) => {
           await this.dependencies.repository.saveDocuments(documents);
           await this.dependencies.repository.saveChunks(chunks);
+        })
+        .catch((error: unknown) => {
+          this.initialization = null;
+          throw error;
         });
     }
     return this.initialization;
