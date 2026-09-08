@@ -14,7 +14,7 @@ type FoodClaimPattern = {
 const FOOD_CLAIM_PATTERNS: FoodClaimPattern[] = [
   {
     pattern:
-      /(?:감기|당뇨|아토피|관절염|고혈압|암)(?:을|를|에|의)?\s*(?:예방|치료|개선|완화)(?:에\s*좋은|하는|해주는|합니다)?/g,
+      /(?:감기|당뇨(?:병)?|아토피|관절염|고혈압|암)(?:을|를|에|의)?\s*(?:예방|치료|개선|완화)(?:에\s*좋은|하는|해주는|합니다)?/g,
     claimType: 'DISEASE_PREVENTION_TREATMENT',
     importance: 'HIGH',
     signals: ['DISEASE', 'EFFICACY'],
