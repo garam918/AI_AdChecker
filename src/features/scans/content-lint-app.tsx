@@ -43,6 +43,9 @@ import { z } from 'zod';
 
 import { analyzeContent } from '@/src/ai/analyze-content';
 import { analyzeUrl } from '@/src/ai/analyze-url';
+import { analyzeImage } from '@/src/ai/analyze-image';
+import type { AnalysisStage } from '@/src/ai/providers/content-analysis-provider';
+import { ImageScanInput } from './image-scan-input';
 import {
   AI_SAAS_DEMO_FIXTURE_ID,
   GENERAL_FOOD_DEMO_FIXTURE_ID,
@@ -117,27 +120,31 @@ const FOOD_DEMO_PRESETS = [
   },
 ] as const;
 
+const analysisStages = [
+  'EXTRACTING',
+  'CLASSIFYING',
+  'RETRIEVING',
+  'ANALYZING',
+  'VALIDATING',
+] as const;
 const textProgressStages = [
-  '콘텐츠 분석',
-  'Claim 추출',
-  '규정 검색 질의 생성',
+  '콘텐츠 준비',
+  '문맥 분류 · 광고 주장 추출',
   '공식 규정 검색',
-  '위험 맥락 분석',
-  '출처 검증',
-  '리포트 생성',
+  'AI 위험 해석 · 수정안 생성',
+  '출처 검증 · 결과 정리',
 ] as const;
-
 const urlProgressStages = [
-  '웹페이지 연결',
-  '콘텐츠 추출',
-  '주요 광고 Claim 탐색',
-  '적용 규정 검색',
-  '위험 요소 분석',
-  '리포트 생성',
-] as const;
+  '웹페이지 연결 · 콘텐츠 추출',
+  ...textProgressStages.slice(1),
+];
+const imageProgressStages = [
+  '이미지 문구 · 시각 정보 추출',
+  ...textProgressStages.slice(1),
+];
 
 const webMcpInputSchema = z.object({
-  text: z.string().trim().min(1).max(2000),
+  text: z.string().trim().min(1).max(20000),
 });
 
 type View = 'dashboard' | 'new-scan' | 'progress' | 'result';
@@ -173,7 +180,11 @@ export function ContentLintApp() {
   const [view, setView] = useState<View>('dashboard');
   const [inputText, setInputText] = useState('');
   const [inputUrl, setInputUrl] = useState('');
-  const [scanTab, setScanTab] = useState<'text' | 'url'>('text');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [lastInputType, setLastInputType] = useState<'text' | 'url' | 'image'>(
+    'text',
+  );
+  const [scanTab, setScanTab] = useState<'text' | 'url' | 'image'>('text');
   const [analysisAudience, setAnalysisAudience] =
     useState<AnalysisAudience>('CONSUMER');
   const [analysisCategory, setAnalysisCategory] =
@@ -200,11 +211,16 @@ export function ContentLintApp() {
     [activeIssueId, result],
   );
 
+  const reportProgress = useCallback((stage: AnalysisStage) => {
+    setProgressStage(analysisStages.indexOf(stage));
+  }, []);
+
   const runAnalysis = useCallback(
     async (value: string, audience = analysisAudience) => {
       const normalizedText = value.trim();
       if (!normalizedText) return;
 
+      setLastInputType('text');
       setAnalyzedText(normalizedText);
       setInputText(normalizedText);
       setAnalysisError(null);
@@ -215,7 +231,7 @@ export function ContentLintApp() {
       setView('progress');
 
       try {
-        const pendingResult = analyzeContent(
+        const nextResult = await analyzeContent(
           normalizedText,
           audience,
           buildRegulatedProductOptions(
@@ -224,14 +240,8 @@ export function ContentLintApp() {
             companyName,
             reportNumber,
           ),
+          reportProgress,
         );
-
-        for (let index = 0; index < textProgressStages.length; index += 1) {
-          setProgressStage(index);
-          await delay(320);
-        }
-
-        const nextResult = await pendingResult;
         const firstIssue = nextResult.issues[0] ?? null;
         setResult(nextResult);
         setActiveIssueId(firstIssue?.id ?? null);
@@ -252,13 +262,61 @@ export function ContentLintApp() {
       companyName,
       productName,
       reportNumber,
+      reportProgress,
     ],
   );
+
+  const runImageAnalysis = useCallback(async () => {
+    if (!imageFile) return;
+    setLastInputType('image');
+    setLastUrlRequest(undefined);
+    setAnalysisError(null);
+    setDraftNotice(null);
+    setProgressStage(0);
+    setActiveProgressStages(imageProgressStages);
+    setView('progress');
+    try {
+      const nextResult = await analyzeImage(
+        imageFile,
+        analysisAudience,
+        buildRegulatedProductOptions(
+          analysisCategory,
+          productName,
+          companyName,
+          reportNumber,
+        ),
+        reportProgress,
+      );
+      const text = nextResult.imageContent?.analysisText ?? '';
+      setAnalyzedText(text);
+      setInputText(text);
+      setResult(nextResult);
+      const firstIssue = nextResult.issues[0] ?? null;
+      setActiveIssueId(firstIssue?.id ?? null);
+      setSelectedRewrite(firstIssue?.suggestedRewrites[0] ?? '');
+      setView('result');
+    } catch (error) {
+      setAnalysisError(
+        error instanceof Error
+          ? error.message
+          : '이미지 분석을 완료하지 못했습니다.',
+      );
+    }
+  }, [
+    imageFile,
+    analysisAudience,
+    analysisCategory,
+    productName,
+    companyName,
+    reportNumber,
+    reportProgress,
+  ]);
 
   const runUrlAnalysis = useCallback(
     async (request: { url?: string; fixtureId?: string }) => {
       if (!request.url && !request.fixtureId) return;
       if (request.url) setInputUrl(request.url);
+      setLastInputType('url');
       setLastUrlRequest(request);
       setAnalysisError(null);
       setDraftNotice(null);
@@ -267,21 +325,19 @@ export function ContentLintApp() {
       setView('progress');
 
       try {
-        const pendingResult = analyzeUrl({
-          ...request,
-          audience: analysisAudience,
-          ...buildRegulatedProductOptions(
-            analysisCategory,
-            productName,
-            companyName,
-            reportNumber,
-          ),
-        });
-        for (let index = 0; index < urlProgressStages.length; index += 1) {
-          setProgressStage(index);
-          await delay(320);
-        }
-        const nextResult = await pendingResult;
+        const nextResult = await analyzeUrl(
+          {
+            ...request,
+            audience: analysisAudience,
+            ...buildRegulatedProductOptions(
+              analysisCategory,
+              productName,
+              companyName,
+              reportNumber,
+            ),
+          },
+          reportProgress,
+        );
         const firstIssue = nextResult.issues[0] ?? null;
         setResult(nextResult);
         setAnalyzedText(nextResult.webContent?.visibleText ?? '');
@@ -303,6 +359,7 @@ export function ContentLintApp() {
       companyName,
       productName,
       reportNumber,
+      reportProgress,
     ],
   );
 
@@ -325,7 +382,7 @@ export function ContentLintApp() {
                 text: {
                   type: 'string',
                   minLength: 1,
-                  maxLength: 2000,
+                  maxLength: 20000,
                   description: '검사할 한국어 광고 문구',
                 },
               },
@@ -505,6 +562,9 @@ export function ContentLintApp() {
           )}
           {view === 'new-scan' && (
             <NewScan
+              imageFile={imageFile}
+              setImageFile={setImageFile}
+              onAnalyzeImage={() => void runImageAnalysis()}
               text={inputText}
               setText={setInputText}
               url={inputUrl}
@@ -547,9 +607,11 @@ export function ContentLintApp() {
               stages={activeProgressStages}
               error={analysisError}
               onRetry={() =>
-                lastUrlRequest
-                  ? void runUrlAnalysis(lastUrlRequest)
-                  : void runAnalysis(inputText)
+                lastInputType === 'image'
+                  ? void runImageAnalysis()
+                  : lastUrlRequest
+                    ? void runUrlAnalysis(lastUrlRequest)
+                    : void runAnalysis(inputText)
               }
               onBack={() => setView('new-scan')}
             />
@@ -769,6 +831,9 @@ function ScanCard({
 }
 
 function NewScan({
+  imageFile,
+  setImageFile,
+  onAnalyzeImage,
   text,
   setText,
   url,
@@ -791,12 +856,15 @@ function NewScan({
   onAnalyzeDemoUrl,
   onAnalyzeFoodDemoUrl,
 }: {
+  imageFile: File | null;
+  setImageFile: (file: File | null) => void;
+  onAnalyzeImage: () => void;
   text: string;
   setText: (value: string) => void;
   url: string;
   setUrl: (value: string) => void;
-  activeTab: 'text' | 'url';
-  setActiveTab: (value: 'text' | 'url') => void;
+  activeTab: 'text' | 'url' | 'image';
+  setActiveTab: (value: 'text' | 'url' | 'image') => void;
   audience: AnalysisAudience;
   setAudience: (value: AnalysisAudience) => void;
   category: AnalysisCategory;
@@ -813,7 +881,7 @@ function NewScan({
   onAnalyzeDemoUrl: () => void;
   onAnalyzeFoodDemoUrl: () => void;
 }) {
-  const tooLong = text.length > 2000;
+  const tooLong = text.length > 20000;
   const urlError = getUrlValidationError(url);
   const productIdentityLabels = getProductIdentityLabels(category);
   return (
@@ -823,7 +891,7 @@ function NewScan({
         새 콘텐츠 검사
       </h1>
       <p className="mt-3 text-base leading-7 text-slate-500">
-        웹페이지 주소나 게시하려는 문구를 입력하면 문제 구간과 수정 방향을
+        웹페이지 주소, 광고 문구 또는 이미지를 입력하면 문제 구간과 수정 방향을
         정리합니다.
       </p>
       <Card className="mt-8 gap-0 border-0 py-0 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-slate-200">
@@ -970,7 +1038,9 @@ function NewScan({
         </div>
         <Tabs
           value={activeTab}
-          onValueChange={(value) => setActiveTab(value as 'text' | 'url')}
+          onValueChange={(value) =>
+            setActiveTab(value as 'text' | 'url' | 'image')
+          }
         >
           <TabsList
             variant="line"
@@ -981,10 +1051,18 @@ function NewScan({
               YouTube
             </TabsTrigger>
             <TabsTrigger value="text">Text</TabsTrigger>
-            <TabsTrigger value="media" disabled>
-              Image / Video
+            <TabsTrigger value="image">Image</TabsTrigger>
+            <TabsTrigger value="video" disabled>
+              Video
             </TabsTrigger>
           </TabsList>
+          <TabsContent value="image" className="p-6 sm:p-8">
+            <ImageScanInput
+              file={imageFile}
+              setFile={setImageFile}
+              onAnalyze={onAnalyzeImage}
+            />
+          </TabsContent>
           <TabsContent value="url" className="p-6 sm:p-8">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <label
@@ -1096,7 +1174,7 @@ function NewScan({
             <div className="mt-3 flex items-center justify-between text-xs">
               <span className={tooLong ? 'text-red-600' : 'text-slate-400'}>
                 {tooLong
-                  ? '2,000자 이하로 입력해 주세요.'
+                  ? '20,000자 이하로 입력해 주세요.'
                   : '한국어 광고 문구 · 카테고리 자동 감지'}
               </span>
               <span
@@ -1104,7 +1182,7 @@ function NewScan({
                   tooLong ? 'font-medium text-red-600' : 'text-slate-400'
                 }
               >
-                {text.length} / 2,000
+                {text.length} / 20,000
               </span>
             </div>
             <div className="mt-6 flex justify-end">
@@ -1122,8 +1200,9 @@ function NewScan({
       </Card>
       <div className="mt-5 flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-500">
         <FileImage className="mt-1 size-4 shrink-0 text-slate-400" />
-        현재 MVP는 공개 웹페이지와 광고 텍스트 검사를 지원합니다. 로그인,
-        JavaScript 렌더링, 이미지·동영상 검사는 지원하지 않습니다.
+        공개 웹페이지의 텍스트·이미지 대체 설명, 광고 문구, 업로드 이미지를
+        검사합니다. 로그인 페이지, JavaScript 렌더링, YouTube·동영상은 지원하지
+        않습니다.
       </div>
     </div>
   );
@@ -1193,7 +1272,7 @@ function AnalysisProgress({
   onRetry: () => void;
   onBack: () => void;
 }) {
-  const progress = ((activeStage + 1) / stages.length) * 100;
+  const progress = Math.min(95, ((activeStage + 1) / stages.length) * 100);
   return (
     <div className="mx-auto flex min-h-[calc(100vh-11rem)] max-w-2xl items-center justify-center">
       <Card className="w-full border-0 px-2 py-2 shadow-[0_18px_60px_rgba(15,23,42,0.08)] ring-1 ring-slate-200">
@@ -1213,7 +1292,8 @@ function AnalysisProgress({
               : '콘텐츠를 검사하고 있습니다'}
           </CardTitle>
           <CardDescription className="mt-2 text-base leading-6">
-            {error ?? '표현을 나누고 관련 검토 기준과 위험 요소를 확인합니다.'}
+            {error ??
+              'Gemini가 문맥과 공식 근거를 대조합니다. 콘텐츠 양에 따라 시간이 걸릴 수 있습니다.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="px-6 pb-7 sm:px-10 sm:pb-9">
@@ -1310,6 +1390,25 @@ function ScanResult({
   const isBusiness = result.audience === 'BUSINESS';
   return (
     <div className="space-y-6">
+      {result.imageContent && (
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 text-sm text-slate-700">
+          <p className="font-semibold">
+            이미지 분석 · {result.imageContent.fileName}
+          </p>
+          <details className="mt-2">
+            <summary className="cursor-pointer">
+              추출한 문구와 시각 관찰 확인
+            </summary>
+            <p className="mt-3 whitespace-pre-wrap leading-7">
+              {result.imageContent.analysisText}
+            </p>
+          </details>
+          <p className="mt-2 text-xs text-slate-500">
+            시각 관찰은 AI의 이미지 해석입니다. 수정안을 적용한 뒤에는 새
+            이미지를 업로드해 다시 검사하세요.
+          </p>
+        </div>
+      )}
       <section className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
           <div className="mb-3 flex items-center gap-2 text-sm text-slate-500">
@@ -1368,6 +1467,9 @@ function ScanResult({
             >
               Detected Category · {formatCategory(result.detectedCategory)}
             </Badge>
+            {result.analysisModel && (
+              <Badge variant="outline">Gemini 3.8 Flash 분석</Badge>
+            )}
             {result.activePacks.map((packId) => (
               <Badge
                 key={packId}
@@ -2574,10 +2676,6 @@ function getAuthorizationDisplay(
   return category in displays
     ? displays[category as keyof typeof displays]
     : displays.HEALTH_FUNCTIONAL_FOOD;
-}
-
-function delay(milliseconds: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
 function createExcerpt(text: string) {
