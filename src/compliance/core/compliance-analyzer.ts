@@ -9,6 +9,7 @@ export type ComplianceAnalysisInput =
       text: string;
       claims: PreparedClaim[];
       productAuthorization?: ProductAuthorizationResolution;
+      onProgress?: import('@/src/ai/providers/content-analysis-provider').AnalysisProgress;
     };
 
 export interface ComplianceAnalyzer {
