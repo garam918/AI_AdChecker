@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { contentComplianceScanService } from '@/src/server/regulatory-runtime';
+import { createContentComplianceScanService } from '@/src/server/regulatory-runtime';
 import type { Issue } from './schemas';
 import { deduplicateIssues } from './content-compliance-scan-service';
+
+const contentComplianceScanService = createContentComplianceScanService();
 
 describe('ContentComplianceScanService', () => {
   it('runs text food input through claims, food retrieval and citations', async () => {
