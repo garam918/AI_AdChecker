@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { contentComplianceScanService } from '@/src/server/regulatory-runtime';
+import { createContentComplianceScanService } from '@/src/server/regulatory-runtime';
 import { FixtureWebContentExtractor } from './fixture-web-content-extractor';
 import { UrlComplianceScanService } from './url-compliance-scan-service';
+
+const contentComplianceScanService = createContentComplianceScanService();
 
 describe('URL compliance scan integration', () => {
   it('runs demo HTML through extraction, claims, RAG and citation validation', async () => {
