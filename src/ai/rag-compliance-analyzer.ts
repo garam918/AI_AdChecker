@@ -92,6 +92,7 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
       }>,
     };
 
+    preparedInput.onProgress?.('RETRIEVING');
     const reasoningItems = await Promise.all(
       claims.map(async (claim) => {
         const query = this.pack.buildRetrievalQuery(claim);
@@ -119,11 +120,14 @@ export class RagComplianceAnalyzer implements ComplianceAnalyzer {
       }),
     );
 
+    preparedInput.onProgress?.('ANALYZING');
     const rawFindings = await this.dependencies.reasoningProvider.analyze({
+      text: normalizedInput,
       instructions: [...this.pack.analysisInstructions],
       productAuthorization: preparedInput.productAuthorization,
       items: reasoningItems,
     });
+    preparedInput.onProgress?.('VALIDATING');
     const findings = rawFindings.map((finding) =>
       ComplianceFindingSchema.parse(finding),
     );
