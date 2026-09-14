@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { contentComplianceScanService } from '@/src/server/regulatory-runtime';
+import { createContentComplianceScanService } from '@/src/server/regulatory-runtime';
 import {
   createCosmeticRagComplianceAnalyzer,
   createMedicalDeviceRagComplianceAnalyzer,
@@ -11,6 +11,8 @@ import { detectMedicalDeviceCategory } from '@/src/compliance/packs/medical-devi
 import { detectPharmaceuticalCategory } from '@/src/compliance/packs/pharmaceutical/category-detector';
 import { extractRegulatedProductClaimCandidates } from './claim-extractor';
 import type { ProductAuthorizationResolution } from '@/src/compliance/product-authorization/schemas';
+
+const contentComplianceScanService = createContentComplianceScanService();
 
 describe('regulated product compliance packs', () => {
   it('detects and analyzes pharmaceutical authorization and safety claims', async () => {
