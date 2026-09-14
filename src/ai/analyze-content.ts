@@ -1,7 +1,6 @@
-import {
-  ScanAnalysisResultSchema,
-  type AnalysisAudience,
-} from '../compliance/core/schemas';
+import { requestAnalysis } from './analysis-stream';
+import type { AnalysisProgress } from './providers/content-analysis-provider';
+import { type AnalysisAudience } from '../compliance/core/schemas';
 import type { ProductIdentity } from '../compliance/product-authorization/schemas';
 import type { DetectedCategory } from '../content/web/schemas';
 
@@ -22,24 +21,15 @@ export async function analyzeContent(
     categoryHint?: RegulatedAnalysisCategory;
     productIdentity?: ProductIdentity;
   },
+  onProgress?: AnalysisProgress,
 ) {
-  const response = await fetch('/api/analyze', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ text: input, audience, ...options }),
-  });
-  const output: unknown = await response.json();
-
-  if (!response.ok) {
-    const message =
-      typeof output === 'object' &&
-      output !== null &&
-      'message' in output &&
-      typeof output.message === 'string'
-        ? output.message
-        : '분석을 완료하지 못했습니다.';
-    throw new Error(message);
-  }
-
-  return ScanAnalysisResultSchema.parse(output);
+  return requestAnalysis(
+    '/api/analyze',
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text: input, audience, ...options }),
+    },
+    onProgress,
+  );
 }
