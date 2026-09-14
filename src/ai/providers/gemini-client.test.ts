@@ -1,0 +1,241 @@
+import { describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
+import { GeminiClient } from './gemini-client';
+
+const schema = z.object({ answer: z.string() });
+const response = (text: string, finishReason = 'STOP') =>
+  Response.json({
+    candidates: [
+      {
+        finishReason,
+        content: {
+          parts: [{ thought: true, text: 'private reasoning' }, { text }],
+        },
+      },
+    ],
+  });
+
+describe('Gemini structured HTTP boundary', () => {
+  it('reports daily quota exhaustion without suggesting an immediate retry or exposing provider text', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json(
+        {
+          error: {
+            message: 'private test-secret details',
+            details: [
+              {
+                violations: [
+                  {
+                    quotaId:
+                      'GenerateRequestsPerDayPerProjectPerModel-FreeTier',
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        { status: 429 },
+      ),
+    );
+    const client = new GeminiClient({
+      apiKey: () => 'test-secret',
+      fetch: fetcher,
+    });
+    await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+      code: 'AI_DAILY_LIMIT',
+      status: 429,
+      message: expect.stringContaining('일일 사용 한도'),
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not retry a rejected request configuration', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        new Response('private test-secret details', { status: 400 }),
+      );
+    const client = new GeminiClient({
+      apiKey: () => 'test-secret',
+      fetch: fetcher,
+    });
+    await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+      code: 'AI_REQUEST_REJECTED',
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it('keeps string bounds in server validation without forwarding unsupported JSON Schema keywords', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(response('{"answer":"longer than allowed"}'));
+    const client = new GeminiClient({
+      apiKey: () => 'test-secret',
+      fetch: fetcher,
+    });
+    await expect(
+      client.generate(z.object({ answer: z.string().max(5) }), '', {}),
+    ).rejects.toMatchObject({ code: 'AI_INVALID_RESPONSE' });
+    const body = JSON.parse(fetcher.mock.calls[0][1]!.body as string);
+    expect(
+      body.generationConfig.responseFormat.text.schema.properties.answer,
+    ).toEqual({ type: 'string' });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it('recovers from explicit temporary overload without retrying completed generation', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(new Response('', { status: 503 }))
+        .mockResolvedValueOnce(response('{"answer":"확인 필요"}'));
+      const client = new GeminiClient({
+        apiKey: () => 'test-secret',
+        fetch: fetcher,
+      });
+      const pending = client.generate(schema, '', {});
+      await vi.advanceTimersByTimeAsync(1500);
+      await expect(pending).resolves.toEqual({ answer: '확인 필요' });
+      expect(fetcher).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps nested array bounds in server validation without expanding the generation grammar', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        response(JSON.stringify({ findings: [{ sources: ['one', 'two'] }] })),
+      );
+    const client = new GeminiClient({
+      apiKey: () => 'test-secret',
+      fetch: fetcher,
+    });
+    const bounded = z.object({
+      findings: z
+        .array(z.object({ sources: z.array(z.string()).min(1).max(1) }))
+        .max(8),
+    });
+    await expect(client.generate(bounded, '', {})).rejects.toMatchObject({
+      code: 'AI_INVALID_RESPONSE',
+    });
+    const body = JSON.parse(fetcher.mock.calls[0][1]!.body as string);
+    const wire = body.generationConfig.responseFormat.text.schema;
+    expect(JSON.stringify(wire)).not.toMatch(/minItems|maxItems/);
+    expect(wire.properties.findings.items.properties.sources.items).toEqual({
+      type: 'string',
+    });
+  });
+
+  it('limits temporary overload retries and returns a safe service-unavailable error', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockImplementation(async () => new Response('', { status: 503 }));
+      const client = new GeminiClient({
+        apiKey: () => 'test-secret',
+        fetch: fetcher,
+      });
+      const expectation = expect(
+        client.generate(schema, '', {}),
+      ).rejects.toMatchObject({ code: 'AI_BUSY', status: 503 });
+      await vi.advanceTimersByTimeAsync(4500);
+      await expectation;
+      expect(fetcher).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it('uses the requested model, server header, supported thinking and a JSON schema', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(response('{"answer":"검토 필요"}'));
+    const client = new GeminiClient({
+      apiKey: () => 'test-secret',
+      fetch: fetcher,
+    });
+    expect(
+      await client.generate(schema, 'instructions', { text: '광고' }),
+    ).toEqual({ answer: '검토 필요' });
+    const [url, init] = fetcher.mock.calls[0];
+    expect(url).toBe(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
+    );
+    expect(url).not.toContain('test-secret');
+    const body = JSON.parse(typeof init?.body === 'string' ? init.body : '');
+    expect(body.generationConfig.thinkingConfig.thinkingLevel).toBe('low');
+    expect(body.generationConfig.responseFormat.text.mimeType).toBe(
+      'APPLICATION_JSON',
+    );
+    expect(body.generationConfig.responseFormat.text.schema.required).toContain(
+      'answer',
+    );
+    expect(body.generationConfig).not.toHaveProperty('temperature');
+    expect(init?.headers).toMatchObject({ 'x-goog-api-key': 'test-secret' });
+  });
+
+  it('does not make a request or invent a fallback result without a key', async () => {
+    const fetcher = vi.fn<typeof fetch>();
+    const client = new GeminiClient({ apiKey: () => '', fetch: fetcher });
+    await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+      code: 'AI_NOT_CONFIGURED',
+      status: 503,
+    });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['not json', 'STOP', 'AI_INVALID_RESPONSE'],
+    ['{"answer":12}', 'STOP', 'AI_INVALID_RESPONSE'],
+    ['{"answer":"partial"}', 'MAX_TOKENS', 'AI_INCOMPLETE'],
+    ['{}', 'SAFETY', 'AI_INCOMPLETE'],
+  ])(
+    'rejects malformed or incomplete output: %s / %s',
+    async (body, finish, code) => {
+      const client = new GeminiClient({
+        apiKey: () => 'test-secret',
+        fetch: vi.fn<typeof fetch>().mockResolvedValue(response(body, finish)),
+      });
+      await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+        code,
+      });
+    },
+  );
+
+  it.each([401, 403, 429, 500])(
+    'never exposes upstream error bodies for HTTP %i',
+    async (status) => {
+      const client = new GeminiClient({
+        apiKey: () => 'test-secret',
+        fetch: vi
+          .fn<typeof fetch>()
+          .mockResolvedValue(
+            new Response('test-secret: private prompt', { status }),
+          ),
+      });
+      await expect(client.generate(schema, '', {})).rejects.not.toThrow(
+        /test-secret|private prompt/,
+      );
+    },
+  );
+
+  it('aborts a stalled call and reports a bounded timeout', async () => {
+    const client = new GeminiClient({
+      apiKey: () => 'test-secret',
+      timeoutMs: 5,
+      fetch: vi.fn<typeof fetch>().mockImplementation(
+        (_url, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () =>
+              reject(new Error('aborted test-secret')),
+            );
+          }),
+      ),
+    });
+    await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+      code: 'AI_TIMEOUT',
+      status: 504,
+    });
+  });
+});
