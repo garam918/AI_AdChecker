@@ -1,3 +1,9 @@
+import {
+  analysisResponse,
+  AnalysisInputError,
+  errorResponse,
+  readAnalysisJson,
+} from '@/src/server/analysis-response';
 import { z } from 'zod';
 
 import {
@@ -8,7 +14,7 @@ import { ProductIdentitySchema } from '@/src/compliance/product-authorization/sc
 import { contentComplianceScanService } from '@/src/server/regulatory-runtime';
 
 const RequestSchema = z.object({
-  text: z.string().trim().min(1).max(2000),
+  text: z.string().trim().min(1).max(20000),
   audience: AnalysisAudienceSchema.default('CONSUMER'),
   categoryHint: z
     .enum([
@@ -23,32 +29,28 @@ const RequestSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const input = RequestSchema.parse(await request.json());
-    const result = await contentComplianceScanService.analyzeContent({
-      text: input.text,
-      detectedContentType: 'ADVERTISEMENT_TEXT',
-      categoryHint: input.categoryHint,
-      productIdentity: input.productIdentity,
-    });
-    return Response.json(
-      ScanAnalysisResultSchema.parse({ ...result, audience: input.audience }),
-    );
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return Response.json(
-        { message: '1자 이상 2,000자 이하의 광고 문구를 입력해 주세요.' },
-        { status: 400 },
+    const parsed = RequestSchema.safeParse(await readAnalysisJson(request));
+    if (!parsed.success)
+      throw new AnalysisInputError(
+        '1자 이상 20,000자 이하의 광고 문구와 올바른 제품 정보를 입력해 주세요.',
       );
-    }
-
-    return Response.json(
-      {
-        message:
-          error instanceof Error
-            ? error.message
-            : '분석 중 오류가 발생했습니다. 결과를 생성하지 않았습니다.',
-      },
-      { status: 500 },
-    );
+    const input = parsed.data;
+    return analysisResponse(request, async (progress) => {
+      const result = await contentComplianceScanService.analyzeContent(
+        {
+          text: input.text,
+          detectedContentType: 'ADVERTISEMENT_TEXT',
+          categoryHint: input.categoryHint,
+          productIdentity: input.productIdentity,
+        },
+        progress,
+      );
+      return ScanAnalysisResultSchema.parse({
+        ...result,
+        audience: input.audience,
+      });
+    });
+  } catch (error) {
+    return errorResponse(error);
   }
 }
