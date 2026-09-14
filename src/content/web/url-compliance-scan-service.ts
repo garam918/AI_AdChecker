@@ -1,3 +1,4 @@
+import type { AnalysisProgress } from '@/src/ai/providers/content-analysis-provider';
 import type { ContentComplianceScanService } from '@/src/compliance/core/content-compliance-scan-service';
 import { ScanAnalysisResultSchema } from '@/src/compliance/core/schemas';
 import type { ProductIdentity } from '@/src/compliance/product-authorization/schemas';
@@ -24,9 +25,11 @@ export class UrlComplianceScanService {
       ContentComplianceScanService,
       'analyzeContent'
     >,
+    private readonly aiEnabled = false,
   ) {}
 
-  async analyze(input: UrlScanInput) {
+  async analyze(input: UrlScanInput, progress?: AnalysisProgress) {
+    progress?.('EXTRACTING');
     const webContent = input.fixtureId
       ? await this.fixtureContentExtractor.extract(input.fixtureId)
       : await this.webContentExtractor.extract(input.url!);
@@ -55,7 +58,7 @@ export class UrlComplianceScanService {
         ]
       : [];
 
-    if (detectedCategory === 'UNKNOWN') {
+    if (detectedCategory === 'UNKNOWN' && !this.aiEnabled) {
       notices.push({
         code: 'UNKNOWN_CATEGORY',
         message:
@@ -75,18 +78,21 @@ export class UrlComplianceScanService {
       });
     }
 
-    const complianceResult = await this.complianceAnalyzer.analyzeContent({
-      text: webContent.visibleText,
-      detectedContentType,
-      webContent,
-      categoryHint: input.categoryHint,
-      productIdentity: input.productIdentity,
-    });
+    const complianceResult = await this.complianceAnalyzer.analyzeContent(
+      {
+        text: webContent.visibleText,
+        detectedContentType,
+        webContent,
+        categoryHint: input.categoryHint,
+        productIdentity: input.productIdentity,
+      },
+      progress,
+    );
 
     return ScanAnalysisResultSchema.parse({
       ...complianceResult,
       inputType: 'URL',
-      detectedContentType,
+      detectedContentType: complianceResult.detectedContentType,
       detectedCategory: complianceResult.detectedCategory,
       webContent,
       notices: [...complianceResult.notices, ...notices],
