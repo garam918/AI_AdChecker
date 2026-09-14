@@ -125,7 +125,7 @@ export const AnalysisDebugSchema = z.object({
 
 export const ScanSchema = z.object({
   id: z.string().min(1),
-  inputType: z.enum(['TEXT', 'URL']),
+  inputType: z.enum(['TEXT', 'URL', 'IMAGE']),
   audience: AnalysisAudienceSchema.default('CONSUMER'),
   inputText: z.string().min(1).nullable(),
   inputUrl: z.url().nullable(),
@@ -139,7 +139,18 @@ export const ScanSchema = z.object({
 
 export const ScanAnalysisResultSchema = z
   .object({
-    inputType: z.enum(['TEXT', 'URL']).default('TEXT'),
+    inputType: z.enum(['TEXT', 'URL', 'IMAGE']).default('TEXT'),
+    analysisModel: z.string().min(1).optional(),
+    imageContent: z
+      .object({
+        fileName: z.string(),
+        mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
+        extractedText: z.string(),
+        visualObservations: z.array(z.string()),
+        analysisText: z.string(),
+        incomplete: z.boolean(),
+      })
+      .optional(),
     audience: AnalysisAudienceSchema.default('CONSUMER'),
     detectedContentType: DetectedContentTypeSchema,
     detectedCategory: DetectedCategorySchema,
@@ -156,6 +167,8 @@ export const ScanAnalysisResultSchema = z
         z.object({
           code: z.enum([
             'CONTENT_TRUNCATED',
+            'AI_REVIEW_REQUIRED',
+            'IMAGE_EXTRACTION_LIMITS',
             'UNKNOWN_CATEGORY',
             'PRODUCT_AUTHORIZATION_REQUIRED',
             'PRODUCT_AUTHORIZATION_NOT_FOUND',
@@ -181,6 +194,13 @@ export const ScanAnalysisResultSchema = z
         code: 'custom',
         message: 'URL analysis must include extracted web content.',
         path: ['webContent'],
+      });
+    }
+    if (result.inputType === 'IMAGE' && !result.imageContent) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Image analysis must include extraction metadata.',
+        path: ['imageContent'],
       });
     }
 
