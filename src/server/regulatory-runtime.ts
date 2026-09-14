@@ -1,3 +1,5 @@
+import { GeminiContentProvider } from '@/src/ai/providers/gemini-content-provider';
+import type { ComplianceReasoningProvider } from '@/src/ai/providers/compliance-reasoning-provider';
 import { RagComplianceAnalyzer } from '@/src/ai/rag-compliance-analyzer';
 import { MockRagReasoningProvider } from '@/src/ai/providers/mock-rag-reasoning-provider';
 import { ContentComplianceScanService } from '@/src/compliance/core/content-compliance-scan-service';
@@ -44,12 +46,14 @@ const configuredSemanticSearch: SemanticRegulationSearch = {
 
 export function createRagComplianceAnalyzer(options?: {
   includeDebug?: boolean;
+  reasoningProvider?: ComplianceReasoningProvider;
 }) {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader(),
     repository: new InMemoryRegulationRepository(),
     semanticSearch: configuredSemanticSearch,
-    reasoningProvider: new MockRagReasoningProvider(),
+    reasoningProvider:
+      options?.reasoningProvider ?? new MockRagReasoningProvider(),
     pack: generalAdvertisingCompliancePack,
     includeDebug: options?.includeDebug ?? false,
   });
@@ -57,12 +61,14 @@ export function createRagComplianceAnalyzer(options?: {
 
 export function createGeneralFoodRagComplianceAnalyzer(options?: {
   includeDebug?: boolean;
+  reasoningProvider?: ComplianceReasoningProvider;
 }) {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader('GENERAL_FOOD'),
     repository: new InMemoryRegulationRepository(),
     semanticSearch: configuredSemanticSearch,
-    reasoningProvider: new GeneralFoodReasoningProvider(),
+    reasoningProvider:
+      options?.reasoningProvider ?? new GeneralFoodReasoningProvider(),
     pack: generalFoodCompliancePack,
     includeDebug: options?.includeDebug ?? false,
   });
@@ -70,12 +76,14 @@ export function createGeneralFoodRagComplianceAnalyzer(options?: {
 
 export function createHealthFunctionalFoodRagComplianceAnalyzer(options?: {
   includeDebug?: boolean;
+  reasoningProvider?: ComplianceReasoningProvider;
 }) {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader('HEALTH_FUNCTIONAL_FOOD'),
     repository: new InMemoryRegulationRepository(),
     semanticSearch: configuredSemanticSearch,
-    reasoningProvider: new HealthFunctionalFoodReasoningProvider(),
+    reasoningProvider:
+      options?.reasoningProvider ?? new HealthFunctionalFoodReasoningProvider(),
     pack: healthFunctionalFoodCompliancePack,
     includeDebug: options?.includeDebug ?? false,
   });
@@ -83,15 +91,18 @@ export function createHealthFunctionalFoodRagComplianceAnalyzer(options?: {
 
 export function createPharmaceuticalRagComplianceAnalyzer(options?: {
   includeDebug?: boolean;
+  reasoningProvider?: ComplianceReasoningProvider;
 }) {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader('PHARMACEUTICAL'),
     repository: new InMemoryRegulationRepository(),
     semanticSearch: configuredSemanticSearch,
-    reasoningProvider: new RegulatedProductReasoningProvider(
-      'PHARMACEUTICAL',
-      PHARMACEUTICAL_ANALYSIS_INSTRUCTIONS,
-    ),
+    reasoningProvider:
+      options?.reasoningProvider ??
+      new RegulatedProductReasoningProvider(
+        'PHARMACEUTICAL',
+        PHARMACEUTICAL_ANALYSIS_INSTRUCTIONS,
+      ),
     pack: pharmaceuticalCompliancePack,
     includeDebug: options?.includeDebug ?? false,
   });
@@ -99,15 +110,18 @@ export function createPharmaceuticalRagComplianceAnalyzer(options?: {
 
 export function createMedicalDeviceRagComplianceAnalyzer(options?: {
   includeDebug?: boolean;
+  reasoningProvider?: ComplianceReasoningProvider;
 }) {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader('MEDICAL_DEVICE'),
     repository: new InMemoryRegulationRepository(),
     semanticSearch: configuredSemanticSearch,
-    reasoningProvider: new RegulatedProductReasoningProvider(
-      'MEDICAL_DEVICE',
-      MEDICAL_DEVICE_ANALYSIS_INSTRUCTIONS,
-    ),
+    reasoningProvider:
+      options?.reasoningProvider ??
+      new RegulatedProductReasoningProvider(
+        'MEDICAL_DEVICE',
+        MEDICAL_DEVICE_ANALYSIS_INSTRUCTIONS,
+      ),
     pack: medicalDeviceCompliancePack,
     includeDebug: options?.includeDebug ?? false,
   });
@@ -115,87 +129,127 @@ export function createMedicalDeviceRagComplianceAnalyzer(options?: {
 
 export function createCosmeticRagComplianceAnalyzer(options?: {
   includeDebug?: boolean;
+  reasoningProvider?: ComplianceReasoningProvider;
 }) {
   return new RagComplianceAnalyzer({
     corpusLoader: new LocalProcessedRegulationLoader('COSMETIC'),
     repository: new InMemoryRegulationRepository(),
     semanticSearch: configuredSemanticSearch,
-    reasoningProvider: new RegulatedProductReasoningProvider(
-      'COSMETIC',
-      COSMETIC_ANALYSIS_INSTRUCTIONS,
-    ),
+    reasoningProvider:
+      options?.reasoningProvider ??
+      new RegulatedProductReasoningProvider(
+        'COSMETIC',
+        COSMETIC_ANALYSIS_INSTRUCTIONS,
+      ),
     pack: cosmeticCompliancePack,
     includeDebug: options?.includeDebug ?? false,
   });
 }
 
-export const regulatoryAnalyzer = createRagComplianceAnalyzer({
-  includeDebug: process.env.NODE_ENV === 'development',
-});
-
-export const generalFoodRegulatoryAnalyzer =
-  createGeneralFoodRagComplianceAnalyzer({
+// Pass no provider only for deterministic regression evaluations. Production always uses Gemini.
+export function createContentComplianceScanService(
+  provider?: GeminiContentProvider,
+) {
+  const regulatoryAnalyzer = createRagComplianceAnalyzer({
     includeDebug: process.env.NODE_ENV === 'development',
-  });
-
-export const healthFunctionalFoodRegulatoryAnalyzer =
-  createHealthFunctionalFoodRagComplianceAnalyzer({
-    includeDebug: process.env.NODE_ENV === 'development',
-  });
-
-export const pharmaceuticalRegulatoryAnalyzer =
-  createPharmaceuticalRagComplianceAnalyzer({
-    includeDebug: process.env.NODE_ENV === 'development',
-  });
-
-export const medicalDeviceRegulatoryAnalyzer =
-  createMedicalDeviceRagComplianceAnalyzer({
-    includeDebug: process.env.NODE_ENV === 'development',
-  });
-
-export const cosmeticRegulatoryAnalyzer = createCosmeticRagComplianceAnalyzer({
-  includeDebug: process.env.NODE_ENV === 'development',
-});
-
-export const contentComplianceScanService = new ContentComplianceScanService(
-  [
-    {
-      pack: generalAdvertisingCompliancePack,
-      analyzer: regulatoryAnalyzer,
-    },
-    {
-      pack: generalFoodCompliancePack,
-      analyzer: generalFoodRegulatoryAnalyzer,
-    },
-    {
-      pack: healthFunctionalFoodCompliancePack,
-      analyzer: healthFunctionalFoodRegulatoryAnalyzer,
-    },
-    {
-      pack: pharmaceuticalCompliancePack,
-      analyzer: pharmaceuticalRegulatoryAnalyzer,
-    },
-    {
-      pack: medicalDeviceCompliancePack,
-      analyzer: medicalDeviceRegulatoryAnalyzer,
-    },
-    {
-      pack: cosmeticCompliancePack,
-      analyzer: cosmeticRegulatoryAnalyzer,
-    },
-  ],
-  new LocalEnforcementCaseRepository(),
-  new CompositeProductAuthorizationResolver(
-    new HealthFunctionalFoodAuthorizationResolver(
-      process.env.FOOD_SAFETY_KOREA_API_KEY,
+    reasoningProvider: provider?.reasoningProvider(
+      new MockRagReasoningProvider(),
     ),
-    new MfdsRegulatedProductAuthorizationResolver(
-      process.env.DATA_GO_KR_SERVICE_KEY,
+  });
+
+  const generalFoodRegulatoryAnalyzer = createGeneralFoodRagComplianceAnalyzer({
+    includeDebug: process.env.NODE_ENV === 'development',
+    reasoningProvider: provider?.reasoningProvider(
+      new GeneralFoodReasoningProvider(),
+    ),
+  });
+
+  const healthFunctionalFoodRegulatoryAnalyzer =
+    createHealthFunctionalFoodRagComplianceAnalyzer({
+      includeDebug: process.env.NODE_ENV === 'development',
+      reasoningProvider: provider?.reasoningProvider(
+        new HealthFunctionalFoodReasoningProvider(),
+      ),
+    });
+
+  const pharmaceuticalRegulatoryAnalyzer =
+    createPharmaceuticalRagComplianceAnalyzer({
+      includeDebug: process.env.NODE_ENV === 'development',
+      reasoningProvider: provider?.reasoningProvider(
+        new RegulatedProductReasoningProvider(
+          'PHARMACEUTICAL',
+          PHARMACEUTICAL_ANALYSIS_INSTRUCTIONS,
+        ),
+      ),
+    });
+
+  const medicalDeviceRegulatoryAnalyzer =
+    createMedicalDeviceRagComplianceAnalyzer({
+      includeDebug: process.env.NODE_ENV === 'development',
+      reasoningProvider: provider?.reasoningProvider(
+        new RegulatedProductReasoningProvider(
+          'MEDICAL_DEVICE',
+          MEDICAL_DEVICE_ANALYSIS_INSTRUCTIONS,
+        ),
+      ),
+    });
+
+  const cosmeticRegulatoryAnalyzer = createCosmeticRagComplianceAnalyzer({
+    includeDebug: process.env.NODE_ENV === 'development',
+    reasoningProvider: provider?.reasoningProvider(
+      new RegulatedProductReasoningProvider(
+        'COSMETIC',
+        COSMETIC_ANALYSIS_INSTRUCTIONS,
+      ),
+    ),
+  });
+
+  return new ContentComplianceScanService(
+    [
       {
-        PHARMACEUTICAL: process.env.MFDS_DRUG_PRODUCT_API_URL,
-        MEDICAL_DEVICE: process.env.MFDS_MEDICAL_DEVICE_PRODUCT_API_URL,
-        COSMETIC: process.env.MFDS_COSMETIC_PRODUCT_API_URL,
+        pack: generalAdvertisingCompliancePack,
+        analyzer: regulatoryAnalyzer,
       },
+      {
+        pack: generalFoodCompliancePack,
+        analyzer: generalFoodRegulatoryAnalyzer,
+      },
+      {
+        pack: healthFunctionalFoodCompliancePack,
+        analyzer: healthFunctionalFoodRegulatoryAnalyzer,
+      },
+      {
+        pack: pharmaceuticalCompliancePack,
+        analyzer: pharmaceuticalRegulatoryAnalyzer,
+      },
+      {
+        pack: medicalDeviceCompliancePack,
+        analyzer: medicalDeviceRegulatoryAnalyzer,
+      },
+      {
+        pack: cosmeticCompliancePack,
+        analyzer: cosmeticRegulatoryAnalyzer,
+      },
+    ],
+    new LocalEnforcementCaseRepository(),
+    new CompositeProductAuthorizationResolver(
+      new HealthFunctionalFoodAuthorizationResolver(
+        process.env.FOOD_SAFETY_KOREA_API_KEY,
+      ),
+      new MfdsRegulatedProductAuthorizationResolver(
+        process.env.DATA_GO_KR_SERVICE_KEY,
+        {
+          PHARMACEUTICAL: process.env.MFDS_DRUG_PRODUCT_API_URL,
+          MEDICAL_DEVICE: process.env.MFDS_MEDICAL_DEVICE_PRODUCT_API_URL,
+          COSMETIC: process.env.MFDS_COSMETIC_PRODUCT_API_URL,
+        },
+      ),
     ),
-  ),
+    provider,
+  );
+}
+
+export const geminiContentProvider = new GeminiContentProvider();
+export const contentComplianceScanService = createContentComplianceScanService(
+  geminiContentProvider,
 );
