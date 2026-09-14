@@ -23,4 +23,5 @@ export const urlComplianceScanService = new UrlComplianceScanService(
   cachedWebContentExtractor,
   new FixtureWebContentExtractor(semanticHtmlExtractor),
   contentComplianceScanService,
+  true,
 );
