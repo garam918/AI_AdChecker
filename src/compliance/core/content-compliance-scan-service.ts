@@ -17,6 +17,10 @@ import type { EnforcementCase } from '@/src/compliance/regulatory/enforcement-ca
 import type { EnforcementCaseRepository } from '@/src/compliance/regulatory/local-enforcement-case-repository';
 import type { ProductAuthorizationResolution } from '@/src/compliance/product-authorization/schemas';
 import type { ProductAuthorizationResolver } from '@/src/compliance/product-authorization/health-functional-food-authorization';
+import type {
+  AnalysisProgress,
+  ContentAnalysisProvider,
+} from '@/src/ai/providers/content-analysis-provider';
 
 const AUTHORIZATION_CATEGORIES = [
   'HEALTH_FUNCTIONAL_FOOD',
@@ -37,6 +41,7 @@ export class ContentComplianceScanService implements ComplianceAnalyzer {
     private readonly registrations: readonly PackAnalyzerRegistration[],
     private readonly enforcementCaseRepository?: EnforcementCaseRepository,
     private readonly productAuthorizationResolver?: ProductAuthorizationResolver,
+    private readonly aiProvider?: ContentAnalysisProvider,
   ) {
     this.router = new CompliancePackRouter(
       registrations.map((registration) => registration.pack),
@@ -51,11 +56,35 @@ export class ContentComplianceScanService implements ComplianceAnalyzer {
     });
   }
 
-  async analyzeContent(input: PackContentInput): Promise<ScanAnalysisResult> {
+  async analyzeContent(
+    input: PackContentInput,
+    onProgress?: AnalysisProgress,
+  ): Promise<ScanAnalysisResult> {
     const normalizedText = input.text.trim();
     if (!normalizedText) throw new Error('분석할 광고 문구를 입력해 주세요.');
 
-    const routed = this.router.route({ ...input, text: normalizedText });
+    input = { ...input, text: normalizedText };
+    onProgress?.('CLASSIFYING');
+    const prepared = await this.aiProvider?.prepareContent(
+      input,
+      this.registrations.map(({ pack }) => pack),
+    );
+    const routed = this.router.route(input);
+    if (prepared) {
+      // Uncertain product classes must never be silently treated as general advertising.
+      routed.detectedCategory = prepared.uncertain
+        ? 'UNKNOWN'
+        : (input.categoryHint ?? prepared.category);
+      input = { ...input, detectedContentType: prepared.contentType };
+      routed.activePacks = this.registrations
+        .map(({ pack }) => pack)
+        .filter(
+          (pack) =>
+            pack.appliesToCategories.includes(routed.detectedCategory) &&
+            pack.supportedContentTypes.includes(input.detectedContentType),
+        );
+      if (routed.activePacks.length === 0) routed.detectedCategory = 'UNKNOWN';
+    }
     if (routed.detectedCategory === 'UNKNOWN') {
       return ScanAnalysisResultSchema.parse({
         detectedContentType: input.detectedContentType,
@@ -65,6 +94,7 @@ export class ContentComplianceScanService implements ComplianceAnalyzer {
         issues: [],
         sources: [],
         activePacks: [],
+        ...(this.aiProvider && { analysisModel: this.aiProvider.model }),
         notices: [
           {
             code: 'UNKNOWN_CATEGORY',
@@ -81,31 +111,54 @@ export class ContentComplianceScanService implements ComplianceAnalyzer {
       ? await this.resolveProductAuthorization(input, routed.detectedCategory)
       : undefined;
 
-    const results = await Promise.all(
-      routed.activePacks.map(async (pack) => {
-        const registration = this.registrations.find(
-          (candidate) => candidate.pack.metadata.id === pack.metadata.id,
-        );
-        if (!registration) {
-          throw new Error(
-            `${pack.metadata.id} analyzer가 등록되지 않았습니다.`,
-          );
-        }
-        const claims = pack.extractClaims(input);
-        return registration.analyzer.analyze({
+    let claimsTruncated = prepared?.truncated ?? false;
+    // Packs run sequentially so progress reflects real work and API bursts stay bounded.
+    const results: ScanAnalysisResult[] = [];
+    for (const pack of routed.activePacks) {
+      const registration = this.registrations.find(
+        (candidate) => candidate.pack.metadata.id === pack.metadata.id,
+      );
+      if (!registration) {
+        throw new Error(`${pack.metadata.id} analyzer가 등록되지 않았습니다.`);
+      }
+      const allClaims = uniqueBy(
+        [
+          ...pack.extractClaims(input),
+          ...(prepared?.claims.filter(
+            (claim) => claim.packId === pack.metadata.id,
+          ) ?? []),
+        ],
+        (claim) => `${claim.startOffset}:${claim.endOffset}:${claim.claimType}`,
+      );
+      const claims = prepared ? allClaims.slice(0, 40) : allClaims;
+      claimsTruncated ||= claims.length < allClaims.length;
+      results.push(
+        await registration.analyzer.analyze({
           text: normalizedText,
           claims,
           productAuthorization,
-        });
-      }),
-    );
+          onProgress,
+        }),
+      );
+    }
 
-    return this.mergeResults(
+    const result = await this.mergeResults(
       input,
       routed.detectedCategory,
       results,
       productAuthorization,
     );
+    if (this.aiProvider) result.analysisModel = this.aiProvider.model;
+    if (prepared && (claimsTruncated || result.claims.length === 0)) {
+      result.overallRisk = 'REVIEW_REQUIRED';
+      result.notices.push({
+        code: 'AI_REVIEW_REQUIRED',
+        message: claimsTruncated
+          ? '분석할 주장이 많아 최대 40개씩 우선 검토했습니다. 내용을 나눠 추가 검사해 주세요.'
+          : '검토 가능한 광고 주장을 충분히 추출하지 못했습니다. 원문과 제품 유형을 확인해 주세요.',
+      });
+    }
+    return ScanAnalysisResultSchema.parse(result);
   }
 
   private async resolveProductAuthorization(
