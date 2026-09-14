@@ -1,3 +1,9 @@
+import {
+  analysisResponse,
+  AnalysisInputError,
+  errorResponse,
+  readAnalysisJson,
+} from '@/src/server/analysis-response';
 import { z } from 'zod';
 
 import {
@@ -6,11 +12,7 @@ import {
 } from '@/src/compliance/core/schemas';
 import { ProductIdentitySchema } from '@/src/compliance/product-authorization/schemas';
 import { DEMO_FIXTURE_IDS } from '@/src/content/web/fixture-web-content-extractor';
-import { WebExtractionError } from '@/src/content/web/web-extraction-error';
-import {
-  UnsafeUrlError,
-  validatePublicHttpUrl,
-} from '@/src/security/url-validator';
+import { validatePublicHttpUrl } from '@/src/security/url-validator';
 import { urlComplianceScanService } from '@/src/server/url-scan-runtime';
 
 const RequestSchema = z
@@ -34,58 +36,37 @@ const RequestSchema = z
 
 export async function POST(request: Request) {
   try {
-    const input = RequestSchema.parse(await request.json());
-    if (input.url) {
-      const url = validatePublicHttpUrl(input.url);
-      return Response.json(
-        ScanAnalysisResultSchema.parse({
-          ...(await urlComplianceScanService.analyze({
-            url: url.toString(),
-            categoryHint: input.categoryHint,
-            productIdentity: input.productIdentity,
-          })),
-          audience: input.audience,
-        }),
+    const parsed = RequestSchema.safeParse(await readAnalysisJson(request));
+    if (!parsed.success)
+      throw new AnalysisInputError(
+        '올바른 웹페이지 URL과 제품 정보를 입력해 주세요.',
+      );
+    const input = parsed.data;
+    const url = input.url ? validatePublicHttpUrl(input.url) : undefined;
+    if (
+      url &&
+      /(^|\.)(youtube\.com|youtu\.be|youtube-nocookie\.com)$/.test(url.hostname)
+    ) {
+      throw new AnalysisInputError(
+        'YouTube 분석은 이번 지원 범위에 포함되지 않습니다. 광고 텍스트나 이미지를 입력해 주세요.',
       );
     }
-    return Response.json(
+    return analysisResponse(request, async (progress) =>
       ScanAnalysisResultSchema.parse({
-        ...(await urlComplianceScanService.analyze({
-          fixtureId: input.fixtureId!,
-          categoryHint: input.categoryHint,
-          productIdentity: input.productIdentity,
-        })),
+        ...(await urlComplianceScanService.analyze(
+          {
+            ...(url
+              ? { url: url.toString() }
+              : { fixtureId: input.fixtureId! }),
+            categoryHint: input.categoryHint,
+            productIdentity: input.productIdentity,
+          },
+          progress,
+        )),
         audience: input.audience,
       }),
     );
   } catch (error) {
-    if (error instanceof z.ZodError || error instanceof UnsafeUrlError) {
-      return Response.json(
-        {
-          code: 'INVALID_INPUT',
-          message:
-            error instanceof UnsafeUrlError
-              ? error.message
-              : '올바른 URL을 입력해 주세요.',
-        },
-        { status: 400 },
-      );
-    }
-    if (error instanceof WebExtractionError) {
-      return Response.json(
-        { code: error.code, message: error.message },
-        { status: error.httpStatus },
-      );
-    }
-    return Response.json(
-      {
-        code: 'ANALYSIS_FAILED',
-        message:
-          error instanceof Error
-            ? error.message
-            : '웹페이지 분석 중 오류가 발생했습니다.',
-      },
-      { status: 500 },
-    );
+    return errorResponse(error);
   }
 }
