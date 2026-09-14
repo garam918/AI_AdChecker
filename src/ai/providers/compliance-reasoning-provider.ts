@@ -55,6 +55,7 @@ export const ComplianceFindingSchema = z
   });
 
 export const ComplianceReasoningInputSchema = z.object({
+  text: z.string().optional(),
   instructions: z.array(z.string().min(1)).min(1),
   productAuthorization: ProductAuthorizationResolutionSchema.optional(),
   items: z.array(
