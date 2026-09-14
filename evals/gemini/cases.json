@@ -1,0 +1,34 @@
+[
+  {
+    "id": "saas-objective-and-superiority",
+    "inputType": "TEXT",
+    "input": "업무 시간을 70% 줄여주는 국내 최고의 AI 서비스",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedConcern": "성과 수치·우월성의 근거와 비교 조건 확인",
+    "notes": "주장과 공식 출처를 연결해야 하며 수정안에서 성과나 날짜를 새로 만들면 안 됩니다."
+  },
+  {
+    "id": "food-implied-health",
+    "inputType": "TEXT",
+    "input": "일반식품인 보리차입니다. 매일 한 잔으로 혈당 관리와 면역력 개선",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedConcern": "일반식품의 건강·질병 관련 오인 가능성",
+    "notes": "일반식품 출처가 연결되어야 하며 건강기능식품으로 임의 확정하면 안 됩니다."
+  },
+  {
+    "id": "saas-landing",
+    "inputType": "URL",
+    "fixtureId": "ai-saas-landing",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedConcern": "페이지 문맥에서 수치·무료·비교 표현 검토",
+    "notes": "원문 섹션과 주장 위치가 연결되어야 합니다."
+  },
+  {
+    "id": "image-ad",
+    "inputType": "IMAGE",
+    "file": "public/demo-ad.png",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedConcern": "OCR로 읽은 성과 수치와 우월성 표현 검토",
+    "notes": "OCR 원문과 시각 관찰을 구분하고 읽을 수 없는 내용은 부분 분석으로 표시합니다."
+  }
+]
