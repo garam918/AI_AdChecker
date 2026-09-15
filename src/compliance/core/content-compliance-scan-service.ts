@@ -2,6 +2,8 @@ import type {
   ComplianceAnalysisInput,
   ComplianceAnalyzer,
 } from './compliance-analyzer';
+import { consolidateIssues, rankIssues, selectKeyIssueIds } from './key-issues';
+import { mergeClaims } from './merge-claims';
 import type {
   CompliancePackDefinition,
   PackContentInput,
@@ -121,14 +123,14 @@ export class ContentComplianceScanService implements ComplianceAnalyzer {
       if (!registration) {
         throw new Error(`${pack.metadata.id} analyzer가 등록되지 않았습니다.`);
       }
-      const allClaims = uniqueBy(
+      const allClaims = mergeClaims(
         [
           ...pack.extractClaims(input),
           ...(prepared?.claims.filter(
             (claim) => claim.packId === pack.metadata.id,
           ) ?? []),
         ],
-        (claim) => `${claim.startOffset}:${claim.endOffset}:${claim.claimType}`,
+        pack.metadata.id,
       );
       const claims = prepared ? allClaims.slice(0, 40) : allClaims;
       claimsTruncated ||= claims.length < allClaims.length;
@@ -177,8 +179,11 @@ export class ContentComplianceScanService implements ComplianceAnalyzer {
     results: ScanAnalysisResult[],
     productAuthorization?: ProductAuthorizationResolution,
   ) {
-    const issues = deduplicateIssues(
-      results.flatMap((result) => result.issues),
+    // Exact duplicates → nested quotes of one expression → most actionable first.
+    const issues = rankIssues(
+      consolidateIssues(
+        deduplicateIssues(results.flatMap((result) => result.issues)),
+      ),
     );
     const enforcementCases: EnforcementCase[] = [];
 
@@ -224,6 +229,7 @@ export class ContentComplianceScanService implements ComplianceAnalyzer {
       overallRisk,
       claims: results.flatMap((result) => result.claims),
       issues,
+      keyIssueIds: selectKeyIssueIds(issues),
       sources: uniqueSources,
       enforcementCases: uniqueCases,
       activePacks: unique(results.flatMap((result) => result.activePacks)),
@@ -303,8 +309,9 @@ export function deduplicateIssues(issues: Issue[]) {
   issues.forEach((issue) => {
     const key = [
       issue.category,
+      issue.packId,
+      issue.citationStatus,
       normalize(issue.originalText),
-      [...issue.sourceChunkIds].sort().join(','),
     ].join(':');
     const existing = merged.get(key);
     if (!existing) {
@@ -314,6 +321,14 @@ export function deduplicateIssues(issues: Issue[]) {
     merged.set(key, {
       ...existing,
       severity: higherSeverity(existing.severity, issue.severity),
+      sourceChunkIds: unique([
+        ...existing.sourceChunkIds,
+        ...issue.sourceChunkIds,
+      ]),
+      regulationSourceIds: unique([
+        ...existing.regulationSourceIds,
+        ...issue.regulationSourceIds,
+      ]),
       requiredEvidence: unique([
         ...existing.requiredEvidence,
         ...issue.requiredEvidence,
