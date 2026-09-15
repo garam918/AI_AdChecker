@@ -10,6 +10,8 @@
     "prebuild": "npm run rag:check",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
+    "predeploy:workers": "npm run build",
+    "deploy:workers": "node scripts/deploy-workers.mjs",
     "lint": "oxlint",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit",
