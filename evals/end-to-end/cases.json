@@ -1,0 +1,384 @@
+[
+  {
+    "id": "ga-time-reduction",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "input": "업무 시간을 70% 줄여드립니다",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["EVIDENCE_REQUIRED"],
+    "notes": "성과 수치는 실증 대상"
+  },
+  {
+    "id": "ga-domestic-best",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "input": "국내 최고의 AI 서비스",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["COMPARATIVE_CLAIM"],
+    "notes": "비교 대상·기준 없는 우월성 표현"
+  },
+  {
+    "id": "ga-absolute-accuracy",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "input": "100% 정확한 AI",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["EVIDENCE_REQUIRED"],
+    "notes": "절대적 성능 수치"
+  },
+  {
+    "id": "ga-competitor-speed",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "input": "경쟁사 대비 3배 빠릅니다",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["COMPARATIVE_CLAIM"],
+    "notes": "비교 광고 조건"
+  },
+  {
+    "id": "ga-free-conditions",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "input": "무료로 사용할 수 있습니다",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["CONDITION_DISCLOSURE"],
+    "notes": "무료 범위·기간·유료 전환 조건 미표시"
+  },
+  {
+    "id": "ga-measured-accuracy",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "input": "99.9% 정확도를 기록했습니다",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["EVIDENCE_REQUIRED"],
+    "notes": "측정 조건과 원본 자료 필요"
+  },
+  {
+    "id": "ga-industry-first",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "input": "업계 1위",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["COMPARATIVE_CLAIM"],
+    "notes": "순위 표현"
+  },
+  {
+    "id": "ga-representative-demo",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "input": "업무 시간을 70% 줄여주는 국내 최고의 AI 서비스",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["EVIDENCE_REQUIRED", "COMPARATIVE_CLAIM"],
+    "notes": "대표 텍스트 데모. 핵심 이슈 2개로 정리되어야 한다."
+  },
+  {
+    "id": "ga-efficiency-support",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "input": "업무 효율 개선을 지원합니다",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "수치 없는 지원 표현"
+  },
+  {
+    "id": "ga-feature-availability",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "input": "다양한 기능을 제공합니다",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "기능 안내"
+  },
+  {
+    "id": "ga-dashboard",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "input": "팀 협업을 위한 대시보드를 제공합니다",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "중립적 기능 설명"
+  },
+  {
+    "id": "ga-integration",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "input": "슬랙과 이메일 알림 연동을 지원합니다",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "연동 기능 안내"
+  },
+  {
+    "id": "food-blood-sugar-tea",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "input": "하루 한 잔으로 혈당 관리에 도움을 주는 보리차",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["HEALTH_FUNCTIONAL_FOOD_CONFUSION"],
+    "notes": "일반식품에 기능성 연결"
+  },
+  {
+    "id": "food-immunity-drink",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "input": "면역력 개선을 위한 일반식품 음료",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["HEALTH_FUNCTIONAL_FOOD_CONFUSION"],
+    "notes": "건강기능식품 오인"
+  },
+  {
+    "id": "food-cold-prevention-tea",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "input": "감기 예방에 좋은 따뜻한 차",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["DISEASE_PREVENTION_TREATMENT"],
+    "notes": "질병 예방 표현"
+  },
+  {
+    "id": "food-diabetes-treatment-powder",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "input": "당뇨 치료에 도움을 주는 일반식품 분말",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["DISEASE_PREVENTION_TREATMENT"],
+    "notes": "질병 치료 표현"
+  },
+  {
+    "id": "food-atopy-snack",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "input": "아토피 개선에 좋은 어린이 과자",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["DISEASE_PREVENTION_TREATMENT"],
+    "notes": "질병명 직접 연결"
+  },
+  {
+    "id": "food-enzyme-anti-inflammatory",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "input": "항염 효과가 있는 효소식품",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["PHARMACEUTICAL_CONFUSION"],
+    "notes": "의약품 오인 표현"
+  },
+  {
+    "id": "food-absolute-fat-reduction",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "input": "100% 체지방 감소 효과를 보장하는 단백질 식품",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["FALSE_EXAGGERATED_CLAIM"],
+    "notes": "절대적 효과 보장"
+  },
+  {
+    "id": "food-joint-pain-tea",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "input": "관절 통증 완화에 좋은 일반식품 차",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["HEALTH_FUNCTIONAL_FOOD_CONFUSION"],
+    "notes": "기능성 오인"
+  },
+  {
+    "id": "food-consumer-testimonial",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "구매 후기: 이 일반식품 차를 마시고 몸이 훨씬 좋아졌어요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["CONSUMER_EXPERIENCE_GENERALIZATION"],
+    "notes": "체험기 일반화"
+  },
+  {
+    "id": "food-before-after",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "일반식품 음료 섭취 전후 사진을 확인하세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["BEFORE_AFTER_RISK"],
+    "notes": "전후 비교"
+  },
+  {
+    "id": "food-expert-endorsement",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "의사가 추천한 일반식품 차",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["EXPERT_ENDORSEMENT_RISK"],
+    "notes": "전문가 추천"
+  },
+  {
+    "id": "food-diabetes-warning",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "일반식품 보리차입니다. 당뇨 환자는 섭취 전 전문가와 상담하세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "질병명이 주의사항 문맥에 등장"
+  },
+  {
+    "id": "food-negated-expert",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "이 일반식품 차는 의사가 추천하지 않았습니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "부정문"
+  },
+  {
+    "id": "food-negated-before-after",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "일반식품 음료 광고에 전후 사진을 사용하지 않습니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "부정문"
+  },
+  {
+    "id": "food-barley-tea-taste",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "input": "구수하게 즐기는 무가당 보리차",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "맛 표현"
+  },
+  {
+    "id": "food-coffee-aroma",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "input": "은은한 향과 깔끔한 맛의 원두커피",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "관능 표현"
+  },
+  {
+    "id": "food-ingredient-list",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "input": "원재료: 볶은 보리 100%",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "원재료 표시"
+  },
+  {
+    "id": "food-calorie-information",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "input": "영양정보: 1회 제공량당 열량 25kcal",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "영양정보"
+  },
+  {
+    "id": "food-brewing-instruction",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "input": "티백을 따뜻한 물에 3분간 우려 드세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "섭취 방법"
+  },
+  {
+    "id": "food-daily-beverage",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "input": "매일 편하게 즐기는 곡물 음료",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "일상 음용 표현"
+  },
+  {
+    "id": "hff-disease-prevention",
+    "pack": "HEALTH_FUNCTIONAL_FOOD",
+    "group": "FLAG",
+    "input": "건강기능식품으로 감기 예방과 면역력 강화",
+    "categoryHint": "HEALTH_FUNCTIONAL_FOOD",
+    "productIdentity": { "productName": "면역 데모 제품" },
+    "expectedCategory": "HEALTH_FUNCTIONAL_FOOD",
+    "expectedIssueTypes": ["DISEASE_PREVENTION_TREATMENT"],
+    "notes": "건기식의 질병 예방 표현"
+  },
+  {
+    "id": "hff-unverified-function",
+    "pack": "HEALTH_FUNCTIONAL_FOOD",
+    "group": "FLAG",
+    "input": "건강기능식품으로 혈당 조절과 체지방 감소에 도움",
+    "categoryHint": "HEALTH_FUNCTIONAL_FOOD",
+    "productIdentity": { "productName": "혈당 데모 제품" },
+    "expectedCategory": "HEALTH_FUNCTIONAL_FOOD",
+    "expectedIssueTypes": ["PRODUCT_AUTHORIZATION_NOT_VERIFIED"],
+    "notes": "기능성 내용이 인정 범위와 대조되지 않음"
+  },
+  {
+    "id": "pharma-rx-public-ad",
+    "pack": "PHARMACEUTICAL",
+    "group": "FLAG",
+    "input": "전문의약품으로 두통을 완치합니다.",
+    "categoryHint": "PHARMACEUTICAL",
+    "productIdentity": { "productName": "예시 전문의약품" },
+    "expectedCategory": "PHARMACEUTICAL",
+    "expectedIssueTypes": ["PRODUCT_AUTHORIZATION_NOT_VERIFIED"],
+    "notes": "허가 범위 외 효능"
+  },
+  {
+    "id": "pharma-absolute-safety",
+    "pack": "PHARMACEUTICAL",
+    "group": "FLAG",
+    "input": "일반의약품이며 부작용이 전혀 없습니다.",
+    "categoryHint": "PHARMACEUTICAL",
+    "productIdentity": { "productName": "예시 일반의약품" },
+    "expectedCategory": "PHARMACEUTICAL",
+    "expectedIssueTypes": ["ABSOLUTE_SAFETY_OR_EFFECT_CLAIM"],
+    "notes": "절대적 안전성"
+  },
+  {
+    "id": "device-outside-permit",
+    "pack": "MEDICAL_DEVICE",
+    "group": "FLAG",
+    "input": "의료기기로 디스크를 완치합니다.",
+    "categoryHint": "MEDICAL_DEVICE",
+    "productIdentity": { "productName": "예시 의료기기" },
+    "expectedCategory": "MEDICAL_DEVICE",
+    "expectedIssueTypes": ["PRODUCT_AUTHORIZATION_NOT_VERIFIED"],
+    "notes": "허가 범위 외 효능"
+  },
+  {
+    "id": "device-expert-guarantee",
+    "pack": "MEDICAL_DEVICE",
+    "group": "FLAG",
+    "input": "의료기기 전문의가 효과를 보증합니다.",
+    "categoryHint": "MEDICAL_DEVICE",
+    "productIdentity": { "productName": "예시 의료기기" },
+    "expectedCategory": "MEDICAL_DEVICE",
+    "expectedIssueTypes": ["EXPERT_ENDORSEMENT_RISK"],
+    "notes": "전문가 보증"
+  },
+  {
+    "id": "cosmetic-medicinal",
+    "pack": "COSMETIC",
+    "group": "FLAG",
+    "input": "화장품으로 여드름을 치료합니다.",
+    "categoryHint": "COSMETIC",
+    "productIdentity": { "productName": "예시 화장품" },
+    "expectedCategory": "COSMETIC",
+    "expectedIssueTypes": ["PHARMACEUTICAL_MISRECOGNITION"],
+    "notes": "의약품 오인"
+  },
+  {
+    "id": "cosmetic-functional-scope",
+    "pack": "COSMETIC",
+    "group": "FLAG",
+    "input": "기능성 화장품으로 미백 개선에 도움을 줍니다.",
+    "categoryHint": "COSMETIC",
+    "productIdentity": { "productName": "예시 기능성 화장품" },
+    "expectedCategory": "COSMETIC",
+    "expectedIssueTypes": ["PRODUCT_AUTHORIZATION_NOT_VERIFIED"],
+    "notes": "기능성 범위 미확인"
+  }
+]
