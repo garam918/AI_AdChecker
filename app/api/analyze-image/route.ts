@@ -1,14 +1,8 @@
 import { z } from 'zod';
 import { AnalysisAudienceSchema } from '@/src/compliance/core/schemas';
 import { ProductIdentitySchema } from '@/src/compliance/product-authorization/schemas';
-import {
-  ImageComplianceScanService,
-  MAX_IMAGE_BYTES,
-} from '@/src/content/image/image-compliance-scan-service';
-import {
-  contentComplianceScanService,
-  geminiContentProvider,
-} from '@/src/server/regulatory-runtime';
+import { MAX_IMAGE_BYTES } from '@/src/content/image/image-compliance-scan-service';
+import { createProductionAnalysis } from '@/src/server/production-analysis';
 import {
   analysisResponse,
   AnalysisInputError,
@@ -28,11 +22,6 @@ const OptionsSchema = z.object({
     .optional(),
   productIdentity: ProductIdentitySchema.optional(),
 });
-
-const service = new ImageComplianceScanService(
-  geminiContentProvider,
-  contentComplianceScanService,
-);
 
 export async function POST(request: Request) {
   try {
@@ -64,8 +53,11 @@ export async function POST(request: Request) {
     const options = OptionsSchema.safeParse(rawOptions);
     if (!options.success)
       throw new AnalysisInputError('제품 유형과 검사 목적을 확인해 주세요.');
+    const service = createProductionAnalysis();
     return analysisResponse(request, async (progress) => ({
-      ...(await service.analyze(file, options.data, progress)),
+      ...(await service.measure(() =>
+        service.image.analyze(file, options.data, progress),
+      )),
       audience: options.data.audience,
     }));
   } catch (error) {
