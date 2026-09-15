@@ -1388,6 +1388,7 @@ function ScanResult({
   const isLow = result.overallRisk === 'LOW';
   const isWeb = result.inputType === 'URL' && Boolean(result.webContent);
   const isBusiness = result.audience === 'BUSINESS';
+  const { keyIssues, otherIssues } = splitKeyIssues(result);
   return (
     <div className="space-y-6">
       {result.imageContent && (
@@ -1468,7 +1469,16 @@ function ScanResult({
               Detected Category · {formatCategory(result.detectedCategory)}
             </Badge>
             {result.analysisModel && (
-              <Badge variant="outline">Gemini 3.8 Flash 분석</Badge>
+              <Badge
+                variant="outline"
+                className={
+                  result.metrics?.mode === 'offline'
+                    ? 'border-amber-200 bg-amber-50 text-amber-800'
+                    : 'border-slate-200 bg-white text-slate-700'
+                }
+              >
+                {formatAnalysisModel(result)}
+              </Badge>
             )}
             {result.activePacks.map((packId) => (
               <Badge
@@ -1511,11 +1521,16 @@ function ScanResult({
           </Button>
         </div>
       </section>
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <SummaryMetric
           label="Detected"
           value={formatContentType(result.detectedContentType)}
           icon={ScanText}
+        />
+        <SummaryMetric
+          label="Elapsed"
+          value={formatElapsed(result)}
+          icon={Clock3}
         />
         <SummaryMetric
           label="Category"
@@ -1538,6 +1553,7 @@ function ScanResult({
           icon={Clipboard}
         />
       </section>
+      {result.metrics && <ValueMetricNote result={result} />}
       {result.notices.length > 0 && (
         <div className="space-y-2">
           {result.notices.map((notice) => (
@@ -1602,45 +1618,53 @@ function ScanResult({
             <section>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-900">
-                  발견된 위험
+                  핵심 이슈
                 </h2>
                 <span className="text-sm text-slate-500">
-                  {result.issues.length}개
+                  우선 확인 {keyIssues.length}개 · 전체 {result.issues.length}개
                 </span>
               </div>
               <div className="space-y-3">
-                {result.issues.map((issue, index) => (
-                  <button
+                {keyIssues.map((issue, index) => (
+                  <IssueListItem
                     key={issue.id}
-                    type="button"
-                    onClick={() => onSelectIssue(issue)}
-                    className={`flex w-full items-start gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition ${activeIssue?.id === issue.id ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200 hover:border-slate-300'}`}
-                  >
-                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-red-50 text-sm font-semibold text-red-700">
-                      {index + 1}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="mb-2 flex flex-wrap items-center gap-2">
-                        <RiskBadge severity={issue.severity} compact />
-                        <span className="font-semibold text-slate-900">
-                          “{issue.originalText}”
-                        </span>
-                      </span>
-                      <span className="block line-clamp-2 text-sm leading-6 text-slate-500">
-                        {issue.explanation}
-                      </span>
-                      {isBusiness && (
-                        <span className="mt-2 block text-xs font-medium text-violet-700">
-                          검토 기준 ·{' '}
-                          {formatPrimaryLegalBasis(issue, result) ??
-                            '공식 근거 추가 확인 필요'}
-                        </span>
-                      )}
-                    </span>
-                    <ChevronRight className="mt-2 size-4 shrink-0 text-slate-400" />
-                  </button>
+                    issue={issue}
+                    index={index}
+                    active={activeIssue?.id === issue.id}
+                    legalBasis={
+                      isBusiness
+                        ? (formatPrimaryLegalBasis(issue, result) ??
+                          '공식 근거 추가 확인 필요')
+                        : null
+                    }
+                    onSelect={() => onSelectIssue(issue)}
+                  />
                 ))}
               </div>
+              {otherIssues.length > 0 && (
+                <details className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4">
+                  <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                    기타 검토 항목 {otherIssues.length}개 보기
+                  </summary>
+                  <div className="mt-3 space-y-3">
+                    {otherIssues.map((issue, index) => (
+                      <IssueListItem
+                        key={issue.id}
+                        issue={issue}
+                        index={keyIssues.length + index}
+                        active={activeIssue?.id === issue.id}
+                        legalBasis={
+                          isBusiness
+                            ? (formatPrimaryLegalBasis(issue, result) ??
+                              '공식 근거 추가 확인 필요')
+                            : null
+                        }
+                        onSelect={() => onSelectIssue(issue)}
+                      />
+                    ))}
+                  </div>
+                </details>
+              )}
             </section>
             <RewriteDraft
               value={draftText}
@@ -1669,6 +1693,88 @@ function ScanResult({
           ? '표시된 법령은 잠재적 검토 기준입니다. 개별 광고의 위법 여부를 확정하는 법률 자문이나 공식 심의를 대체하지 않습니다.'
           : '본 결과는 공식 심의나 법률 자문을 대체하지 않는 사전 점검 정보입니다.'}
       </p>
+    </div>
+  );
+}
+
+function IssueListItem({
+  issue,
+  index,
+  active,
+  legalBasis,
+  onSelect,
+}: {
+  issue: Issue;
+  index: number;
+  active: boolean;
+  legalBasis: string | null;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`flex w-full items-start gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition ${active ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200 hover:border-slate-300'}`}
+    >
+      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-red-50 text-sm font-semibold text-red-700">
+        {index + 1}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="mb-2 flex flex-wrap items-center gap-2">
+          <RiskBadge severity={issue.severity} compact />
+          <span className="font-semibold text-slate-900">
+            “{issue.originalText}”
+          </span>
+        </span>
+        <span className="block line-clamp-2 text-sm leading-6 text-slate-500">
+          {issue.explanation}
+        </span>
+        {legalBasis && (
+          <span className="mt-2 block text-xs font-medium text-violet-700">
+            검토 기준 · {legalBasis}
+          </span>
+        )}
+      </span>
+      <ChevronRight className="mt-2 size-4 shrink-0 text-slate-400" />
+    </button>
+  );
+}
+
+// Manual pre-publication review time is an assumption until measured with
+// real users; the UI must never present it as a measured fact.
+const MANUAL_REVIEW_BASELINE_MINUTES = 30;
+
+function ValueMetricNote({ result }: { result: ScanAnalysisResult }) {
+  const metrics = result.metrics;
+  if (!metrics) return null;
+  const seconds = metrics.elapsedMs / 1000;
+  const speedup =
+    metrics.elapsedMs > 0
+      ? Math.round((MANUAL_REVIEW_BASELINE_MINUTES * 60) / seconds)
+      : null;
+  const providers = metrics.attempts.map(
+    (attempt) =>
+      `${attempt.provider}/${attempt.model} ${attempt.outcome === 'success' ? '성공' : `실패(${attempt.code ?? 'error'})`} ${(attempt.elapsedMs / 1000).toFixed(1)}초`,
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs leading-5 text-slate-600">
+      <span className="inline-flex items-center gap-1.5 font-medium text-slate-800">
+        <Gauge className="size-3.5" />
+        이번 분석 {formatElapsed(result)}
+      </span>
+      <span>
+        수동 사전검수 기준선 {MANUAL_REVIEW_BASELINE_MINUTES}분(가정) 대비{' '}
+        {speedup ? `약 ${speedup.toLocaleString()}배` : '비교 불가'}
+      </span>
+      {metrics.mode === 'offline' ? (
+        <span className="text-amber-700">
+          AI 제공자 실패 → 규칙·규정 검색만 사용
+        </span>
+      ) : (
+        providers.length > 0 && (
+          <span className="text-slate-500">{providers.join(' → ')}</span>
+        )
+      )}
     </div>
   );
 }
@@ -2676,6 +2782,36 @@ function getAuthorizationDisplay(
   return category in displays
     ? displays[category as keyof typeof displays]
     : displays.HEALTH_FUNCTIONAL_FOOD;
+}
+
+function splitKeyIssues(result: ScanAnalysisResult) {
+  const ids =
+    result.keyIssueIds.length > 0
+      ? result.keyIssueIds
+      : result.issues.slice(0, 3).map((issue) => issue.id);
+  const keyIssues = ids
+    .map((id) => result.issues.find((issue) => issue.id === id))
+    .filter((issue): issue is Issue => Boolean(issue));
+  const otherIssues = result.issues.filter((issue) => !ids.includes(issue.id));
+  return { keyIssues, otherIssues };
+}
+
+function formatAnalysisModel(result: ScanAnalysisResult) {
+  const model = result.analysisModel ?? '';
+  if (result.metrics?.mode === 'offline' || model === 'rules-only')
+    return '규칙 기반 결과 · AI 미사용';
+  if (model.includes(' + ')) return `AI 분석 · ${model} (대체 제공자 포함)`;
+  if (model.startsWith('openai/'))
+    return `AI 분석 · ${model.slice('openai/'.length)} (대체 제공자)`;
+  if (model.startsWith('vertex/'))
+    return `AI 분석 · Vertex AI ${model.slice('vertex/'.length)}`;
+  return `AI 분석 · ${model}`;
+}
+
+function formatElapsed(result: ScanAnalysisResult) {
+  const ms = result.metrics?.elapsedMs;
+  if (ms === undefined) return '—';
+  return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)}초`;
 }
 
 function createExcerpt(text: string) {
