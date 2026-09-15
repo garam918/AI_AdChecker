@@ -80,6 +80,15 @@ export const ClaimSchema = z.object({
   contextRole: ClaimContextRoleSchema.optional(),
 });
 
+export const RewriteOptionSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(['REMOVE', 'REPLACE', 'CONDITIONAL', 'MANUAL_REVIEW']),
+  text: z.string(),
+  label: z.string().min(1),
+  explanation: z.string().min(1),
+});
+export type RewriteOption = z.infer<typeof RewriteOptionSchema>;
+
 export const IssueSchema = z.object({
   id: z.string().min(1),
   scanId: z.string().min(1),
@@ -94,6 +103,7 @@ export const IssueSchema = z.object({
   citationStatus: CitationStatusSchema.default('REVIEW_REQUIRED'),
   uncertaintyReason: z.string().min(1).nullable().default(null),
   suggestedRewrites: z.array(z.string().min(1)).min(1),
+  rewriteOptions: z.array(RewriteOptionSchema).optional(),
   requiredEvidence: z.array(z.string().min(1)),
   resolutionType: ResolutionTypeSchema.default('HUMAN_REVIEW'),
   similarEnforcementCaseIds: z.array(z.string().min(1)).default([]),
@@ -135,6 +145,8 @@ export const AnalysisMetricsSchema = z.object({
   elapsedMs: z.number().nonnegative(),
   mode: z.enum(['live', 'offline']),
   attempts: z.array(AnalysisAttemptSchema),
+  fallbackConfigured: z.boolean().optional(),
+  aiBudgetMs: z.number().positive().optional(),
 });
 
 export const ScanSchema = z.object({
@@ -155,8 +167,8 @@ export const ScanAnalysisResultSchema = z
   .object({
     inputType: z.enum(['TEXT', 'URL', 'IMAGE']).default('TEXT'),
     analysisModel: z.string().min(1).optional(),
-    // Wall-clock and provider trace for value measurement. `offline` means
-    // every AI provider failed and the deterministic pipeline produced the result.
+    // `offline` identifies the final rule-based risk analysis. Earlier steps
+    // (e.g. image extraction) may still have succeeded with AI; inspect attempts.
     metrics: AnalysisMetricsSchema.optional(),
     // Issue ids the user should read first, in display order (at most 3).
     keyIssueIds: z.array(z.string().min(1)).default([]),
