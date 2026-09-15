@@ -157,4 +157,86 @@ describe('ResilientAIClient', () => {
       code: 'AI_ALL_PROVIDERS_FAILED',
     });
   });
+
+  it('uses strict structured output with required fields on the fallback', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response('', { status: 503 }))
+      .mockResolvedValueOnce(openaiResponse('{"answer":"ok"}'));
+    const client = new ResilientAIClient(env, fetcher);
+    await client.generate(schema, '', {});
+    const request = JSON.parse(fetcher.mock.calls[1][1]?.body as string);
+    expect(request.text.format).toMatchObject({
+      strict: true,
+      schema: { required: ['answer'], additionalProperties: false },
+    });
+    expect(request.store).toBe(false);
+  });
+
+  it('preserves fallback refusals as incomplete instead of a generic provider outage', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response('', { status: 500 }))
+      .mockResolvedValueOnce(
+        Response.json({
+          status: 'completed',
+          output: [
+            {
+              type: 'message',
+              content: [{ type: 'refusal', refusal: 'refused' }],
+            },
+          ],
+        }),
+      );
+    await expect(
+      new ResilientAIClient(env, fetcher).generate(schema, '', {}),
+    ).rejects.toMatchObject({ code: 'AI_INCOMPLETE' });
+  });
+
+  it('does not reset the overall deadline between generation steps', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(vertexResponse('{"answer":"ok"}'));
+      const client = new ResilientAIClient(env, fetcher, 1000);
+      await client.generate(schema, '', {});
+      vi.setSystemTime(Date.now() + 1001);
+      await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+        code: 'AI_BUDGET_EXCEEDED',
+      });
+      expect(fetcher).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('bounds a hanging primary request by the remaining budget', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi.fn<typeof fetch>(
+        (_url, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener(
+              'abort',
+              () => reject(new DOMException('aborted', 'AbortError')),
+              { once: true },
+            );
+          }),
+      );
+      const client = new ResilientAIClient(
+        { VERTEX_API_KEY: 'test-only' },
+        fetcher,
+        1000,
+      );
+      const failure = expect(
+        client.generate(schema, '', {}),
+      ).rejects.toMatchObject({ code: 'AI_TIMEOUT' });
+      await vi.advanceTimersByTimeAsync(1001);
+      await failure;
+      expect(client.fallbackConfigured).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
