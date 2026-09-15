@@ -4,6 +4,7 @@ import type {
 } from './compliance-analyzer';
 import { consolidateIssues, rankIssues, selectKeyIssueIds } from './key-issues';
 import { mergeClaims } from './merge-claims';
+import { buildRewriteOptions } from './rewrite-options';
 import type {
   CompliancePackDefinition,
   PackContentInput,
@@ -228,7 +229,10 @@ export class ContentComplianceScanService implements ComplianceAnalyzer {
       detectedCategory,
       overallRisk,
       claims: results.flatMap((result) => result.claims),
-      issues,
+      issues: issues.map((issue) => ({
+        ...issue,
+        rewriteOptions: buildRewriteOptions(issue),
+      })),
       keyIssueIds: selectKeyIssueIds(issues),
       sources: uniqueSources,
       enforcementCases: uniqueCases,
