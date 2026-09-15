@@ -22,15 +22,13 @@ const emptyResult = () =>
 describe('single-image analysis', () => {
   it('passes the image to vision and preserves OCR and visual context in the compliance input', async () => {
     const vision = {
-      analyzeImage: vi
-        .fn()
-        .mockResolvedValue({
-          extractedText: '업무 시간을 70% 줄입니다',
-          visualObservations: [
-            '무료 체험 버튼 아래에 작은 조건 문구가 보입니다.',
-          ],
-          incomplete: false,
-        }),
+      analyzeImage: vi.fn().mockResolvedValue({
+        extractedText: '업무 시간을 70% 줄입니다',
+        visualObservations: [
+          '무료 체험 버튼 아래에 작은 조건 문구가 보입니다.',
+        ],
+        incomplete: false,
+      }),
     };
     const compliance = {
       analyzeContent: vi.fn().mockResolvedValue(emptyResult()),
@@ -56,13 +54,11 @@ describe('single-image analysis', () => {
   it('marks unreadable/cropped content as partial review, not a clean result', async () => {
     const service = new ImageComplianceScanService(
       {
-        analyzeImage: vi
-          .fn()
-          .mockResolvedValue({
-            extractedText: '일부 문구',
-            visualObservations: [],
-            incomplete: true,
-          }),
+        analyzeImage: vi.fn().mockResolvedValue({
+          extractedText: '일부 문구',
+          visualObservations: [],
+          incomplete: true,
+        }),
       },
       { analyzeContent: vi.fn().mockResolvedValue(emptyResult()) },
     );
@@ -77,13 +73,11 @@ describe('single-image analysis', () => {
     const compliance = { analyzeContent: vi.fn() };
     const service = new ImageComplianceScanService(
       {
-        analyzeImage: vi
-          .fn()
-          .mockResolvedValue({
-            extractedText: '',
-            visualObservations: [],
-            incomplete: true,
-          }),
+        analyzeImage: vi.fn().mockResolvedValue({
+          extractedText: '',
+          visualObservations: [],
+          incomplete: true,
+        }),
       },
       compliance,
     );
