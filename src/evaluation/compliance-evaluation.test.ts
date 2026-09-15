@@ -1,4 +1,5 @@
 import rawCases from '@/evals/end-to-end/cases.json';
+import challengeCases from '@/evals/challenge/cases.json';
 import { describe, expect, it } from 'vitest';
 
 import { createContentComplianceScanService } from '@/src/server/regulatory-runtime';
@@ -33,6 +34,50 @@ describe('end-to-end evaluation dataset', () => {
     cases
       .filter((item) => item.group === 'SAFE')
       .forEach((item) => expect(item.expectedIssueTypes).toEqual([]));
+  });
+
+  it('keeps a separate synthetic challenge set without relabeling it as expert ground truth', () => {
+    const challenge = EvaluationDatasetSchema.parse(challengeCases);
+    expect(challenge).toHaveLength(40);
+    expect(challenge.filter((item) => item.group === 'SAFE')).toHaveLength(16);
+    expect(
+      challenge.every((item) => !cases.some((old) => old.input === item.input)),
+    ).toBe(true);
+  });
+
+  it('does not count SAFE execution errors as successful negatives or server time as user savings', async () => {
+    const safe = cases.find((item) => item.group === 'SAFE')!;
+    const failed = await evaluateCase(async () => {
+      throw new Error('service unavailable');
+    }, safe);
+    const result = summarize([failed]);
+    expect(result.completion).toEqual({ hit: 0, total: 1, rate: 0 });
+    expect(result.falsePositives.total).toBe(0);
+    expect(result.safeErrors).toEqual([safe.id]);
+    expect(result.value.speedup).toBeNull();
+  });
+
+  it('measures displayed key issues separately from all findings and preserves review artifacts', async () => {
+    const outcome = await evaluateCase(
+      (input) => service.analyzeContent(input),
+      cases[0]!,
+    );
+    expect(outcome.analysis?.issues.length).toBeGreaterThan(0);
+    expect(outcome.humanReview?.status).toBe('PENDING');
+    const result = summarize([{ ...outcome, issueCount: 9, keyIssueCount: 3 }]);
+    expect(result.keyIssues.withinThree.rate).toBe(1);
+    expect(result.keyIssues.maxIssues).toBe(9);
+    expect(
+      renderMarkdown(result, [outcome], {
+        evaluatedAt: 'test',
+        mode: 'live',
+        model: null,
+        dataset: 'challenge',
+        datasetSha256: 'test',
+        completed: false,
+        expectedCases: 40,
+      }),
+    ).toContain('최종 수치 아님');
   });
 
   it('measures detection, source linking and false positives for the offline pipeline', async () => {
