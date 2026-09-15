@@ -64,6 +64,15 @@ export type CaseOutcome = {
   mode: 'live' | 'offline' | 'rules';
   analysisModel: string | null;
   error: string | null;
+  usedFallback?: boolean;
+  analysis?: ScanAnalysisResult;
+  humanReview?: {
+    status: 'PENDING';
+    sourceRelevance: null;
+    rewriteTruthfulness: null;
+    missedClaims: null;
+    reviewer: null;
+  };
 };
 
 export type Scanner = (input: PackContentInput) => Promise<ScanAnalysisResult>;
@@ -130,6 +139,17 @@ export async function evaluateCase(
       mode: result.metrics?.mode ?? 'rules',
       analysisModel: result.analysisModel ?? null,
       error: null,
+      usedFallback: result.notices.some(
+        (notice) => notice.code === 'AI_UNAVAILABLE_RULES_ONLY',
+      ),
+      analysis: result,
+      humanReview: {
+        status: 'PENDING',
+        sourceRelevance: null,
+        rewriteTruthfulness: null,
+        missedClaims: null,
+        reviewer: null,
+      },
     };
   } catch (error) {
     return {
@@ -157,6 +177,11 @@ export type Rate = { hit: number; total: number; rate: number | null };
 export type EvaluationSummary = {
   cases: number;
   errors: number;
+  completion: Rate;
+  aiCompletion: Rate;
+  fallbackIds: string[];
+  reviewRequiredIds: string[];
+  safeErrors: string[];
   categoryAccuracy: Rate;
   /** FLAG cases where every expected issue type was raised. */
   detection: Rate;
@@ -182,7 +207,7 @@ export type EvaluationSummary = {
   value: {
     baselineMinutes: number;
     medianSeconds: number | null;
-    /** Baseline ÷ median tool time. Baseline is an assumption until measured. */
+    /** Deprecated: never infer user time savings from a server-time benchmark. */
     speedup: number | null;
     baselineIsAssumption: true;
   };
@@ -196,6 +221,7 @@ export function summarize(
   const baselineMinutes = options.baselineMinutes ?? 30;
   const flagged = outcomes.filter((item) => item.group === 'FLAG');
   const safe = outcomes.filter((item) => item.group === 'SAFE');
+  const evaluatedSafe = safe.filter((item) => item.error === null);
   const detected = flagged.filter((item) => item.detected === true);
   const falsePositives = safe.filter((item) => item.falsePositive === true);
   const context = outcomes.filter((item) => item.contextDependent);
@@ -207,6 +233,20 @@ export function summarize(
   return {
     cases: outcomes.length,
     errors: outcomes.filter((item) => item.error !== null).length,
+    completion: rate(withIssues.length, outcomes.length),
+    aiCompletion: rate(
+      withIssues.filter((item) => item.mode === 'live').length,
+      outcomes.length,
+    ),
+    fallbackIds: outcomes
+      .filter((item) => item.usedFallback)
+      .map((item) => item.id),
+    reviewRequiredIds: outcomes
+      .filter((item) => item.overallRisk === 'REVIEW_REQUIRED')
+      .map((item) => item.id),
+    safeErrors: safe
+      .filter((item) => item.error !== null)
+      .map((item) => item.id),
     categoryAccuracy: rate(
       outcomes.filter((item) => item.categoryMatch).length,
       outcomes.length,
@@ -221,7 +261,7 @@ export function summarize(
       totalIssues,
     ),
     falsePositives: {
-      ...rate(falsePositives.length, safe.length),
+      ...rate(falsePositives.length, evaluatedSafe.length),
       ids: falsePositives.map((item) => item.id),
     },
     contextDependent: {
@@ -231,7 +271,8 @@ export function summarize(
       ),
       falsePositives: rate(
         context.filter((item) => item.falsePositive === true).length,
-        context.filter((item) => item.group === 'SAFE').length,
+        context.filter((item) => item.group === 'SAFE' && item.error === null)
+          .length,
       ),
     },
     misses: flagged
@@ -242,8 +283,13 @@ export function summarize(
         withIssues.length > 0 ? totalIssues / withIssues.length : null,
       maxIssues: Math.max(0, ...outcomes.map((item) => item.issueCount)),
       withinThree: rate(
-        withIssues.filter((item) => item.issueCount <= 3).length,
-        withIssues.length,
+        withIssues.filter(
+          (item) =>
+            item.issueCount > 0 &&
+            item.keyIssueCount > 0 &&
+            item.keyIssueCount <= 3,
+        ).length,
+        withIssues.filter((item) => item.issueCount > 0).length,
       ),
     },
     latency: {
@@ -258,16 +304,13 @@ export function summarize(
     value: {
       baselineMinutes,
       medianSeconds: medianMs === null ? null : medianMs / 1000,
-      speedup:
-        medianMs === null || medianMs === 0
-          ? null
-          : (baselineMinutes * 60_000) / medianMs,
+      speedup: null,
       baselineIsAssumption: true,
     },
     byPack: Object.fromEntries(
       [...new Set(outcomes.map((item) => item.pack))].map((pack) => {
         const packFlagged = flagged.filter((item) => item.pack === pack);
-        const packSafe = safe.filter((item) => item.pack === pack);
+        const packSafe = evaluatedSafe.filter((item) => item.pack === pack);
         return [
           pack,
           {
@@ -289,7 +332,15 @@ export function summarize(
 export function renderMarkdown(
   summary: EvaluationSummary,
   outcomes: CaseOutcome[],
-  meta: { evaluatedAt: string; mode: string; model: string | null },
+  meta: {
+    evaluatedAt: string;
+    mode: string;
+    model: string | null;
+    dataset?: string;
+    datasetSha256?: string;
+    completed?: boolean;
+    expectedCases?: number;
+  },
 ) {
   const pct = (value: Rate) =>
     value.rate === null
@@ -303,26 +354,44 @@ export function renderMarkdown(
     `- 실행 시각: ${meta.evaluatedAt}`,
     `- 실행 모드: ${meta.mode}${meta.model ? ` · 모델: ${meta.model}` : ''}`,
     `- 사례 수: ${summary.cases} (오류 ${summary.errors})`,
+    ...(meta.dataset
+      ? [
+          `- 데이터셋: ${meta.dataset} · SHA-256: ${meta.datasetSha256}`,
+          `- 실행 상태: ${meta.completed ? '완료' : '진행 중 — 최종 수치 아님'} (${summary.cases}/${meta.expectedCases})`,
+        ]
+      : []),
     ``,
     `## 핵심 지표`,
     ``,
     `| 지표 | 값 |`,
     `| --- | --- |`,
+    `| 결과 반환율 (규칙 대체 포함) | ${pct(summary.completion)} |`,
+    `| 최종 AI 분석 완료율 | ${meta.mode.includes('live') ? pct(summary.aiCompletion) : '미실행 — 규칙 평가'} |`,
+    `| 규칙 대체 / 추가 검토 결과 | ${summary.fallbackIds.length} / ${summary.reviewRequiredIds.length} |`,
     `| 분류 정확도 | ${pct(summary.categoryAccuracy)} |`,
     `| 탐지 성공률 (FLAG 사례에서 기대 이슈 유형 모두 탐지) | ${pct(summary.detection)} |`,
     `| 출처 연결률 (탐지된 이슈가 모두 검증된 조항 인용) | ${pct(summary.sourceLink)} |`,
     `| 검증 인용 이슈 비율 (전체 이슈 기준) | ${pct(summary.verifiedIssueShare)} |`,
-    `| 오탐률 (SAFE 사례에서 이슈 발생) | ${pct(summary.falsePositives)} |`,
+    `| 오탐률 (결과가 반환된 SAFE 사례에서 이슈 발생) | ${pct(summary.falsePositives)} |`,
+    `| SAFE 분석 오류 (오탐률 분모에서 제외·별도 실패) | ${summary.safeErrors.length} |`,
     `| 문맥 의존 사례 탐지 / 오탐 | ${pct(summary.contextDependent.detection)} / ${pct(summary.contextDependent.falsePositives)} |`,
     `| 결과당 평균 이슈 수 / 최대 | ${summary.keyIssues.meanIssues?.toFixed(2) ?? 'n/a'} / ${summary.keyIssues.maxIssues} |`,
-    `| 3개 이하 핵심 이슈로 정리된 결과 | ${pct(summary.keyIssues.withinThree)} |`,
+    `| 이슈 있는 결과 중 핵심 항목 1~3개를 제시한 비율 | ${pct(summary.keyIssues.withinThree)} |`,
     `| 지연 시간 평균 / 중앙값 / p95 | ${ms(summary.latency.meanMs)} / ${ms(summary.latency.medianMs)} / ${ms(summary.latency.p95Ms)} |`,
     ``,
-    `## 가치 검증 (측정값 + 가정)`,
+    `## 처리 시간과 사용자 가치의 구분`,
     ``,
     `- 도구 분석 중앙값: ${summary.value.medianSeconds === null ? 'n/a' : `${summary.value.medianSeconds.toFixed(2)}초`}`,
-    `- 수동 사전검수 기준선: ${summary.value.baselineMinutes}분 — **가정값**입니다. 실제 사용자 시간 측정으로 대체해야 합니다 (docs/value-metrics.md 참고).`,
-    `- 기준선 대비 속도: ${summary.value.speedup === null ? 'n/a' : `약 ${Math.round(summary.value.speedup).toLocaleString()}배`}`,
+    `- 이전 기준선 ${summary.value.baselineMinutes}분은 **가정값**이며 절감 배수를 계산하지 않습니다.`,
+    `- 서버 처리 시간은 사용자의 검토·수정 완료 시간이 아닙니다. 실제 사용자 비교 실험이 필요합니다 (docs/value-metrics.md).`,
+    ``,
+    `## 사람이 확인해야 하는 품질`,
+    ``,
+    `- JSON의 각 analysis에는 전체 이슈·수정안·출처·호출 기록을 보존합니다. humanReview는 아직 PENDING입니다.`,
+    `- 출처 연결은 조항 존재·인용 검증이며, 해당 주장에 대한 출처 적합성·해석의 정확성은 별도 검토해야 합니다.`,
+    `- 수정안의 새로운 사실 추가, 누락된 주장, 정상 문구의 불필요한 지적을 검토하세요. 자동 구조 검증을 사람의 검토로 대체하지 않습니다.`,
+    `- AI 미완료 후 규칙 대체: ${summary.fallbackIds.join(', ') || '없음'}`,
+    `- 추가 검토 결과: ${summary.reviewRequiredIds.join(', ') || '없음'}`,
     ``,
     `## Pack별`,
     ``,
@@ -360,7 +429,7 @@ export function renderMarkdown(
         `| ${item.id} | ${item.group}${item.contextDependent ? '·ctx' : ''} | ${item.categoryMatch ? '✓' : '✗'} | ${flag(item.detected)} | ${flag(item.sourceLinked)} | ${item.falsePositive === null ? '-' : item.falsePositive ? '✗' : '✓'} | ${item.issueCount} | ${item.keyIssueCount} | ${item.overallRisk ?? 'ERR'} | ${item.elapsedMs} |`,
     ),
     ``,
-    `> 이 수치는 현재 규칙·검색 코퍼스와 선택된 ${summary.cases}개 사례에 대한 회귀 측정입니다. 법적 판단의 정확도나 실제 광고 모집단의 탐지율을 뜻하지 않습니다.`,
+    `> 이 수치는 선택된 ${summary.cases}개 내부 사례와 실행 모드에 한정된 측정입니다. 새 도전 사례도 독립적인 전문가 검증 데이터는 아닙니다. 법적 판단의 정확도나 실제 광고 모집단의 탐지율을 뜻하지 않습니다.`,
   ];
   return lines.join('\n');
 }
