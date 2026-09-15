@@ -27,6 +27,9 @@ export interface StructuredAIClient {
 }
 
 const DEFAULT_OPENAI_MODEL = 'gpt-4.1-mini';
+export const AI_REQUEST_BUDGET_MS = 65_000;
+const PRIMARY_CALL_TIMEOUT_MS = 35_000;
+const FALLBACK_CALL_TIMEOUT_MS = 25_000;
 
 /**
  * Primary Vertex AI Gemini call with an optional OpenAI fallback.
@@ -39,17 +42,20 @@ const DEFAULT_OPENAI_MODEL = 'gpt-4.1-mini';
 export class ResilientAIClient implements StructuredAIClient {
   readonly attempts: AIAttempt[] = [];
   private readonly vertex: GeminiClient;
+  private readonly deadline: number;
 
   constructor(
     private readonly env: VertexEnv = process.env,
     private readonly fetcher: typeof fetch = fetch,
+    budgetMs = AI_REQUEST_BUDGET_MS,
   ) {
-    // Keep the primary call short so the fallback still fits in one request.
+    this.deadline = Date.now() + budgetMs;
+    // One shared budget covers all calls, not a new full deadline per claim batch.
     this.vertex = new GeminiClient({
       env,
       fetch: fetcher,
       retries: 0,
-      timeoutMs: 25_000,
+      timeoutMs: PRIMARY_CALL_TIMEOUT_MS,
     });
   }
 
@@ -64,7 +70,7 @@ export class ResilientAIClient implements StructuredAIClient {
     return successful.join(' + ') || `vertex/${this.vertex.model}`;
   }
 
-  private get fallbackEnabled() {
+  get fallbackConfigured() {
     return (
       this.env.AI_FALLBACK_PROVIDER !== 'none' &&
       Boolean(this.env.OPENAI_API_KEY?.trim())
@@ -77,26 +83,38 @@ export class ResilientAIClient implements StructuredAIClient {
     data: unknown,
     options: GenerateOptions = {},
   ): Promise<T> {
+    const remaining = this.deadline - Date.now();
+    if (remaining <= 0)
+      throw new AIAnalysisError(
+        'AI_BUDGET_EXCEEDED',
+        'AI 분석 시간 한도에 도달했습니다. 내용을 나누어 검사해 주세요.',
+        504,
+      );
     const primaryStart = Date.now();
     try {
-      const result = await this.vertex.generate(
-        schema,
-        instructions,
-        data,
-        options,
-      );
+      const result = await this.vertex.generate(schema, instructions, data, {
+        ...options,
+        timeoutMs: Math.min(PRIMARY_CALL_TIMEOUT_MS, remaining),
+      });
       this.record('vertex', this.vertex.model, primaryStart, 'success');
       return result;
     } catch (error) {
       this.record('vertex', this.vertex.model, primaryStart, 'error', error);
       if (error instanceof AIAnalysisError && error.code === 'AI_INCOMPLETE')
         throw error;
-      if (!this.fallbackEnabled) throw error;
+      if (!this.fallbackConfigured) throw error;
     }
 
     const model =
       this.env.OPENAI_ANALYSIS_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
     const fallbackStart = Date.now();
+    const fallbackRemaining = this.deadline - fallbackStart;
+    if (fallbackRemaining <= 0)
+      throw new AIAnalysisError(
+        'AI_BUDGET_EXCEEDED',
+        '대체 AI를 실행할 시간이 남지 않았습니다. 내용을 나누어 검사해 주세요.',
+        504,
+      );
     try {
       const result = await this.openai(
         schema,
@@ -104,11 +122,14 @@ export class ResilientAIClient implements StructuredAIClient {
         data,
         options.image,
         model,
+        Math.min(FALLBACK_CALL_TIMEOUT_MS, fallbackRemaining),
       );
       this.record('openai', model, fallbackStart, 'success');
       return result;
     } catch (error) {
       this.record('openai', model, fallbackStart, 'error', error);
+      if (error instanceof AIAnalysisError && error.code === 'AI_INCOMPLETE')
+        throw error;
       throw new AIAnalysisError(
         'AI_ALL_PROVIDERS_FAILED',
         '기본·대체 AI 모두 분석을 완료하지 못했습니다. 잠시 후 다시 검사해 주세요.',
@@ -141,10 +162,11 @@ export class ResilientAIClient implements StructuredAIClient {
     data: unknown,
     image: GeminiImage | undefined,
     model: string,
+    timeoutMs: number,
   ): Promise<T> {
     const response = await this.fetcher('https://api.openai.com/v1/responses', {
       method: 'POST',
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(timeoutMs),
       headers: {
         'content-type': 'application/json',
         authorization: `Bearer ${this.env.OPENAI_API_KEY?.trim()}`,
@@ -174,8 +196,8 @@ export class ResilientAIClient implements StructuredAIClient {
           format: {
             type: 'json_schema',
             name: 'analysis',
-            strict: false,
-            schema: z.toJSONSchema(schema, { target: 'draft-7', io: 'input' }),
+            strict: true,
+            schema: z.toJSONSchema(schema, { target: 'draft-7', io: 'output' }),
           },
         },
         max_output_tokens: 12_000,
