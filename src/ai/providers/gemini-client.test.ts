@@ -76,9 +76,9 @@ describe('Gemini structured HTTP boundary', () => {
       client.generate(z.object({ answer: z.string().max(5) }), '', {}),
     ).rejects.toMatchObject({ code: 'AI_INVALID_RESPONSE' });
     const body = JSON.parse(fetcher.mock.calls[0][1]!.body as string);
-    expect(
-      body.generationConfig.responseFormat.text.schema.properties.answer,
-    ).toEqual({ type: 'string' });
+    expect(body.generationConfig.responseJsonSchema.properties.answer).toEqual({
+      type: 'string',
+    });
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
   it('recovers from explicit temporary overload without retrying completed generation', async () => {
@@ -120,7 +120,7 @@ describe('Gemini structured HTTP boundary', () => {
       code: 'AI_INVALID_RESPONSE',
     });
     const body = JSON.parse(fetcher.mock.calls[0][1]!.body as string);
-    const wire = body.generationConfig.responseFormat.text.schema;
+    const wire = body.generationConfig.responseJsonSchema;
     expect(JSON.stringify(wire)).not.toMatch(/minItems|maxItems/);
     expect(wire.properties.findings.items.properties.sources.items).toEqual({
       type: 'string',
@@ -160,15 +160,13 @@ describe('Gemini structured HTTP boundary', () => {
     ).toEqual({ answer: '검토 필요' });
     const [url, init] = fetcher.mock.calls[0];
     expect(url).toBe(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
+      'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.8-flash:generateContent',
     );
     expect(url).not.toContain('test-secret');
     const body = JSON.parse(typeof init?.body === 'string' ? init.body : '');
     expect(body.generationConfig.thinkingConfig.thinkingLevel).toBe('low');
-    expect(body.generationConfig.responseFormat.text.mimeType).toBe(
-      'APPLICATION_JSON',
-    );
-    expect(body.generationConfig.responseFormat.text.schema.required).toContain(
+    expect(body.generationConfig.responseMimeType).toBe('application/json');
+    expect(body.generationConfig.responseJsonSchema.required).toContain(
       'answer',
     );
     expect(body.generationConfig).not.toHaveProperty('temperature');
@@ -181,6 +179,51 @@ describe('Gemini structured HTTP boundary', () => {
     await expect(client.generate(schema, '', {})).rejects.toMatchObject({
       code: 'AI_NOT_CONFIGURED',
       status: 503,
+    });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('calls the regional project endpoint with a bearer token and never leaks it', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(response('{"answer":"확인"}'));
+    const client = new GeminiClient({
+      env: {
+        GOOGLE_CLOUD_PROJECT: 'demo-project',
+        GOOGLE_CLOUD_LOCATION: 'asia-northeast3',
+        VERTEX_ACCESS_TOKEN: 'ya29.test-secret',
+        VERTEX_MODEL: 'gemini-2.5-flash',
+      },
+      fetch: fetcher,
+    });
+    await expect(
+      client.generate(schema, '', {}, { thinking: 'medium' }),
+    ).resolves.toEqual({ answer: '확인' });
+    const [url, init] = fetcher.mock.calls[0];
+    expect(url).toBe(
+      'https://asia-northeast3-aiplatform.googleapis.com/v1/projects/demo-project/locations/asia-northeast3/publishers/google/models/gemini-2.5-flash:generateContent',
+    );
+    expect(init?.headers).toMatchObject({
+      authorization: 'Bearer ya29.test-secret',
+    });
+    const body = JSON.parse(typeof init?.body === 'string' ? init.body : '');
+    // 2.5 models take a token budget; 3.x models take a thinking level.
+    expect(body.generationConfig.thinkingConfig).toEqual({
+      thinkingBudget: 2048,
+    });
+  });
+
+  it('rejects an unsafe project or model name before any network call', async () => {
+    const fetcher = vi.fn<typeof fetch>();
+    const client = new GeminiClient({
+      env: {
+        GOOGLE_CLOUD_PROJECT: 'demo/../other',
+        VERTEX_ACCESS_TOKEN: 'token',
+      },
+      fetch: fetcher,
+    });
+    await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+      code: 'AI_NOT_CONFIGURED',
     });
     expect(fetcher).not.toHaveBeenCalled();
   });
