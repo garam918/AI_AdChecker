@@ -269,6 +269,7 @@ export function ContentLintApp() {
       }
 
       setLastInputType('text');
+      setScanTab('text');
       setAnalyzedText(normalizedText);
       setInputText(normalizedText);
       setAnalysisError(null);
@@ -327,6 +328,7 @@ export function ContentLintApp() {
     setStorageNotice(null);
     setReviewNote('');
     setLastInputType('image');
+    setScanTab('image');
     setLastUrlRequest(undefined);
     setAnalysisError(null);
     setDraftNotice(null);
@@ -387,6 +389,7 @@ export function ContentLintApp() {
       setReviewNote('');
       if (request.url) setInputUrl(request.url);
       setLastInputType('url');
+      setScanTab('url');
       setLastUrlRequest(request);
       setAnalysisError(null);
       setDraftNotice(null);
