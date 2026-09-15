@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ComponentType,
   type ReactNode,
@@ -16,20 +17,15 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Clipboard,
-  Clock3,
-  Copy,
   FileImage,
   Gauge,
   Globe2,
-  History,
   Info,
+  History,
   ExternalLink,
-  Layers3,
   Link2,
   ListChecks,
   LoaderCircle,
-  PlaySquare,
   Plus,
   RefreshCw,
   ScanText,
@@ -46,6 +42,26 @@ import { analyzeUrl } from '@/src/ai/analyze-url';
 import { analyzeImage } from '@/src/ai/analyze-image';
 import type { AnalysisStage } from '@/src/ai/providers/content-analysis-provider';
 import { ImageScanInput } from './image-scan-input';
+import { RewriteOptionsPanel } from './rewrite-options-panel';
+import { ImageEvidence } from './image-evidence';
+import { ReviewComparison, type PreviousReview } from './review-comparison';
+import { ReviewRecord } from './review-record';
+import { ScanHistoryView } from './scan-history-view';
+import {
+  readScanHistory,
+  saveScanHistory,
+  removeSavedScan,
+  type SavedScan,
+} from './scan-history';
+import {
+  defaultRewriteId,
+  getRewriteOptions,
+} from '@/src/compliance/core/rewrite-options';
+import {
+  applyDraftEdits,
+  removeFlaggedClaims,
+  type DraftEditResult,
+} from './rewrite-draft';
 import {
   AI_SAAS_DEMO_FIXTURE_ID,
   GENERAL_FOOD_DEMO_FIXTURE_ID,
@@ -57,7 +73,6 @@ import type {
   ScanAnalysisResult,
   Severity,
 } from '@/src/compliance/core/schemas';
-import { SAFE_DEMO_REWRITE } from '@/src/compliance/packs/general-advertising/demo-data';
 import { validatePublicHttpUrl } from '@/src/security/url-validator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -90,15 +105,9 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { findIssueHighlights } from './issue-highlights';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -147,7 +156,7 @@ const webMcpInputSchema = z.object({
   text: z.string().trim().min(1).max(20000),
 });
 
-type View = 'dashboard' | 'new-scan' | 'progress' | 'result';
+type View = 'dashboard' | 'new-scan' | 'progress' | 'result' | 'history';
 type AnalysisCategory =
   | 'AUTO'
   | 'HEALTH_FUNCTIONAL_FOOD'
@@ -170,14 +179,36 @@ const navItems: Array<{
   label: string;
   icon: ComponentType<{ className?: string }>;
 }> = [
-  { id: 'dashboard', label: 'Dashboard', icon: Gauge },
-  { id: 'new-scan', label: 'New Scan', icon: Plus },
-  { id: null, label: 'Scan History', icon: History },
-  { id: null, label: 'Rule Packs', icon: ShieldCheck },
+  { id: 'dashboard', label: '시작하기', icon: Gauge },
+  { id: 'new-scan', label: '새 검사', icon: Plus },
+  { id: 'history', label: '저장한 검사', icon: History },
 ];
 
 export function ContentLintApp() {
+  const requestController = useRef<AbortController | null>(null);
+  const [requestSerial, setRequestSerial] = useState(0);
+  const beginRequest = useCallback(() => {
+    requestController.current?.abort();
+    const controller = new AbortController();
+    requestController.current = controller;
+    setRequestSerial((serial) => serial + 1);
+    return controller;
+  }, []);
+  useEffect(() => () => requestController.current?.abort(), []);
+  const reviewStartedAt = useRef<number | null>(null);
+  const [reviewCompletedMs, setReviewCompletedMs] = useState<number | null>(
+    null,
+  );
+  const [reviewNote, setReviewNote] = useState('');
+  const [storageNotice, setStorageNotice] = useState<string | null>(null);
+  const [savedScans, setSavedScans] = useState<SavedScan[]>([]);
+  const [previousReview, setPreviousReview] = useState<PreviousReview | null>(
+    null,
+  );
   const [view, setView] = useState<View>('dashboard');
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
   const [inputText, setInputText] = useState('');
   const [inputUrl, setInputUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -186,7 +217,7 @@ export function ContentLintApp() {
   );
   const [scanTab, setScanTab] = useState<'text' | 'url' | 'image'>('text');
   const [analysisAudience, setAnalysisAudience] =
-    useState<AnalysisAudience>('CONSUMER');
+    useState<AnalysisAudience>('BUSINESS');
   const [analysisCategory, setAnalysisCategory] =
     useState<AnalysisCategory>('AUTO');
   const [productName, setProductName] = useState('');
@@ -216,9 +247,26 @@ export function ContentLintApp() {
   }, []);
 
   const runAnalysis = useCallback(
-    async (value: string, audience = analysisAudience) => {
+    async (
+      value: string,
+      audience = analysisAudience,
+      useAutoCategory = false,
+      isRescan = false,
+    ) => {
       const normalizedText = value.trim();
       if (!normalizedText) return;
+      const controller = beginRequest();
+      if (!isRescan) {
+        setPreviousReview(null);
+        reviewStartedAt.current = Date.now();
+        setReviewNote('');
+      }
+      setReviewCompletedMs(null);
+      setStorageNotice(null);
+      if (useAutoCategory) {
+        setAnalysisCategory('AUTO');
+        setAnalysisAudience(audience);
+      }
 
       setLastInputType('text');
       setAnalyzedText(normalizedText);
@@ -235,20 +283,23 @@ export function ContentLintApp() {
           normalizedText,
           audience,
           buildRegulatedProductOptions(
-            analysisCategory,
+            useAutoCategory ? 'AUTO' : analysisCategory,
             productName,
             companyName,
             reportNumber,
           ),
           reportProgress,
+          controller.signal,
         );
+        if (controller.signal.aborted) return;
         const firstIssue = nextResult.issues[0] ?? null;
         setResult(nextResult);
         setActiveIssueId(firstIssue?.id ?? null);
-        setSelectedRewrite(firstIssue?.suggestedRewrites[0] ?? '');
+        setSelectedRewrite(defaultRewriteId(firstIssue));
         setView('result');
         return nextResult;
       } catch (error) {
+        if (controller.signal.aborted) return;
         setAnalysisError(
           error instanceof Error
             ? error.message
@@ -257,6 +308,7 @@ export function ContentLintApp() {
       }
     },
     [
+      beginRequest,
       analysisAudience,
       analysisCategory,
       companyName,
@@ -268,6 +320,12 @@ export function ContentLintApp() {
 
   const runImageAnalysis = useCallback(async () => {
     if (!imageFile) return;
+    const controller = beginRequest();
+    reviewStartedAt.current = Date.now();
+    setPreviousReview(null);
+    setReviewCompletedMs(null);
+    setStorageNotice(null);
+    setReviewNote('');
     setLastInputType('image');
     setLastUrlRequest(undefined);
     setAnalysisError(null);
@@ -286,16 +344,19 @@ export function ContentLintApp() {
           reportNumber,
         ),
         reportProgress,
+        controller.signal,
       );
+      if (controller.signal.aborted) return;
       const text = nextResult.imageContent?.analysisText ?? '';
       setAnalyzedText(text);
       setInputText(text);
       setResult(nextResult);
       const firstIssue = nextResult.issues[0] ?? null;
       setActiveIssueId(firstIssue?.id ?? null);
-      setSelectedRewrite(firstIssue?.suggestedRewrites[0] ?? '');
+      setSelectedRewrite(defaultRewriteId(firstIssue));
       setView('result');
     } catch (error) {
+      if (controller.signal.aborted) return;
       setAnalysisError(
         error instanceof Error
           ? error.message
@@ -303,6 +364,7 @@ export function ContentLintApp() {
       );
     }
   }, [
+    beginRequest,
     imageFile,
     analysisAudience,
     analysisCategory,
@@ -315,6 +377,12 @@ export function ContentLintApp() {
   const runUrlAnalysis = useCallback(
     async (request: { url?: string; fixtureId?: string }) => {
       if (!request.url && !request.fixtureId) return;
+      const controller = beginRequest();
+      reviewStartedAt.current = Date.now();
+      setPreviousReview(null);
+      setReviewCompletedMs(null);
+      setStorageNotice(null);
+      setReviewNote('');
       if (request.url) setInputUrl(request.url);
       setLastInputType('url');
       setLastUrlRequest(request);
@@ -337,15 +405,19 @@ export function ContentLintApp() {
             ),
           },
           reportProgress,
+          controller.signal,
         );
+        if (controller.signal.aborted) return;
         const firstIssue = nextResult.issues[0] ?? null;
         setResult(nextResult);
         setAnalyzedText(nextResult.webContent?.visibleText ?? '');
+        setInputText(nextResult.webContent?.visibleText ?? '');
         setActiveIssueId(firstIssue?.id ?? null);
-        setSelectedRewrite(firstIssue?.suggestedRewrites[0] ?? '');
+        setSelectedRewrite(defaultRewriteId(firstIssue));
         setView('result');
         return nextResult;
       } catch (error) {
+        if (controller.signal.aborted) return;
         setAnalysisError(
           error instanceof Error
             ? error.message
@@ -354,6 +426,7 @@ export function ContentLintApp() {
       }
     },
     [
+      beginRequest,
       analysisAudience,
       analysisCategory,
       companyName,
@@ -415,34 +488,59 @@ export function ContentLintApp() {
 
   const selectIssue = (issue: Issue) => {
     setActiveIssueId(issue.id);
-    setSelectedRewrite(issue.suggestedRewrites[0]);
+    setSelectedRewrite(defaultRewriteId(issue));
     setCopied(false);
+    if (window.matchMedia('(max-width: 1279px)').matches) {
+      requestAnimationFrame(() =>
+        document.getElementById('issue-inspector')?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)')
+            .matches
+            ? 'auto'
+            : 'smooth',
+          block: 'start',
+        }),
+      );
+    }
+  };
+
+  const commitDraftEdit = (edit: DraftEditResult) => {
+    setReviewCompletedMs(null);
+    setInputText(edit.text);
+    setDraftNotice(
+      [
+        edit.appliedIssueIds.length
+          ? `${edit.appliedIssueIds.length}개 표현을 초안에 반영했습니다. 문장과 남은 주장을 확인하고 재검사하세요.`
+          : '자동 적용한 표현이 없습니다.',
+        ...new Set(edit.skipped.map((item) => item.reason)),
+      ].join(' '),
+    );
   };
 
   const applySelectedRewrite = () => {
     if (!activeIssue || !selectedRewrite) return;
-    setInputText(inputText.replace(activeIssue.originalText, selectedRewrite));
-    setDraftNotice('선택한 표현을 수정 초안에 반영했습니다.');
+    const option = getRewriteOptions(activeIssue).find(
+      (item) => item.id === selectedRewrite,
+    );
+    if (option)
+      commitDraftEdit(
+        applyDraftEdits(inputText, [{ issue: activeIssue, option }]),
+      );
   };
 
   const applyAllRewrites = () => {
     if (!result) return;
-    const rewritten = result.issues.reduce(
-      (draft, issue) =>
-        draft.replace(
-          issue.originalText,
-          issue.suggestedRewrites[0] ?? issue.originalText,
-        ),
-      inputText,
-    );
-    setInputText(rewritten);
-    setDraftNotice('추천 수정안을 모두 적용했습니다. 다시 검사해 보세요.');
+    commitDraftEdit(removeFlaggedClaims(inputText, result.issues));
   };
 
   const copyRewrite = async () => {
-    if (!selectedRewrite) return;
+    const option =
+      activeIssue &&
+      getRewriteOptions(activeIssue).find(
+        (item) => item.id === selectedRewrite,
+      );
+    if (!option?.text) return;
     try {
-      await navigator.clipboard.writeText(selectedRewrite);
+      await navigator.clipboard.writeText(option.text);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
@@ -450,14 +548,87 @@ export function ContentLintApp() {
     }
   };
 
+  const openHistory = () => {
+    requestController.current?.abort();
+    setStorageNotice(null);
+    try {
+      setSavedScans(readScanHistory(window.localStorage));
+    } catch {
+      setSavedScans([]);
+      setStorageNotice(
+        '브라우저 저장 기록을 읽거나 검증하지 못했습니다. 저장 공간 설정을 확인하세요.',
+      );
+    }
+    setView('history');
+  };
+
+  const saveCurrentReview = () => {
+    if (!result) return;
+    try {
+      setSavedScans(
+        saveScanHistory(window.localStorage, {
+          id: crypto.randomUUID(),
+          savedAt: new Date().toISOString(),
+          analyzedText,
+          draftText: inputText,
+          result,
+          review: {
+            elapsedMs: reviewCompletedMs,
+            completed: reviewCompletedMs !== null,
+            note: reviewNote,
+          },
+        }),
+      );
+      setStorageNotice(
+        '이 브라우저에 저장했습니다. 저장한 검사에서 다시 열 수 있습니다.',
+      );
+    } catch {
+      setStorageNotice(
+        '브라우저 저장 공간을 사용할 수 없거나 기록을 검증하지 못했습니다. 결과는 현재 화면에 남아 있습니다.',
+      );
+    }
+  };
+
+  const restoreReview = (record: SavedScan) => {
+    setResult(record.result);
+    setAnalyzedText(record.analyzedText);
+    setInputText(record.draftText);
+    setAnalysisAudience(record.result.audience);
+    setImageFile(null);
+    setAnalysisCategory('AUTO');
+    setProductName('');
+    setCompanyName('');
+    setReportNumber('');
+    setActiveIssueId(record.result.issues[0]?.id ?? null);
+    setSelectedRewrite(defaultRewriteId(record.result.issues[0]));
+    setPreviousReview(null);
+    setReviewNote(record.review.note);
+    setReviewCompletedMs(record.review.elapsedMs);
+    reviewStartedAt.current = null;
+    setLastUrlRequest(
+      record.result.webContent?.fixtureId
+        ? { fixtureId: record.result.webContent.fixtureId }
+        : record.result.webContent
+          ? { url: record.result.webContent.url }
+          : undefined,
+    );
+    setStorageNotice(
+      '저장 당시의 결과입니다. 최신 규정·현재 페이지 상태를 확인하려면 새로 검사하세요. 원본 이미지는 보관하지 않습니다.',
+    );
+    setDraftNotice(null);
+    setView('result');
+  };
+
   const pageLabel =
     view === 'dashboard'
-      ? 'Dashboard'
+      ? '시작하기'
       : view === 'new-scan'
-        ? 'New Scan'
+        ? '새 검사'
         : view === 'progress'
-          ? 'Analysis Progress'
-          : 'Scan Result';
+          ? '분석 중'
+          : view === 'history'
+            ? '저장한 검사'
+            : '검사 결과';
 
   return (
     <SidebarProvider>
@@ -465,7 +636,10 @@ export function ContentLintApp() {
         <SidebarHeader className="border-b border-slate-200/90 px-5 py-5">
           <button
             className="flex items-center gap-3 text-left"
-            onClick={() => setView('dashboard')}
+            onClick={() => {
+              requestController.current?.abort();
+              setView('dashboard');
+            }}
             type="button"
           >
             <span className="grid size-9 place-items-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-200">
@@ -476,7 +650,7 @@ export function ContentLintApp() {
                 ContentLint AI
               </span>
               <span className="block text-xs text-slate-500">
-                Content compliance
+                게시 전 광고 사전검수
               </span>
             </span>
           </button>
@@ -485,20 +659,24 @@ export function ContentLintApp() {
         <SidebarContent className="px-3 py-4">
           <SidebarGroup>
             <SidebarGroupLabel className="px-2 text-[11px] font-semibold tracking-[0.08em] text-slate-400 uppercase">
-              Workspace
+              작업 공간
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {navItems.map((item) => (
                   <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton
+                    <WorkspaceMenuButton
                       className="h-10 rounded-xl px-3 text-sm data-active:bg-indigo-50 data-active:text-indigo-700"
                       isActive={
                         item.id === view ||
                         (item.id === 'new-scan' &&
                           (view === 'progress' || view === 'result'))
                       }
-                      onClick={() => item.id && setView(item.id)}
+                      onClick={() => {
+                        requestController.current?.abort();
+                        if (item.id === 'history') openHistory();
+                        else if (item.id) setView(item.id);
+                      }}
                       disabled={!item.id}
                     >
                       <item.icon />
@@ -508,7 +686,7 @@ export function ContentLintApp() {
                           Soon
                         </span>
                       )}
-                    </SidebarMenuButton>
+                    </WorkspaceMenuButton>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
@@ -519,7 +697,7 @@ export function ContentLintApp() {
         <SidebarFooter className="border-t border-slate-200/90 p-4">
           <div className="rounded-xl bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500">
             <span className="font-medium text-slate-700">
-              Pre-screening only
+              게시 전 위험 점검
             </span>
             <br />
             법률 자문이 아닌 사전 위험 점검 도구입니다.
@@ -531,19 +709,37 @@ export function ContentLintApp() {
         <header className="flex h-16 shrink-0 items-center border-b border-slate-200/90 bg-white/85 px-4 backdrop-blur sm:px-7">
           <SidebarTrigger className="mr-3 md:hidden" />
           <div className="flex min-w-0 items-center gap-2 text-sm text-slate-500">
-            <span>Workspace</span>
+            <span className="hidden sm:inline">작업 공간</span>
             <span>/</span>
             <span className="truncate font-medium text-slate-900">
               {pageLabel}
             </span>
           </div>
-          <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-xs">
+          <span className="ml-auto inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-xs">
             <span className="size-1.5 rounded-full bg-emerald-500" />
-            Auto Detect · Advertising + Food + Regulated Products
+            사전검수 · 법률 자문 아님
           </span>
         </header>
 
-        <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-8 sm:px-8 lg:px-10 lg:py-10">
+        <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-6 sm:px-8 lg:px-10">
+          {view === 'history' && (
+            <ScanHistoryView
+              records={savedScans}
+              notice={storageNotice}
+              onOpen={restoreReview}
+              onNew={() => setView('new-scan')}
+              onDelete={(id) => {
+                try {
+                  setSavedScans(removeSavedScan(window.localStorage, id));
+                  setStorageNotice('선택한 저장 기록을 삭제했습니다.');
+                } catch {
+                  setStorageNotice(
+                    '기록을 삭제하지 못했습니다. 브라우저 저장 공간 설정을 확인하세요.',
+                  );
+                }
+              }}
+            />
+          )}
           {view === 'dashboard' && (
             <Dashboard
               onStart={() => {
@@ -554,10 +750,11 @@ export function ContentLintApp() {
                 setScanTab('url');
                 setView('new-scan');
               }}
-              onUseDemo={() => {
-                setInputText(DEMO_TEXT);
+              onImageStart={() => {
+                setScanTab('image');
                 setView('new-scan');
               }}
+              onUseDemo={() => void runAnalysis(DEMO_TEXT, 'BUSINESS', true)}
             />
           )}
           {view === 'new-scan' && (
@@ -603,6 +800,7 @@ export function ContentLintApp() {
           )}
           {view === 'progress' && (
             <AnalysisProgress
+              key={requestSerial}
               activeStage={progressStage}
               stages={activeProgressStages}
               error={analysisError}
@@ -613,15 +811,43 @@ export function ContentLintApp() {
                     ? void runUrlAnalysis(lastUrlRequest)
                     : void runAnalysis(inputText)
               }
-              onBack={() => setView('new-scan')}
+              onBack={() => {
+                requestController.current?.abort();
+                setView('new-scan');
+              }}
             />
           )}
           {view === 'result' && result && (
             <ScanResult
+              previousReview={previousReview}
+              reviewRecord={
+                <ReviewRecord
+                  completedMs={reviewCompletedMs}
+                  draftChanged={inputText !== analyzedText}
+                  note={reviewNote}
+                  onNote={setReviewNote}
+                  onComplete={() => {
+                    if (reviewStartedAt.current !== null)
+                      setReviewCompletedMs(
+                        Math.max(0, Date.now() - reviewStartedAt.current),
+                      );
+                    else
+                      setStorageNotice(
+                        '저장된 결과를 연 시간은 새 검토 시간으로 측정하지 않습니다. 새 분석을 시작해 주세요.',
+                      );
+                  }}
+                  onSave={saveCurrentReview}
+                  notice={storageNotice}
+                />
+              }
+              imageFile={imageFile}
               result={result}
               analyzedText={analyzedText}
               draftText={inputText}
-              setDraftText={setInputText}
+              setDraftText={(text) => {
+                setInputText(text);
+                setReviewCompletedMs(null);
+              }}
               activeIssue={activeIssue}
               selectedRewrite={selectedRewrite}
               setSelectedRewrite={setSelectedRewrite}
@@ -631,15 +857,22 @@ export function ContentLintApp() {
               onCopy={() => void copyRewrite()}
               copied={copied}
               draftNotice={draftNotice}
-              onRescan={() =>
-                result.inputType === 'URL'
-                  ? void runUrlAnalysis(
-                      result.webContent?.fixtureId
-                        ? { fixtureId: result.webContent.fixtureId }
-                        : { url: result.webContent?.url },
-                    )
-                  : void runAnalysis(inputText)
+              onRescan={() => {
+                setPreviousReview({ text: analyzedText, result });
+                if (reviewStartedAt.current === null)
+                  reviewStartedAt.current = Date.now();
+                void runAnalysis(inputText, analysisAudience, false, true);
+              }}
+              onRefreshSource={() =>
+                lastUrlRequest
+                  ? void runUrlAnalysis(lastUrlRequest)
+                  : void runImageAnalysis()
               }
+              onNewImage={() => {
+                setScanTab('image');
+                setImageFile(null);
+                setView('new-scan');
+              }}
               onNewScan={() => {
                 setInputText('');
                 setInputUrl('');
@@ -661,10 +894,12 @@ export function ContentLintApp() {
 function Dashboard({
   onStart,
   onUrlStart,
+  onImageStart,
   onUseDemo,
 }: {
   onStart: () => void;
   onUrlStart: () => void;
+  onImageStart: () => void;
   onUseDemo: () => void;
 }) {
   return (
@@ -672,105 +907,71 @@ function Dashboard({
       <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 text-sm font-medium text-indigo-600">
-            Content checks
+            마케터·판매자를 위한 게시 전 사전검수
           </p>
           <h1 className="text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-[34px]">
-            오늘 어떤 콘텐츠를 검사하시겠어요?
+            게시 전에, 고칠 표현부터 확인하세요.
           </h1>
           <p className="mt-3 max-w-2xl text-base leading-7 text-slate-500">
-            게시 전에 광고 표현의 잠재적 위험과 필요한 근거를 빠르게 확인하세요.
+            광고 문구의 잠재적 위험을 찾고, 공식 근거와 수정 방향을 함께
+            확인합니다. 핵심 이슈를 검토하고 수정한 초안을 다시 검사하세요.
           </p>
         </div>
         <Button
           className="h-10 rounded-xl bg-indigo-600 px-4 shadow-sm shadow-indigo-200 hover:bg-indigo-700"
-          onClick={onStart}
+          onClick={onUseDemo}
         >
-          <Plus /> 새 검사
+          <Sparkles /> 대표 예제 바로 분석
         </Button>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">
         <ScanCard
-          eyebrow="Available now"
+          eyebrow="텍스트"
           icon={ScanText}
-          title="Text"
+          title="광고 문구"
           description="광고 문구를 입력하고 위험 표현과 수정안을 확인합니다."
           onClick={onStart}
           active
         />
         <ScanCard
-          eyebrow="Available now"
+          eyebrow="URL"
           icon={Globe2}
-          title="Website / Product Page"
+          title="웹페이지·상세페이지"
           description="URL에서 보이는 광고 표현을 추출해 검사합니다."
           onClick={onUrlStart}
           active
         />
         <ScanCard
-          eyebrow="Coming soon"
-          icon={PlaySquare}
-          title="YouTube"
-          description="자막과 화면 속 광고 표현을 타임라인으로 확인합니다."
+          eyebrow="이미지"
+          icon={FileImage}
+          title="광고 이미지"
+          description="이미지 원본과 읽어낸 문구·시각적 맥락을 대조합니다."
+          onClick={onImageStart}
+          active
         />
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.035)]">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
-          <div>
-            <h2 className="font-semibold text-slate-900">Recent scans</h2>
-            <p className="mt-1 text-sm text-slate-500">데모 검사 기록</p>
-          </div>
-          <Clock3 className="size-4 text-slate-400" />
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-              <TableHead className="px-6 text-xs text-slate-500">
-                Content
-              </TableHead>
-              <TableHead className="text-xs text-slate-500">Category</TableHead>
-              <TableHead className="text-xs text-slate-500">Risk</TableHead>
-              <TableHead className="px-6 text-right text-xs text-slate-500">
-                Created
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow
-              className="cursor-pointer"
-              onClick={onUseDemo}
-              tabIndex={0}
-              onKeyDown={(event) => event.key === 'Enter' && onUseDemo()}
-            >
-              <TableCell className="max-w-[360px] truncate px-6 font-medium text-slate-800">
-                {DEMO_TEXT}
-              </TableCell>
-              <TableCell className="text-slate-500">
-                General Advertising
-              </TableCell>
-              <TableCell>
-                <RiskBadge severity="HIGH" compact />
-              </TableCell>
-              <TableCell className="px-6 text-right text-slate-500">
-                Demo
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="max-w-[360px] truncate px-6 font-medium text-slate-800">
-                {SAFE_DEMO_REWRITE}
-              </TableCell>
-              <TableCell className="text-slate-500">
-                General Advertising
-              </TableCell>
-              <TableCell>
-                <RiskBadge severity="LOW" compact />
-              </TableCell>
-              <TableCell className="px-6 text-right text-slate-500">
-                Demo
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <h2 className="font-semibold text-slate-900">
+          어떤 결과를 볼 수 있나요?
+        </h2>
+        <p className="mt-3 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-800">
+          “{DEMO_TEXT}”
+        </p>
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          이 예제에서는 수치 성과와 최상급 표현의 근거를 확인합니다. 규칙·공식
+          규정 검색·AI 해석을 거쳐 실제 분석하며, AI가 완료하지 못한 경우에는
+          한계를 표시합니다.
+        </p>
+        <Button variant="outline" className="mt-4" onClick={onUseDemo}>
+          <Sparkles /> 이 예제 분석하기
+        </Button>
+        <p className="mt-4 text-xs leading-5 text-slate-600">
+          일반 광고·일반 식품을 중심으로 검토합니다. 법적 적합성을 보증하지
+          않으며, YouTube·동영상·로그인 페이지·JavaScript 렌더링 페이지는
+          지원하지 않습니다.
+        </p>
       </section>
     </div>
   );
@@ -795,7 +996,7 @@ function ScanCard({
     <Card
       className={`relative min-h-[218px] border-0 py-0 shadow-[0_8px_30px_rgba(15,23,42,0.04)] ring-1 ${active ? 'ring-indigo-200' : 'ring-slate-200'}`}
     >
-      <CardHeader className="px-6 pt-6">
+      <CardHeader className="relative block px-6 pt-6">
         <span
           className={`mb-5 grid size-11 place-items-center rounded-xl ${active ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-500'}`}
         >
@@ -804,10 +1005,10 @@ function ScanCard({
         <CardTitle className="text-[17px] font-semibold text-slate-950">
           {title}
         </CardTitle>
-        <CardDescription className="mt-1 max-w-[31ch] leading-6">
+        <CardDescription className="mt-2 leading-6">
           {description}
         </CardDescription>
-        <CardAction>
+        <CardAction className="absolute right-5 top-6">
           <span
             className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${active ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}
           >
@@ -886,7 +1087,9 @@ function NewScan({
   const productIdentityLabels = getProductIdentityLabels(category);
   return (
     <div className="mx-auto max-w-4xl">
-      <p className="mb-2 text-sm font-medium text-indigo-600">New analysis</p>
+      <p className="mb-2 text-sm font-medium text-indigo-600">
+        게시 전 사전검수
+      </p>
       <h1 className="text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-[34px]">
         새 콘텐츠 검사
       </h1>
@@ -894,83 +1097,75 @@ function NewScan({
         웹페이지 주소, 광고 문구 또는 이미지를 입력하면 문제 구간과 수정 방향을
         정리합니다.
       </p>
-      <Card className="mt-8 gap-0 border-0 py-0 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-slate-200">
-        <div className="border-b border-slate-200 px-6 py-6 sm:px-8">
-          <div>
-            <p className="text-sm font-semibold text-slate-800">검사 목적</p>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              분석 기준과 위험도는 동일하며, 선택한 목적에 맞게 결과와 조치
-              방법을 보여드립니다.
-            </p>
-          </div>
-          <div
-            className="mt-4 grid gap-3 sm:grid-cols-2"
-            role="radiogroup"
-            aria-label="검사 목적 선택"
-          >
-            <AudienceOption
-              audience="CONSUMER"
-              selected={audience === 'CONSUMER'}
-              icon={ShoppingBag}
-              title="광고를 보는 소비자"
-              description="주의할 표현과 구매 전 확인할 정보를 봅니다."
-              onSelect={setAudience}
-            />
-            <AudienceOption
-              audience="BUSINESS"
-              selected={audience === 'BUSINESS'}
-              icon={Building2}
-              title="광고를 만드는 기업·판매자"
-              description="관련 법령, 수정안과 필요한 증빙을 봅니다."
-              onSelect={setAudience}
-            />
-          </div>
-        </div>
-        <div className="border-b border-slate-200 px-6 py-6 sm:px-8">
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+      <Card className="mt-5 gap-0 border-0 py-0 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-slate-200">
+        <details className="border-b border-slate-200">
+          <summary className="cursor-pointer px-5 py-3 text-sm text-slate-600">
+            분석 설정 · {audience === 'BUSINESS' ? '기업·판매자용' : '소비자용'}{' '}
+            ·{' '}
+            {category === 'AUTO'
+              ? '제품 유형 자동 감지'
+              : formatCategory(category)}
+          </summary>
+          <div className="border-b border-slate-200 px-6 py-6 sm:px-8">
             <div>
-              <p className="text-sm font-semibold text-slate-800">제품 유형</p>
+              <p className="text-sm font-semibold text-slate-800">검사 목적</p>
               <p className="mt-1 text-sm leading-6 text-slate-500">
-                규제 제품은 식약처 공식 품목정보가 확인될 때만 허가·심사 범위와
-                광고 표현을 대조합니다.
+                분석 기준과 위험도는 동일하며, 선택한 목적에 맞게 결과와 조치
+                방법을 보여드립니다.
               </p>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 rounded-lg border-teal-200 text-teal-700 hover:bg-teal-50"
-              onClick={onUseHealthFunctionalFoodDemo}
+            <div
+              className="mt-4 grid gap-3 sm:grid-cols-2"
+              role="radiogroup"
+              aria-label="검사 목적 선택"
             >
-              <Sparkles /> 건기식 데모
-            </Button>
-          </div>
-          <div
-            className="mt-4 flex flex-wrap gap-2"
-            role="radiogroup"
-            aria-label="제품 유형 선택"
-          >
-            <label
-              className={`cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition ${
-                category === 'AUTO'
-                  ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
-                  : 'border-slate-200 bg-white text-slate-600'
-              }`}
-            >
-              <input
-                className="sr-only"
-                type="radio"
-                name="analysis-category"
-                checked={category === 'AUTO'}
-                onChange={() => setCategory('AUTO')}
+              <AudienceOption
+                audience="CONSUMER"
+                selected={audience === 'CONSUMER'}
+                icon={ShoppingBag}
+                title="광고를 보는 소비자"
+                description="주의할 표현과 구매 전 확인할 정보를 봅니다."
+                onSelect={setAudience}
               />
-              자동 감지
-            </label>
-            {ANALYSIS_CATEGORY_OPTIONS.map((option) => (
+              <AudienceOption
+                audience="BUSINESS"
+                selected={audience === 'BUSINESS'}
+                icon={Building2}
+                title="광고를 만드는 기업·판매자"
+                description="관련 법령, 수정안과 필요한 증빙을 봅니다."
+                onSelect={setAudience}
+              />
+            </div>
+          </div>
+          <div className="border-b border-slate-200 px-6 py-6 sm:px-8">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+              <div>
+                <p className="text-sm font-semibold text-slate-800">
+                  제품 유형
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  규제 제품은 식약처 공식 품목정보가 확인될 때만 허가·심사
+                  범위와 광고 표현을 대조합니다.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 rounded-lg border-teal-200 text-teal-700 hover:bg-teal-50"
+                onClick={onUseHealthFunctionalFoodDemo}
+              >
+                <Sparkles /> 건기식 데모
+              </Button>
+            </div>
+            <div
+              className="mt-4 flex flex-wrap gap-2"
+              role="radiogroup"
+              aria-label="제품 유형 선택"
+            >
               <label
-                key={option.value}
                 className={`cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition ${
-                  category === option.value
-                    ? 'border-teal-300 bg-teal-50 text-teal-800'
+                  category === 'AUTO'
+                    ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
                     : 'border-slate-200 bg-white text-slate-600'
                 }`}
               >
@@ -978,64 +1173,83 @@ function NewScan({
                   className="sr-only"
                   type="radio"
                   name="analysis-category"
-                  checked={category === option.value}
-                  onChange={() => setCategory(option.value)}
+                  checked={category === 'AUTO'}
+                  onChange={() => setCategory('AUTO')}
                 />
-                {option.label}
+                자동 감지
               </label>
-            ))}
-          </div>
-          {category !== 'AUTO' && productIdentityLabels && (
-            <div className="mt-4 rounded-xl border border-teal-100 bg-teal-50/40 p-4">
-              <div className="grid gap-3 md:grid-cols-3">
+              {ANALYSIS_CATEGORY_OPTIONS.map((option) => (
                 <label
-                  className="text-xs font-semibold text-slate-700"
-                  htmlFor="regulated-product-name"
+                  key={option.value}
+                  className={`cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition ${
+                    category === option.value
+                      ? 'border-teal-300 bg-teal-50 text-teal-800'
+                      : 'border-slate-200 bg-white text-slate-600'
+                  }`}
                 >
-                  제품명
-                  <Input
-                    id="regulated-product-name"
-                    value={productName}
-                    onChange={(event) => setProductName(event.target.value)}
-                    placeholder="공식 품목정보의 제품명"
-                    className="mt-2 bg-white font-normal"
+                  <input
+                    className="sr-only"
+                    type="radio"
+                    name="analysis-category"
+                    checked={category === option.value}
+                    onChange={() => setCategory(option.value)}
                   />
+                  {option.label}
                 </label>
-                <label
-                  className="text-xs font-semibold text-slate-700"
-                  htmlFor="regulated-company-name"
-                >
-                  {productIdentityLabels.companyLabel}
-                  <Input
-                    id="regulated-company-name"
-                    value={companyName}
-                    onChange={(event) => setCompanyName(event.target.value)}
-                    placeholder="선택 입력"
-                    className="mt-2 bg-white font-normal"
-                  />
-                </label>
-                <label
-                  className="text-xs font-semibold text-slate-700"
-                  htmlFor="regulated-report-number"
-                >
-                  {productIdentityLabels.numberLabel}
-                  <Input
-                    id="regulated-report-number"
-                    value={reportNumber}
-                    onChange={(event) => setReportNumber(event.target.value)}
-                    placeholder="가장 정확한 조회 키"
-                    className="mt-2 bg-white font-normal"
-                  />
-                </label>
-              </div>
-              <p className="mt-3 text-xs leading-5 text-teal-800">
-                {productIdentityLabels.numberLabel}가 있으면 우선 사용합니다.
-                제품을 확정하지 못하면 허가·심사 범위를 추정하지 않고 추가
-                검토로 표시합니다.
-              </p>
+              ))}
             </div>
-          )}
-        </div>
+            {category !== 'AUTO' && productIdentityLabels && (
+              <div className="mt-4 rounded-xl border border-teal-100 bg-teal-50/40 p-4">
+                <div className="grid gap-3 md:grid-cols-3">
+                  <label
+                    className="text-xs font-semibold text-slate-700"
+                    htmlFor="regulated-product-name"
+                  >
+                    제품명
+                    <Input
+                      id="regulated-product-name"
+                      value={productName}
+                      onChange={(event) => setProductName(event.target.value)}
+                      placeholder="공식 품목정보의 제품명"
+                      className="mt-2 bg-white font-normal"
+                    />
+                  </label>
+                  <label
+                    className="text-xs font-semibold text-slate-700"
+                    htmlFor="regulated-company-name"
+                  >
+                    {productIdentityLabels.companyLabel}
+                    <Input
+                      id="regulated-company-name"
+                      value={companyName}
+                      onChange={(event) => setCompanyName(event.target.value)}
+                      placeholder="선택 입력"
+                      className="mt-2 bg-white font-normal"
+                    />
+                  </label>
+                  <label
+                    className="text-xs font-semibold text-slate-700"
+                    htmlFor="regulated-report-number"
+                  >
+                    {productIdentityLabels.numberLabel}
+                    <Input
+                      id="regulated-report-number"
+                      value={reportNumber}
+                      onChange={(event) => setReportNumber(event.target.value)}
+                      placeholder="가장 정확한 조회 키"
+                      className="mt-2 bg-white font-normal"
+                    />
+                  </label>
+                </div>
+                <p className="mt-3 text-xs leading-5 text-teal-800">
+                  {productIdentityLabels.numberLabel}가 있으면 우선 사용합니다.
+                  제품을 확정하지 못하면 허가·심사 범위를 추정하지 않고 추가
+                  검토로 표시합니다.
+                </p>
+              </div>
+            )}
+          </div>
+        </details>
         <Tabs
           value={activeTab}
           onValueChange={(value) =>
@@ -1044,17 +1258,11 @@ function NewScan({
         >
           <TabsList
             variant="line"
-            className="h-14 w-full justify-start gap-6 border-b border-slate-200 px-6"
+            className="grid h-14 w-full grid-cols-3 border-b border-slate-200 px-3"
           >
-            <TabsTrigger value="url">URL</TabsTrigger>
-            <TabsTrigger value="youtube" disabled>
-              YouTube
-            </TabsTrigger>
-            <TabsTrigger value="text">Text</TabsTrigger>
-            <TabsTrigger value="image">Image</TabsTrigger>
-            <TabsTrigger value="video" disabled>
-              Video
-            </TabsTrigger>
+            <TabsTrigger value="text">광고 문구</TabsTrigger>
+            <TabsTrigger value="url">웹페이지</TabsTrigger>
+            <TabsTrigger value="image">이미지</TabsTrigger>
           </TabsList>
           <TabsContent value="image" className="p-6 sm:p-8">
             <ImageScanInput
@@ -1138,14 +1346,6 @@ function NewScan({
                 onClick={() => setText(DEMO_TEXT)}
               >
                 <Sparkles /> AI SaaS 데모
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-lg border-teal-200 text-teal-700 hover:bg-teal-50"
-                onClick={onUseHealthFunctionalFoodDemo}
-              >
-                <Sparkles /> 건기식 데모
               </Button>
             </div>
             <div
@@ -1272,7 +1472,17 @@ function AnalysisProgress({
   onRetry: () => void;
   onBack: () => void;
 }) {
-  const progress = Math.min(95, ((activeStage + 1) / stages.length) * 100);
+  const [startedAt] = useState(() => Date.now());
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  useEffect(() => {
+    if (error) return;
+    const timer = window.setInterval(
+      () => setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000)),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [error, startedAt]);
+  const progress = (Math.max(0, activeStage) / stages.length) * 100;
   return (
     <div className="mx-auto flex min-h-[calc(100vh-11rem)] max-w-2xl items-center justify-center">
       <Card className="w-full border-0 px-2 py-2 shadow-[0_18px_60px_rgba(15,23,42,0.08)] ring-1 ring-slate-200">
@@ -1293,15 +1503,18 @@ function AnalysisProgress({
           </CardTitle>
           <CardDescription className="mt-2 text-base leading-6">
             {error ??
-              'Gemini가 문맥과 공식 근거를 대조합니다. 콘텐츠 양에 따라 시간이 걸릴 수 있습니다.'}
+              '광고 문맥과 공식 근거를 대조하고 있습니다. 완료하지 못한 분석은 완료된 것처럼 표시하지 않습니다.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="px-6 pb-7 sm:px-10 sm:pb-9">
           {!error ? (
             <>
+              <p className="mt-3 text-center text-sm text-slate-600">
+                {activeStage + 1}/{stages.length}단계 · 경과 {elapsedSeconds}초
+              </p>
               <Progress
                 value={progress}
-                aria-label="분석 진행률"
+                aria-label="완료한 분석 단계"
                 className="mt-4 [&_[data-slot=progress-track]]:h-2 [&_[data-slot=progress-indicator]]:bg-indigo-600"
               />
               <ol className="mt-7 space-y-1.5">
@@ -1332,6 +1545,21 @@ function AnalysisProgress({
                   );
                 })}
               </ol>
+              {elapsedSeconds >= 25 && (
+                <output className="mt-4 block rounded-xl bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+                  분석이 오래 걸리고 있습니다. AI가 완료하지 못하면 규칙 기반
+                  부분 결과를 표시하거나 입력 변경을 안내합니다.
+                </output>
+              )}
+              <div className="mt-5 text-center">
+                <Button variant="outline" onClick={onBack}>
+                  대기 중단 · 입력으로 돌아가기
+                </Button>
+                <p className="mt-2 text-xs leading-5 text-slate-600">
+                  입력은 유지됩니다. 이미 시작된 서버의 AI 요청은 완료될 수
+                  있습니다.
+                </p>
+              </div>
             </>
           ) : (
             <div className="mt-5 flex justify-center gap-3">
@@ -1353,6 +1581,9 @@ function AnalysisProgress({
 }
 
 function ScanResult({
+  previousReview,
+  reviewRecord,
+  imageFile,
   result,
   analyzedText,
   draftText,
@@ -1368,7 +1599,12 @@ function ScanResult({
   draftNotice,
   onRescan,
   onNewScan,
+  onRefreshSource,
+  onNewImage,
 }: {
+  previousReview: PreviousReview | null;
+  reviewRecord: ReactNode;
+  imageFile: File | null;
   result: ScanAnalysisResult;
   analyzedText: string;
   draftText: string;
@@ -1384,6 +1620,8 @@ function ScanResult({
   draftNotice: string | null;
   onRescan: () => void;
   onNewScan: () => void;
+  onRefreshSource: () => void;
+  onNewImage: () => void;
 }) {
   const isLow = result.overallRisk === 'LOW';
   const isWeb = result.inputType === 'URL' && Boolean(result.webContent);
@@ -1391,25 +1629,6 @@ function ScanResult({
   const { keyIssues, otherIssues } = splitKeyIssues(result);
   return (
     <div className="space-y-6">
-      {result.imageContent && (
-        <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 text-sm text-slate-700">
-          <p className="font-semibold">
-            이미지 분석 · {result.imageContent.fileName}
-          </p>
-          <details className="mt-2">
-            <summary className="cursor-pointer">
-              추출한 문구와 시각 관찰 확인
-            </summary>
-            <p className="mt-3 whitespace-pre-wrap leading-7">
-              {result.imageContent.analysisText}
-            </p>
-          </details>
-          <p className="mt-2 text-xs text-slate-500">
-            시각 관찰은 AI의 이미지 해석입니다. 수정안을 적용한 뒤에는 새
-            이미지를 업로드해 다시 검사하세요.
-          </p>
-        </div>
-      )}
       <section className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
           <div className="mb-3 flex items-center gap-2 text-sm text-slate-500">
@@ -1418,15 +1637,17 @@ function ScanResult({
               onClick={onNewScan}
               className="inline-flex items-center gap-1 hover:text-slate-800"
             >
-              <ArrowLeft className="size-3.5" /> New Scan
+              <ArrowLeft className="size-3.5" /> 새 검사
             </button>
             <ChevronRight className="size-3.5" />
-            <span>Result</span>
+            <span>결과</span>
           </div>
           <h1 className="text-3xl font-semibold tracking-[-0.035em] text-slate-950">
             {isWeb
               ? (result.webContent?.title ?? '웹페이지 검사 결과')
-              : '검사 결과'}
+              : result.issues.length
+                ? `확인할 표현 ${result.issues.length}개`
+                : '검사 결과'}
           </h1>
           {isWeb && result.webContent && (
             <a
@@ -1447,67 +1668,32 @@ function ScanResult({
                 ? '게시 전에 조치가 필요한 표현과 관련 검토 기준을 정리했습니다.'
                 : '주의해서 확인할 필요가 있는 광고 표현을 찾았습니다.'}
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge
-              className={
-                isBusiness
-                  ? 'bg-violet-100 text-violet-800'
-                  : 'bg-sky-100 text-sky-800'
-              }
-            >
-              {isBusiness ? (
-                <Building2 className="size-3" />
-              ) : (
-                <ShoppingBag className="size-3" />
-              )}
-              {isBusiness ? '기업·판매자용 결과' : '소비자용 결과'}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="border-slate-200 bg-white text-slate-700"
-            >
-              Detected Category · {formatCategory(result.detectedCategory)}
-            </Badge>
-            {result.analysisModel && (
-              <Badge
-                variant="outline"
-                className={
-                  result.metrics?.mode === 'offline'
-                    ? 'border-amber-200 bg-amber-50 text-amber-800'
-                    : 'border-slate-200 bg-white text-slate-700'
-                }
-              >
-                {formatAnalysisModel(result)}
-              </Badge>
-            )}
-            {result.activePacks.map((packId) => (
-              <Badge
-                key={packId}
-                className={
-                  packId === 'GENERAL_FOOD'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : packId === 'HEALTH_FUNCTIONAL_FOOD'
-                      ? 'bg-teal-100 text-teal-800'
-                      : packId === 'PHARMACEUTICAL'
-                        ? 'bg-rose-100 text-rose-800'
-                        : packId === 'MEDICAL_DEVICE'
-                          ? 'bg-cyan-100 text-cyan-800'
-                          : packId === 'COSMETIC'
-                            ? 'bg-fuchsia-100 text-fuchsia-800'
-                            : 'bg-indigo-100 text-indigo-800'
-                }
-              >
-                {formatPack(packId)} Pack
-              </Badge>
-            ))}
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+            <RiskBadge severity={result.overallRisk} compact />
+            <span>{formatCategory(result.detectedCategory)}</span>
+            <span>· 분석 {formatElapsed(result)}</span>
+            <span>
+              ·{' '}
+              {result.metrics?.mode === 'offline'
+                ? '규칙 기반 대체 · 분석 한계 확인'
+                : '공식 근거 대조'}
+            </span>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {result.imageContent && (
+            <a
+              href="#image-evidence"
+              className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-50"
+            >
+              이미지 원본 대조
+            </a>
+          )}
           {isWeb && (
             <Button
               variant="outline"
               className="h-10 rounded-xl"
-              onClick={onRescan}
+              onClick={onRefreshSource}
             >
               <RefreshCw /> 웹페이지 다시 검사
             </Button>
@@ -1521,71 +1707,39 @@ function ScanResult({
           </Button>
         </div>
       </section>
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <SummaryMetric
-          label="Detected"
-          value={formatContentType(result.detectedContentType)}
-          icon={ScanText}
-        />
-        <SummaryMetric
-          label="Elapsed"
-          value={formatElapsed(result)}
-          icon={Clock3}
-        />
-        <SummaryMetric
-          label="Category"
-          value={formatCategory(result.detectedCategory)}
-          icon={Layers3}
-        />
-        <SummaryMetric
-          label="Overall Risk"
-          value={<RiskBadge severity={result.overallRisk} />}
-          icon={ShieldAlert}
-        />
-        <SummaryMetric
-          label="Claims Found"
-          value={`${result.claims.length} Claims`}
-          icon={ScanText}
-        />
-        <SummaryMetric
-          label={isWeb ? 'Issues' : 'Findings'}
-          value={`${result.issues.length} Risks Found`}
-          icon={Clipboard}
-        />
-      </section>
-      {result.metrics && <ValueMetricNote result={result} />}
       {result.notices.length > 0 && (
-        <div className="space-y-2">
-          {result.notices.map((notice) => (
-            <div
-              key={notice.code}
-              className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-900"
-            >
-              <Info className="mt-1 size-4 shrink-0" /> {notice.message}
-            </div>
-          ))}
-        </div>
+        <details
+          className="rounded-xl border border-amber-200 bg-amber-50/60 p-3"
+          open={
+            result.metrics?.mode === 'offline' ||
+            result.overallRisk === 'REVIEW_REQUIRED' ||
+            result.imageContent?.incomplete ||
+            undefined
+          }
+        >
+          <summary className="cursor-pointer text-sm font-medium text-amber-900">
+            분석 한계·확인 사항 {result.notices.length}개
+          </summary>
+          <div className="mt-2 space-y-2">
+            {result.notices.map((notice) => (
+              <div
+                key={notice.code}
+                className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-900"
+              >
+                <Info className="mt-1 size-4 shrink-0" /> {notice.message}
+              </div>
+            ))}
+          </div>
+        </details>
       )}
-      {result.productAuthorization && (
-        <ProductAuthorizationCard result={result} />
-      )}
-      {process.env.NODE_ENV === 'development' && result.debug && (
-        <RetrievalDebugPanel debug={result.debug} />
-      )}
-      {isBusiness && result.issues.length > 0 && (
-        <BusinessActionPlan result={result} />
-      )}
-      {isWeb && result.webContent ? (
-        <WebScanResultBody
+      {previousReview && (
+        <ReviewComparison
+          previous={previousReview}
+          currentText={analyzedText}
           result={result}
-          activeIssue={activeIssue}
-          selectedRewrite={selectedRewrite}
-          setSelectedRewrite={setSelectedRewrite}
-          onSelectIssue={onSelectIssue}
-          onCopy={onCopy}
-          copied={copied}
         />
-      ) : isLow ? (
+      )}
+      {isLow ? (
         <LowRiskResult
           text={analyzedText}
           audience={result.audience}
@@ -1596,25 +1750,6 @@ function ScanResult({
       ) : (
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
           <div className="min-w-0 space-y-6">
-            <Card className="border-0 py-0 shadow-sm ring-1 ring-slate-200">
-              <CardHeader className="border-b border-slate-200 px-6 py-5">
-                <CardTitle className="text-base font-semibold text-slate-900">
-                  분석한 원문
-                </CardTitle>
-                <CardDescription>
-                  색상과 라벨이 표시된 구간을 선택하면 상세 내용을 확인할 수
-                  있습니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-6 py-6">
-                <HighlightedText
-                  text={analyzedText}
-                  result={result}
-                  activeIssueId={activeIssue?.id ?? null}
-                  onSelectIssue={onSelectIssue}
-                />
-              </CardContent>
-            </Card>
             <section>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-900">
@@ -1667,6 +1802,7 @@ function ScanResult({
               )}
             </section>
             <RewriteDraft
+              originalText={analyzedText}
               value={draftText}
               onChange={setDraftText}
               notice={draftNotice}
@@ -1683,11 +1819,79 @@ function ScanResult({
               onApplyRewrite={onApplyRewrite}
               onCopy={onCopy}
               copied={copied}
+              draftText={draftText}
               canApplyRewrite
             />
           )}
         </div>
       )}
+      {result.issues.length === 0 && (
+        <RewriteDraft
+          originalText={analyzedText}
+          value={draftText}
+          onChange={setDraftText}
+          notice={draftNotice}
+          onApplyAll={onApplyAll}
+          onRescan={onRescan}
+          allowBatch={false}
+        />
+      )}
+      {reviewRecord}
+      {result.imageContent && (
+        <ImageEvidence
+          result={result}
+          file={imageFile}
+          selectedQuote={activeIssue?.originalText}
+          onNewImage={onNewImage}
+        />
+      )}
+      <details className="rounded-2xl border border-slate-200 bg-white p-5">
+        <summary className="cursor-pointer font-medium text-slate-800">
+          분석한 원문·페이지 구간 보기
+        </summary>
+        <div className="mt-4">
+          {isWeb ? (
+            <WebScanResultBody
+              result={result}
+              activeIssue={activeIssue}
+              onSelectIssue={onSelectIssue}
+            />
+          ) : (
+            <HighlightedText
+              text={analyzedText}
+              result={result}
+              activeIssueId={activeIssue?.id ?? null}
+              onSelectIssue={onSelectIssue}
+            />
+          )}
+        </div>
+      </details>
+      <details className="rounded-2xl border border-slate-200 bg-white p-5">
+        <summary className="cursor-pointer text-sm font-medium text-slate-700">
+          분석 방식·출처 범위·처리 기록
+        </summary>
+        <div className="mt-4 space-y-4">
+          <p className="text-sm text-slate-700">
+            {formatAnalysisModel(result)} ·{' '}
+            {result.activePacks.map(formatPack).join(', ')} ·{' '}
+            {result.claims.length}개 주장 검토
+          </p>
+          <p className="text-xs leading-5 text-slate-600">
+            출처 확인은 저장된 공식 규정과 인용의 연결을 확인한 것입니다. 개별
+            해석의 정확성이나 최신 법령 전체의 검토를 보증하지 않습니다.
+          </p>
+          <ValueMetricNote result={result} />
+          {result.productAuthorization && (
+            <ProductAuthorizationCard result={result} />
+          )}
+          {isBusiness && result.issues.length > 0 && (
+            <BusinessActionPlan result={result} />
+          )}
+          {process.env.NODE_ENV === 'development' && result.debug && (
+            <RetrievalDebugPanel debug={result.debug} />
+          )}
+        </div>
+      </details>
       <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-500">
         {isBusiness
           ? '표시된 법령은 잠재적 검토 기준입니다. 개별 광고의 위법 여부를 확정하는 법률 자문이나 공식 심의를 대체하지 않습니다.'
@@ -1740,18 +1944,9 @@ function IssueListItem({
   );
 }
 
-// Manual pre-publication review time is an assumption until measured with
-// real users; the UI must never present it as a measured fact.
-const MANUAL_REVIEW_BASELINE_MINUTES = 30;
-
 function ValueMetricNote({ result }: { result: ScanAnalysisResult }) {
   const metrics = result.metrics;
   if (!metrics) return null;
-  const seconds = metrics.elapsedMs / 1000;
-  const speedup =
-    metrics.elapsedMs > 0
-      ? Math.round((MANUAL_REVIEW_BASELINE_MINUTES * 60) / seconds)
-      : null;
   const providers = metrics.attempts.map(
     (attempt) =>
       `${attempt.provider}/${attempt.model} ${attempt.outcome === 'success' ? '성공' : `실패(${attempt.code ?? 'error'})`} ${(attempt.elapsedMs / 1000).toFixed(1)}초`,
@@ -1763,17 +1958,24 @@ function ValueMetricNote({ result }: { result: ScanAnalysisResult }) {
         이번 분석 {formatElapsed(result)}
       </span>
       <span>
-        수동 사전검수 기준선 {MANUAL_REVIEW_BASELINE_MINUTES}분(가정) 대비{' '}
-        {speedup ? `약 ${speedup.toLocaleString()}배` : '비교 불가'}
+        서버 처리 시간입니다. 결과 확인·수정·최종 검토 시간과 구분합니다. 실제
+        사용자 비교 실험 전에는 시간 절감 배수를 표시하지 않습니다.
       </span>
+      {metrics.fallbackConfigured !== undefined && (
+        <span className="text-slate-700">
+          {metrics.fallbackConfigured
+            ? '대체 AI 인증 설정 있음 · 실제 실행 여부는 처리 기록 참조'
+            : '대체 AI 인증 미구성 · AI 장애 시 규칙 기반 대체 사용'}
+        </span>
+      )}
       {metrics.mode === 'offline' ? (
         <span className="text-amber-700">
-          AI 제공자 실패 → 규칙·규정 검색만 사용
+          최종 위험 분석은 규칙·규정 검색으로 대체됐습니다. 앞선 AI 단계의 완료
+          여부는 아래 처리 기록을 확인하세요.
         </span>
-      ) : (
-        providers.length > 0 && (
-          <span className="text-slate-500">{providers.join(' → ')}</span>
-        )
+      ) : null}
+      {providers.length > 0 && (
+        <span className="text-slate-500">{providers.join(' → ')}</span>
       )}
     </div>
   );
@@ -1989,19 +2191,11 @@ function BusinessActionMetric({
 function WebScanResultBody({
   result,
   activeIssue,
-  selectedRewrite,
-  setSelectedRewrite,
   onSelectIssue,
-  onCopy,
-  copied,
 }: {
   result: ScanAnalysisResult;
   activeIssue: Issue | null;
-  selectedRewrite: string;
-  setSelectedRewrite: (rewrite: string) => void;
   onSelectIssue: (issue: Issue) => void;
-  onCopy: () => void;
-  copied: boolean;
 }) {
   const content = result.webContent!;
   const navigationSections = content.sections
@@ -2020,7 +2214,7 @@ function WebScanResultBody({
     .slice(0, 8);
 
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
+    <div>
       <div className="min-w-0 space-y-5">
         <Card className="gap-0 border-0 py-0 shadow-sm ring-1 ring-slate-200">
           <CardHeader className="border-b border-slate-200 px-5 py-5 sm:px-6">
@@ -2028,7 +2222,7 @@ function WebScanResultBody({
               분석한 페이지 콘텐츠
             </CardTitle>
             <CardDescription>
-              페이지에서 추출한 주요 구간과 광고 Claim입니다.
+              페이지에서 추출한 주요 구간과 광고 주장입니다.
             </CardDescription>
           </CardHeader>
           {navigationSections.length > 0 && (
@@ -2062,36 +2256,6 @@ function WebScanResultBody({
           </CardContent>
         </Card>
       </div>
-      {activeIssue ? (
-        <IssueInspector
-          issue={activeIssue}
-          result={result}
-          selectedRewrite={selectedRewrite}
-          setSelectedRewrite={setSelectedRewrite}
-          onApplyRewrite={() => undefined}
-          onCopy={onCopy}
-          copied={copied}
-          canApplyRewrite={false}
-        />
-      ) : (
-        <Card className="sticky top-6 border-0 shadow-sm ring-1 ring-slate-200">
-          <CardContent className="px-6 py-8 text-center">
-            <span className="mx-auto grid size-12 place-items-center rounded-xl bg-blue-50 text-blue-600">
-              {result.overallRisk === 'LOW' ? (
-                <CheckCircle2 className="size-5" />
-              ) : (
-                <Info className="size-5" />
-              )}
-            </span>
-            <RiskBadge severity={result.overallRisk} />
-            <p className="mt-4 text-sm leading-6 text-slate-600">
-              {result.overallRisk === 'LOW'
-                ? '현재 적용된 Compliance Pack에서 우선 검토할 Claim을 찾지 못했습니다.'
-                : '현재 활성화된 Compliance Pack만으로 판단하지 않고 추가 검토 대상으로 남겼습니다.'}
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
@@ -2190,28 +2354,6 @@ function HighlightedSectionText({
   return <p className="text-sm leading-7 text-slate-700">{content}</p>;
 }
 
-function SummaryMetric({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: ReactNode;
-  icon: ComponentType<{ className?: string }>;
-}) {
-  return (
-    <div className="flex min-h-24 items-center gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-slate-50 text-slate-500">
-        <Icon className="size-[18px]" />
-      </span>
-      <div>
-        <p className="mb-1.5 text-xs font-medium text-slate-400">{label}</p>
-        <div className="text-sm font-semibold text-slate-900">{value}</div>
-      </div>
-    </div>
-  );
-}
-
 function HighlightedText({
   text,
   result,
@@ -2224,82 +2366,111 @@ function HighlightedText({
   onSelectIssue: (issue: Issue) => void;
 }) {
   const segments: ReactNode[] = [];
-  const sortedClaims = [...result.claims].sort(
-    (a, b) => a.startOffset - b.startOffset,
-  );
+  const matches = findIssueHighlights(text, result.issues, result.claims);
   let cursor = 0;
-  sortedClaims.forEach((claim) => {
-    const issue = result.issues.find(
-      (candidate) => candidate.claimId === claim.id,
-    );
-    if (!issue) return;
-    if (claim.startOffset > cursor)
-      segments.push(text.slice(cursor, claim.startOffset));
+  matches.forEach(({ issue, start, end }) => {
+    if (start > cursor) segments.push(text.slice(cursor, start));
     segments.push(
       <button
-        key={claim.id}
+        key={issue.id}
         type="button"
         onClick={() => onSelectIssue(issue)}
-        className={`mx-0.5 rounded-md px-1.5 py-1 font-semibold underline decoration-red-400 decoration-2 underline-offset-4 transition ${activeIssueId === issue.id ? 'bg-red-100 text-red-900 ring-2 ring-red-200' : 'bg-red-50 text-red-800 hover:bg-red-100'}`}
+        className={`mx-0.5 rounded-md px-1.5 py-1 font-semibold underline decoration-2 underline-offset-4 transition ${getIssueHighlightClass(issue.severity, activeIssueId === issue.id)}`}
       >
-        {text.slice(claim.startOffset, claim.endOffset)}
-        <span className="sr-only"> HIGH RISK</span>
+        {text.slice(start, end)}
+        <span className="sr-only"> {issue.severity}</span>
       </button>,
     );
-    cursor = claim.endOffset;
+    cursor = end;
   });
   if (cursor < text.length) segments.push(text.slice(cursor));
   return <p className="text-lg leading-10 text-slate-800">{segments}</p>;
 }
 
+function WorkspaceMenuButton({
+  onClick,
+  ...props
+}: {
+  children: ReactNode;
+  className: string;
+  isActive: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const { setOpenMobile } = useSidebar();
+  return (
+    <SidebarMenuButton
+      {...props}
+      onClick={() => {
+        onClick();
+        setOpenMobile(false);
+      }}
+    />
+  );
+}
+
 function RewriteDraft({
+  originalText,
   value,
   onChange,
   notice,
   onApplyAll,
   onRescan,
+  allowBatch = true,
 }: {
+  originalText: string;
   value: string;
   onChange: (value: string) => void;
   notice: string | null;
   onApplyAll: () => void;
   onRescan: () => void;
+  allowBatch?: boolean;
 }) {
   return (
     <Card className="border-0 py-0 shadow-sm ring-1 ring-indigo-200">
-      <CardHeader className="border-b border-indigo-100 bg-indigo-50/50 px-6 py-5">
+      <CardHeader className="block border-b border-indigo-100 bg-indigo-50/50 px-5 py-4">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
           <Sparkles className="size-4 text-indigo-600" /> 수정 초안
         </CardTitle>
         <CardDescription>
-          수정안을 적용하거나 직접 고친 뒤 다시 검사하세요.
+          새로운 증빙을 가정하지 않고 문구를 정리합니다. URL·이미지에서 가져온
+          초안도 여기서는 텍스트만 재검사합니다.
         </CardDescription>
-        <CardAction>
+        <CardAction className="mt-3">
           <Button
             size="sm"
             variant="outline"
             className="border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50"
             onClick={onApplyAll}
+            disabled={!allowBatch}
           >
-            추천 수정안 모두 적용
+            검토 대상 주장 삭제
           </Button>
         </CardAction>
       </CardHeader>
       <CardContent className="px-6 py-6">
+        {value !== originalText && (
+          <details className="mb-4 rounded-xl border border-slate-200 p-3">
+            <summary className="cursor-pointer text-sm text-slate-600">
+              수정 전 원문 비교
+            </summary>
+            <p className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap text-sm leading-6 text-slate-700">
+              {originalText}
+            </p>
+          </details>
+        )}
         <Textarea
+          aria-label="수정 초안"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           className="min-h-28 resize-none rounded-xl border-slate-200 p-4 text-base leading-7"
         />
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p
-            className={`text-sm ${notice ? 'font-medium text-emerald-700' : 'text-slate-400'}`}
-            aria-live="polite"
-          >
+          <p className="text-sm leading-6 text-slate-600" aria-live="polite">
             {notice ?? '수정한 내용은 재검사 전까지 초안으로 유지됩니다.'}
           </p>
           <Button
-            disabled={!value.trim()}
+            disabled={!value.trim() || value.length > 20000}
             onClick={onRescan}
             className="h-10 rounded-xl bg-indigo-600 px-4 hover:bg-indigo-700"
           >
@@ -2319,6 +2490,7 @@ function IssueInspector({
   onApplyRewrite,
   onCopy,
   copied,
+  draftText,
   canApplyRewrite = true,
 }: {
   issue: Issue;
@@ -2328,6 +2500,7 @@ function IssueInspector({
   onApplyRewrite: () => void;
   onCopy: () => void;
   copied: boolean;
+  draftText?: string;
   canApplyRewrite?: boolean;
 }) {
   const sources = result.sources.filter((source) =>
@@ -2344,12 +2517,13 @@ function IssueInspector({
   );
   const isBusiness = result.audience === 'BUSINESS';
   return (
-    <aside className="sticky top-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.07)]">
+    <aside
+      id="issue-inspector"
+      className="scroll-mt-6 rounded-2xl border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.07)]"
+    >
       <div className="border-b border-slate-200 px-5 py-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-semibold text-slate-950">
-            {isBusiness ? '판매자 조치 가이드' : 'Issue Inspector'}
-          </h2>
+          <h2 className="font-semibold text-slate-950">이슈 상세 · 수정하기</h2>
           <RiskBadge severity={issue.severity} compact />
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -2357,19 +2531,17 @@ function IssueInspector({
           <Badge variant="outline">{formatPack(issue.packId)} Pack</Badge>
         </div>
       </div>
-      <div className="max-h-[calc(100vh-11rem)] space-y-6 overflow-y-auto px-5 py-5">
-        <InspectorSection
-          title={isBusiness ? '문제가 될 수 있는 표현' : 'Original Claim'}
-        >
+      <div className="space-y-6 px-5 py-5">
+        <InspectorSection title="문제가 될 수 있는 표현">
           <p className="rounded-xl bg-red-50 px-4 py-3 font-medium leading-6 text-red-900">
             “{issue.originalText}”
           </p>
         </InspectorSection>
         {pageSection && (
-          <InspectorSection title="Page Source">
+          <InspectorSection title="페이지 원문 위치">
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold text-indigo-700">
-                {formatSectionType(pageSection.type)} Section
+                {formatSectionType(pageSection.type)} 구간
               </p>
               <p className="mt-1 text-sm leading-5 text-slate-700">
                 {pageSection.heading ?? pageSection.text}
@@ -2377,7 +2549,7 @@ function IssueInspector({
             </div>
           </InspectorSection>
         )}
-        <InspectorSection title={isBusiness ? '잠재적 법적 쟁점' : 'Reason'}>
+        <InspectorSection title="확인해야 하는 이유">
           <p className="text-sm leading-6 text-slate-600">
             {issue.explanation}
           </p>
@@ -2387,6 +2559,17 @@ function IssueInspector({
             </p>
           )}
         </InspectorSection>
+        <RewriteOptionsPanel
+          issue={issue}
+          draftText={
+            draftText ?? result.webContent?.visibleText ?? issue.originalText
+          }
+          selectedId={selectedRewrite}
+          onSelect={setSelectedRewrite}
+          onApply={canApplyRewrite ? onApplyRewrite : undefined}
+          onCopy={onCopy}
+          copied={copied}
+        />
         <InspectorSection title="권장 조치">
           <p className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm font-medium text-indigo-900">
             {formatResolutionType(issue.resolutionType)}
@@ -2398,9 +2581,7 @@ function IssueInspector({
           )}
         </InspectorSection>
         {issue.requiredEvidence.length > 0 && (
-          <InspectorSection
-            title={isBusiness ? '게시 전 준비할 증빙' : 'Required Evidence'}
-          >
+          <InspectorSection title="게시 전 준비할 증빙">
             <ul className="grid grid-cols-2 gap-2">
               {issue.requiredEvidence.map((evidence) => (
                 <li
@@ -2425,7 +2606,7 @@ function IssueInspector({
               >
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <Badge className="bg-emerald-100 text-emerald-800">
-                    {isBusiness ? '출처 확인됨' : 'VERIFIED'}
+                    출처 연결 확인
                   </Badge>
                   <span className="text-xs text-emerald-800">
                     {source.authority}
@@ -2515,51 +2696,6 @@ function IssueInspector({
             </div>
           </InspectorSection>
         )}
-        <InspectorSection
-          title={isBusiness ? '권장 수정 문구' : 'Suggested Rewrite'}
-        >
-          <div className="space-y-2">
-            {issue.suggestedRewrites.map((rewrite) => (
-              <label
-                key={rewrite}
-                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${selectedRewrite === rewrite ? 'border-indigo-300 bg-indigo-50/60' : 'border-slate-200 hover:border-slate-300'}`}
-              >
-                <input
-                  type="radio"
-                  name={`rewrite-${issue.id}`}
-                  value={rewrite}
-                  checked={selectedRewrite === rewrite}
-                  onChange={() => setSelectedRewrite(rewrite)}
-                  className="mt-1 accent-indigo-600"
-                />
-                <span className="text-sm leading-6 text-slate-700">
-                  {rewrite}
-                </span>
-              </label>
-            ))}
-          </div>
-          <div
-            className={`mt-3 grid gap-2 ${canApplyRewrite ? 'grid-cols-[auto_1fr]' : 'grid-cols-1'}`}
-          >
-            <Button
-              variant="outline"
-              size={canApplyRewrite ? 'icon' : 'default'}
-              aria-label="수정안 복사"
-              onClick={onCopy}
-            >
-              {copied ? <Check className="text-emerald-600" /> : <Copy />}
-              {!canApplyRewrite && (copied ? '복사됨' : '선택한 수정안 복사')}
-            </Button>
-            {canApplyRewrite && (
-              <Button
-                onClick={onApplyRewrite}
-                className="bg-indigo-600 hover:bg-indigo-700"
-              >
-                이 표현으로 교체 <ArrowRight />
-              </Button>
-            )}
-          </div>
-        </InspectorSection>
       </div>
     </aside>
   );
@@ -2574,9 +2710,7 @@ function InspectorSection({
 }) {
   return (
     <section>
-      <h3 className="mb-2.5 text-xs font-semibold tracking-[0.06em] text-slate-400 uppercase">
-        {title}
-      </h3>
+      <h3 className="mb-2.5 text-xs font-semibold text-slate-600">{title}</h3>
       {children}
     </section>
   );
@@ -2799,7 +2933,11 @@ function splitKeyIssues(result: ScanAnalysisResult) {
 function formatAnalysisModel(result: ScanAnalysisResult) {
   const model = result.analysisModel ?? '';
   if (result.metrics?.mode === 'offline' || model === 'rules-only')
-    return '규칙 기반 결과 · AI 미사용';
+    return result.metrics?.attempts.some(
+      (attempt) => attempt.outcome === 'success',
+    )
+      ? 'AI 일부 단계 완료 · 최종 위험 분석은 규칙 기반 대체'
+      : '규칙·규정 검색 결과 · AI 해석 미완료';
   if (model.includes(' + ')) return `AI 분석 · ${model} (대체 제공자 포함)`;
   if (model.startsWith('openai/'))
     return `AI 분석 · ${model.slice('openai/'.length)} (대체 제공자)`;
@@ -2831,43 +2969,32 @@ function getUrlValidationError(value: string) {
   }
 }
 
-function formatContentType(type: ScanAnalysisResult['detectedContentType']) {
-  return {
-    ADVERTISEMENT_TEXT: 'Advertisement Text',
-    LANDING_PAGE: 'Landing Page',
-    PRODUCT_DETAIL: 'Product Detail',
-    BLOG: 'Blog',
-    DOCUMENTATION: 'Documentation',
-    UNKNOWN: 'Unknown',
-  }[type];
-}
-
 function formatCategory(category: ScanAnalysisResult['detectedCategory']) {
   return {
-    GENERAL_ADVERTISING: 'General Advertising',
-    GENERAL_FOOD: 'General Food',
-    HEALTH_FUNCTIONAL_FOOD: 'Health Functional Food',
-    PHARMACEUTICAL: 'Pharmaceutical',
-    MEDICAL_DEVICE: 'Medical Device',
-    COSMETIC: 'Cosmetic',
-    UNKNOWN: 'Review Required',
+    GENERAL_ADVERTISING: '일반 광고',
+    GENERAL_FOOD: '일반 식품',
+    HEALTH_FUNCTIONAL_FOOD: '건강기능식품',
+    PHARMACEUTICAL: '의약품',
+    MEDICAL_DEVICE: '의료기기',
+    COSMETIC: '화장품',
+    UNKNOWN: '분류 확인 필요',
   }[category];
 }
 
 function formatPack(packId: Issue['packId']) {
   return {
-    GENERAL_ADVERTISING: 'General Advertising',
-    GENERAL_FOOD: 'General Food',
-    HEALTH_FUNCTIONAL_FOOD: 'Health Functional Food',
-    PHARMACEUTICAL: 'Pharmaceutical',
-    MEDICAL_DEVICE: 'Medical Device',
-    COSMETIC: 'Cosmetic',
+    GENERAL_ADVERTISING: '일반 광고',
+    GENERAL_FOOD: '일반 식품',
+    HEALTH_FUNCTIONAL_FOOD: '건강기능식품',
+    PHARMACEUTICAL: '의약품',
+    MEDICAL_DEVICE: '의료기기',
+    COSMETIC: '화장품',
   }[packId];
 }
 
 function formatResolutionType(resolutionType: Issue['resolutionType']) {
   return {
-    REMOVE_OR_REWRITE: '효능 표현을 제거하거나 제품 정보 중심으로 수정',
+    REMOVE_OR_REWRITE: '문제가 된 주장을 제거하거나 실제 제품 정보로 수정',
     VERIFY_PRODUCT_CLASSIFICATION: '제품 분류·품목 허가정보를 먼저 확인',
     PROVIDE_EVIDENCE: '표현과 직접 연결되는 객관적 근거 확인',
     HUMAN_REVIEW: '전체 맥락을 포함한 추가 검토',
@@ -2888,7 +3015,7 @@ function formatPrimaryLegalBasis(issue: Issue, result: ScanAnalysisResult) {
 function getBusinessActionDetail(issue: Issue) {
   return {
     REMOVE_OR_REWRITE:
-      '현재 표현은 근거를 덧붙이는 것만으로 위험이 충분히 줄지 않을 수 있습니다. 게시 전 해당 효능·오인 표현을 제거하거나 확인된 제품 정보 중심으로 바꾸세요.',
+      '지적된 표현의 의미와 실제 제품 정보를 대조하세요. 확인되지 않은 주장은 제거하고, 다른 수치·성과·우월 표현으로 대체하지 마세요.',
     VERIFY_PRODUCT_CLASSIFICATION:
       '적용 법령이 제품 분류에 따라 달라질 수 있습니다. 품목 유형과 인허가 상태를 먼저 확인한 뒤 문구를 확정하세요.',
     PROVIDE_EVIDENCE:
