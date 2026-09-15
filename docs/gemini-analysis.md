@@ -1,49 +1,86 @@
-# Gemini 분석 연결
+# AI 분석 연결: Vertex AI → OpenAI → 규칙 기반
 
-텍스트, 공개 URL·상품 상세페이지, 업로드 이미지의 분석에 `gemini-3.8-flash`를 사용합니다. YouTube·영상은 제외하며, 기존에 구현된 규정 Pack의 범위를 유지합니다.
+텍스트, 공개 URL·상품 상세페이지, 업로드 이미지의 분석은 **Vertex AI의 Gemini**(`gemini-3.8-flash`, `VERTEX_MODEL`로 변경 가능)를 기본 제공자로 사용합니다. Gemini Developer API(`generativelanguage.googleapis.com`, `GEMINI_API_KEY`)는 더 이상 사용하지 않습니다. YouTube·영상은 제외하며, 기존 규정 Pack의 범위를 유지합니다.
 
-## 실행 설정
+## 제공자 체인
 
-로컬 `.env`의 `GEMINI_API_KEY`에 Google AI Studio에서 발급한 키를 넣고 `npm run dev`를 실행합니다. 실행 중 키를 변경했다면 개발 서버를 다시 시작하세요. Cloudflare 개발 환경이 `.env`를 서버 바인딩으로 읽습니다. 배포 환경에는 동일한 이름의 서버 Secret을 별도로 등록해야 합니다. 키를 채팅, 클라이언트 환경변수 또는 저장소에 넣지 않습니다.
+```
+요청 → Vertex AI Gemini ──성공──▶ 결과 (analysisModel: vertex/<model>, metrics.mode: live)
+          │ 실패(인증·할당량·과부하·시간 초과·형식 오류)
+          ▼
+        OpenAI Responses API (OPENAI_API_KEY 있을 때) ──성공──▶ 결과 (analysisModel: openai/<model>)
+          │ 실패
+          ▼
+        규칙 기반 탐지 + 공식 규정 검색 ──▶ 결과 (analysisModel: rules-only, metrics.mode: offline,
+                                              notice AI_UNAVAILABLE_RULES_ONLY)
+```
 
-키 누락, 권한 부족, 사용량 초과, 시간 초과, 불완전 응답은 명시적인 오류입니다. 일일 할당량 초과는 `AI_DAILY_LIMIT`로 구분하며, 짧게 기다린 뒤 바로 재시도하라는 안내를 하지 않습니다. 규칙 기반 데모 결과를 AI 성공 결과로 대체하지 않습니다. 기존 규칙 제공자는 AI에 전달하는 탐지 신호와 오프라인 회귀 평가에 사용합니다.
+- 안전성 차단(`AI_INCOMPLETE`)은 다른 AI 제공자로 재시도하지 않습니다.
+- 이미지의 OCR·시각 관찰 단계는 AI 없이는 대체할 수 없습니다. 추출이 실패하면 오류를 반환하고, 추출 후 규정 해석 단계가 실패하면 추출된 문구에 대해 규칙 기반 결과를 제공합니다.
+- 규칙 기반 결과는 결정론적 패턴 탐지와 검증된 조항 인용으로만 구성됩니다. 문맥 해석과 암시적 주장은 검토되지 않았음을 결과에 명시하며, UI는 "규칙 기반 결과 · AI 미사용" 배지를 표시합니다. AI 결과로 위장하지 않습니다.
+- 모든 시도는 `metrics.attempts`(제공자·모델·소요 시간·결과 코드)에 기록되고 `metrics.elapsedMs`에 전체 소요 시간이 남습니다. 요청마다 새 클라이언트를 만들어 동시 사용자의 기록이 섞이지 않습니다.
+- `AI_FALLBACK_PROVIDER=none`은 OpenAI 대체를, `AI_RULES_FALLBACK=off`는 규칙 기반 대체를 끕니다. 대표 데모(`업무 시간을 70% 줄여주는 국내 최고의 AI 서비스`)는 기본 설정에서 어떤 AI 제공자가 실패해도 규칙 기반 경로로 완료됩니다 ([production-analysis.test.ts](../src/server/production-analysis.test.ts)).
+
+## Vertex AI 설정
+
+### Express 모드 (가장 간단)
+
+Vertex AI Studio에서 API 키를 발급하고 `.env`에 `VERTEX_API_KEY`를 넣습니다. 엔드포인트는 `https://aiplatform.googleapis.com/v1/publishers/google/models/<model>:generateContent`, 인증은 `x-goog-api-key` 헤더입니다.
+
+### 프로젝트 모드
+
+1. GCP 프로젝트에서 Vertex AI API(`aiplatform.googleapis.com`)를 활성화합니다. [scripts/configure-vertex.mjs](../scripts/configure-vertex.mjs)가 `--inspect`, `--create-project`, `--enable-vertex`를 제공합니다 (개발자의 Google ADC 자격증명을 명시적으로 지정해야 하며, 토큰과 오류 본문을 출력하지 않습니다).
+2. 서비스 계정을 만들고 `roles/aiplatform.user`를 부여한 뒤 JSON 키를 발급합니다.
+3. `.env`에 `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`(기본 `global`), `VERTEX_SERVICE_ACCOUNT_JSON`(JSON 한 줄)을 설정합니다. 서버는 WebCrypto로 JWT를 서명해 `oauth2.googleapis.com/token`에서 액세스 토큰을 받습니다. 파일시스템이나 gcloud CLI는 사용하지 않아 Cloudflare Workers에서도 동작합니다.
+4. 이미 발급된 단기 토큰이 있으면 `VERTEX_ACCESS_TOKEN`으로 서비스 계정을 대신할 수 있습니다 (만료 관리는 운영자 책임).
+
+배포 환경에는 같은 이름의 서버 Secret을 별도로 등록합니다. 키를 채팅, 클라이언트 환경변수 또는 저장소에 넣지 않습니다. 개발 서버 실행 중 키를 바꿨다면 재시작하세요.
+
+### 전용 서버 계정 자동 설정
+
+개발자 ADC 경로를 `GOOGLE_ADC_PATH`로 지정한 상태에서 다음 순서로 실행합니다. 프로젝트 생성과 결제 연결은 별도 승인 후 진행하며, 아래 명령은 기존 프로젝트를 사용합니다.
+
+```sh
+node scripts/configure-vertex.mjs --enable-vertex --project=<id>
+node scripts/configure-vertex.mjs --enable-auth-api --project=<id>
+node scripts/configure-vertex.mjs --configure-server --project=<id>
+node scripts/configure-vertex.mjs --server-status --project=<id>
+```
+
+`--configure-server`는 `contentlint-server` 계정에 `roles/aiplatform.user`만 부여하고 기존 IAM 정책을 보존합니다. 기존 키가 있으면 재사용하며, 새 JSON 키는 Git에서 제외된 `secrets/`에 소유자만 읽을 수 있게 저장합니다. `.env`에도 같은 권한으로 설정하지만 배포 서버 Secret 등록은 별도로 필요합니다. 다른 프로젝트·계정의 설정은 덮어쓰지 않습니다. 신규 API·IAM 설정은 반영까지 시간이 걸릴 수 있으므로 실제 호출로 확인해야 합니다.
+
+장기 서비스 계정 키를 사용하므로 정기적으로 교체하고, 폐기할 때는 IAM에서 해당 키를 비활성화·삭제합니다. 키 없이 인증 가능한 GCP 호스팅으로 옮길 경우 연결된 서비스 계정/워크로드 아이덴티티 방식으로 전환하는 것을 권장합니다.
 
 ## 분석 과정
 
-1. URL은 기존의 SSRF 방어가 적용된 정적 HTML 추출기를 사용합니다. 페이지 텍스트와 이미지 대체 설명을 검사하며, 원격 이미지를 별도로 내려받거나 JavaScript를 실행하지 않습니다.
+1. URL은 SSRF 방어가 적용된 정적 HTML 추출기를 사용합니다. 원격 이미지를 내려받거나 JavaScript를 실행하지 않습니다.
 2. 이미지는 Gemini가 보이는 문구와 시각 관찰을 구분해 추출합니다. 시각 관찰에는 `[시각 관찰]` 표시를 붙이며, 읽기 불완전한 이미지는 부분 분석으로 표시합니다.
-3. Gemini가 콘텐츠를 분류하고 주장을 추출합니다. 원문에 없는 인용이나 지원되지 않는 주장 유형은 거부합니다. 기존 규칙이 탐지한 주장과 AI 주장을 병합합니다.
-4. 기존 BM25 검색으로 Pack·시행일을 필터링하고 주장별 최대 5개 조항을 검색합니다. 생성형 모델 연결과 임베딩 설정은 독립적이며 Gemini 사용에 OpenAI 키는 필요하지 않습니다.
-5. Gemini가 전체 문맥, 규칙 탐지 신호, 조회된 공식 품목정보, 검색된 조항을 대조하고 위험 설명·수정안·필요 증빙을 생성합니다.
-6. 주장별 출처 ID와 인용 원문을 검증한 뒤 기존 인용 검증기가 Pack·시행일·저장된 조항을 확인합니다. 검증되지 않은 근거는 `REVIEW_REQUIRED`로 낮추며 모델이 쓴 법령 URL·조 번호를 출처로 사용하지 않습니다. 근거가 없는 `PASS`도 통과 결과로 처리하지 않습니다.
-
-`ContentAnalysisProvider`와 `ComplianceReasoningProvider`가 도메인과 외부 API를 분리합니다. UI는 서버 API만 호출하며, 진행 단계는 NDJSON으로 수신합니다. 일반 API 클라이언트는 기존 JSON 응답도 사용할 수 있습니다.
+3. Gemini가 콘텐츠를 분류하고 주장을 추출합니다. 원문에 없는 인용이나 지원되지 않는 주장 유형은 거부합니다.
+4. 규칙 탐지 주장과 AI 주장을 **병합**합니다 ([merge-claims.ts](../src/compliance/core/merge-claims.ts)): 같은 Pack·유형·문맥 역할·페이지 섹션에서 80% 이상 겹치는 구간은 긴 인용 하나로 합칩니다.
+5. BM25 검색으로 Pack·시행일을 필터링하고 주장별 최대 5개 조항을 검색합니다.
+6. Gemini가 전체 문맥, 규칙 탐지 신호, 조회된 공식 품목정보, 검색된 조항을 대조하고 위험 설명·수정안·필요 증빙을 생성합니다.
+7. 주장별 출처 ID와 인용 원문을 검증한 뒤 인용 검증기가 Pack·시행일·저장된 조항을 확인합니다. 검증되지 않은 근거는 `REVIEW_REQUIRED`로 낮춥니다.
+8. 이슈를 **핵심 이슈로 정리**합니다 ([key-issues.ts](../src/compliance/core/key-issues.ts)): 같은 Pack·유형에서 한 인용이 다른 인용을 포함하면 하나로 합치고(검증 인용·높은 심각도 우선, 출처·증빙·수정안 합집합), 심각도 → 검증 인용 → 원문 위치로 정렬한 뒤 서로 다른 유형을 우선해 최대 3개를 `keyIssueIds`로 표시합니다. UI는 핵심 이슈를 먼저 보여주고 나머지는 접습니다.
 
 ## 입력·비용 제한
 
 - 텍스트: 최대 20,000자, JSON 요청 본문 최대 64,000바이트.
-- URL: 기존 추출 제한 40,000자. 추출 생략은 결과에 표시합니다.
-- 이미지: 한 번에 정지 이미지 1장, 최대 5MB, PNG/JPEG/WebP. MIME과 파일 시그니처를 함께 확인하며 영상·움직이는 PNG/WebP는 제외합니다.
-- AI 추가 주장 최대 24개, Pack별 병합 주장 최대 40개. 초과 시 일부만 분석했음을 표시합니다.
-- 분류·이미지 추출은 `low`, 규정 해석·수정안은 `medium` thinking. 주장 8개씩 묶어 생성하며 호출별 출력 상한 12,000토큰, 응답 상한 1MB, 시간 제한 60초입니다.
-- Pack은 순차 실행합니다. API가 503(일시적 과부하)을 명시적으로 반환한 경우에만 기존 60초 제한 안에서 최대 2회 재시도합니다. 성공 응답, 형식 오류, 사용량 초과, 시간 초과, 연결 실패는 자동 재시도하지 않습니다. 텍스트는 보통 분류 1회 + 주장 묶음별 분석, 이미지는 추출 1회가 추가됩니다. 사용자·프로젝트별 월 예산과 호출 할당량은 별도 운영 설정이 필요합니다.
-
-이미지 결과에서 수정안을 적용하면 추출된 텍스트 초안이 바뀝니다. 재검사는 텍스트를 대상으로 하며, 실제 이미지를 수정한 후에는 새로 업로드해야 배치·시각 요소까지 다시 검사할 수 있습니다.
+- URL: 추출 제한 40,000자. 추출 생략은 결과에 표시합니다.
+- 이미지: 정지 이미지 1장, 최대 5MB, PNG/JPEG/WebP. MIME과 파일 시그니처를 함께 확인하며 영상·움직이는 PNG/WebP는 제외합니다.
+- AI 추가 주장 최대 24개, Pack별 병합 주장 최대 40개.
+- 분류·이미지 추출은 `low`, 규정 해석·수정안은 `medium` thinking. `gemini-2.5-*` 모델은 `thinkingBudget`(0 / 2048)으로 자동 변환합니다. 주장 8개씩 묶어 생성하며 호출별 출력 상한 12,000토큰, 응답 상한 1MB입니다.
+- Vertex 기본 호출 시간 제한은 25초(대체 경로가 같은 요청 안에 들어가도록), OpenAI 대체는 30초입니다. 기본 제공자는 503 재시도를 하지 않고 즉시 대체 경로로 넘어갑니다.
+- Gemini에 보내는 JSON Schema에서는 `$schema`, `minLength`, `maxLength`, `minItems`, `maxItems`를 제외하고 서버의 Zod 스키마로 계속 검증합니다. Vertex 구조화 출력은 `generationConfig.responseMimeType: "application/json"` + `responseJsonSchema`를 사용합니다.
 
 ## 검증
 
-`npm test`는 외부 API를 호출하지 않습니다. HTTP 실패, 구조화 응답, 원문 대조, 인용 변조, 누락 주장, 텍스트·URL 연결, 이미지 제한, API 진행 이벤트를 모의 응답으로 검사합니다.
+`npm test`는 외부 API를 호출하지 않습니다. Vertex 엔드포인트·헤더·스키마, 제공자 대체 순서, 규칙 기반 대체, 이미지 경로의 부분 대체, 핵심 이슈 정리를 모의 응답으로 검사합니다.
 
-키를 설정한 뒤 다음 명령으로 텍스트 2개·URL 예제 1개·이미지 예제 1개를 실제 Gemini에 보낼 수 있습니다. API 비용이 발생합니다.
+실제 제공자 점검(API 비용 발생):
 
 ```sh
-npm run ai:eval -- --live
+npm run ai:eval -- --live        # 텍스트 2·URL 1·이미지 1 예제
+npm run eval:e2e -- --live       # 40개 사례 탐지·출처·오탐·지연 측정
 ```
 
-결과는 Git에서 제외된 `outputs/gemini-evaluation.json`에 저장합니다. 이 소수 예제는 기능 점검용이며 모델 정확도를 입증하는 벤치마크가 아닙니다. 출처의 의미상 적합성, OCR 정확도, 분류, 수정안의 사실성은 별도 평가가 필요합니다. 배포 환경의 실제 호출도 서버 키 설정 후 검증해야 합니다.
-
-Gemini에 보내는 JSON Schema에서는 `minLength`·`maxLength`, `minItems`·`maxItems`, `$schema`를 제외합니다. 중첩 배열의 크기 제약은 구조화 출력 문법을 과도하게 확장할 수 있습니다. 문자열 길이와 배열 개수 제한은 서버의 원래 Zod 스키마로 계속 검증합니다.
-
-REST 구조화 응답의 `responseFormat.text.mimeType`에는 HTTP MIME 문자열이 아닌 `APPLICATION_JSON` enum을 사용합니다. [REST 필드 계약](https://ai.google.dev/api/generate-content#TextResponseFormat)을 기준으로 검증합니다.
-
-공식 API 계약: [Gemini 3.8 Flash](https://ai.google.dev/gemini-api/docs/generate-content/latest-model), [구조화 출력](https://ai.google.dev/gemini-api/docs/generate-content/structured-output), [이미지 입력](https://ai.google.dev/gemini-api/docs/image-understanding).
+결과는 Git에서 제외된 `outputs/`에 저장됩니다. 평가 지표의 정의와 가치 검증 방법은 [value-metrics.md](./value-metrics.md)를 참고하세요.
