@@ -16,6 +16,7 @@ type Mode =
   | 'pass'
   | 'missing-claim'
   | 'unknown'
+  | 'localized-label'
   | 'article-in-prose';
 
 function harness(mode: Mode = 'normal') {
@@ -57,7 +58,10 @@ function harness(mode: Mode = 'normal') {
                 claimId: item.claim.id,
                 disposition: mode === 'pass' ? 'PASS' : 'ISSUE',
                 severity: 'MEDIUM',
-                issueType: 'EVIDENCE_REQUIRED',
+                issueType:
+                  mode === 'localized-label'
+                    ? '수치 실증 및 우월성 확인 필요'
+                    : 'EVIDENCE_REQUIRED',
                 explanation:
                   mode === 'article-in-prose'
                     ? '가상의 법 제999조에 위반됩니다.'
@@ -102,6 +106,20 @@ function harness(mode: Mode = 'normal') {
 }
 
 describe('Gemini analysis through rules, retrieval and citation validation', () => {
+  it('keeps pack-owned issue types even when the AI invents localized labels', async () => {
+    const { service } = harness('localized-label');
+    const result = await service.analyze(
+      '업무 시간을 70% 줄여주는 국내 최고의 AI 서비스',
+    );
+    expect(result.issues.map((issue) => issue.category)).toEqual([
+      'EVIDENCE_REQUIRED',
+      'COMPARATIVE_CLAIM',
+    ]);
+    expect(result.issues).toHaveLength(2);
+    expect(
+      result.issues.every((issue) => issue.citationStatus === 'VERIFIED'),
+    ).toBe(true);
+  });
   it('uses AI for text reasoning and rewrites while preserving deterministic claim detection', async () => {
     const { service, fetcher } = harness();
     const progress = vi.fn();
