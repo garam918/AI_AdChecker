@@ -2,6 +2,21 @@ import type { ScanAnalysisResult } from '@/src/compliance/core/schemas';
 
 export type PreviousReview = { text: string; result: ScanAnalysisResult };
 
+export function getComparisonState(
+  quote: string,
+  previousText: string,
+  currentText: string,
+  currentQuotes: string[],
+) {
+  if (!previousText.includes(quote)) return 'NOT_IN_TEXT';
+  if (!currentText.includes(quote)) return 'REMOVED';
+  return currentQuotes.some(
+    (next) => next.includes(quote) || quote.includes(next),
+  )
+    ? 'REDETECTED'
+    : 'NOT_DETECTED';
+}
+
 export function ReviewComparison({
   previous,
   currentText,
@@ -12,7 +27,9 @@ export function ReviewComparison({
   result: ScanAnalysisResult;
 }) {
   const removed = previous.result.issues.filter(
-    (issue) => !currentText.includes(issue.originalText),
+    (issue) =>
+      getComparisonState(issue.originalText, previous.text, currentText, []) ===
+      'REMOVED',
   );
   return (
     <details className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
@@ -30,15 +47,24 @@ export function ReviewComparison({
             <li key={issue.id} className="rounded-lg bg-white p-3">
               <span className="font-medium">“{issue.originalText}”</span>
               <span className="mt-1 block text-xs text-slate-600">
-                {!currentText.includes(issue.originalText)
-                  ? '이전 표현이 초안에서 제거됨'
-                  : result.issues.some(
-                        (next) =>
-                          next.originalText.includes(issue.originalText) ||
-                          issue.originalText.includes(next.originalText),
-                      )
-                    ? '같거나 겹치는 표현이 다시 탐지됨 · 현재 이슈의 근거·증빙 확인 필요'
-                    : '원문에는 남아 있으나 이번 분석에서는 같은 표현을 탐지하지 않음 · 직접 대조 필요'}
+                {
+                  {
+                    NOT_IN_TEXT:
+                      '텍스트 초안에 없던 관찰·구간입니다. 삭제 완료로 보지 않으며 원본을 직접 재검토하세요.',
+                    REMOVED: '이전 표현이 초안에서 제거됨',
+                    REDETECTED:
+                      '같거나 겹치는 표현이 다시 탐지됨 · 현재 이슈의 근거·증빙 확인 필요',
+                    NOT_DETECTED:
+                      '원문에는 남아 있으나 이번 분석에서는 같은 표현을 탐지하지 않음 · 직접 대조 필요',
+                  }[
+                    getComparisonState(
+                      issue.originalText,
+                      previous.text,
+                      currentText,
+                      result.issues.map((next) => next.originalText),
+                    )
+                  ]
+                }
               </span>
             </li>
           ))}
