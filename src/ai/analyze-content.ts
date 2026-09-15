@@ -22,11 +22,13 @@ export async function analyzeContent(
     productIdentity?: ProductIdentity;
   },
   onProgress?: AnalysisProgress,
+  signal?: AbortSignal,
 ) {
   return requestAnalysis(
     '/api/analyze',
     {
       method: 'POST',
+      signal,
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ text: input, audience, ...options }),
     },
