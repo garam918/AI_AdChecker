@@ -11,7 +11,7 @@ import {
   ScanAnalysisResultSchema,
 } from '@/src/compliance/core/schemas';
 import { ProductIdentitySchema } from '@/src/compliance/product-authorization/schemas';
-import { contentComplianceScanService } from '@/src/server/regulatory-runtime';
+import { createProductionAnalysis } from '@/src/server/production-analysis';
 
 const RequestSchema = z.object({
   text: z.string().trim().min(1).max(20000),
@@ -36,14 +36,17 @@ export async function POST(request: Request) {
       );
     const input = parsed.data;
     return analysisResponse(request, async (progress) => {
-      const result = await contentComplianceScanService.analyzeContent(
-        {
-          text: input.text,
-          detectedContentType: 'ADVERTISEMENT_TEXT',
-          categoryHint: input.categoryHint,
-          productIdentity: input.productIdentity,
-        },
-        progress,
+      const service = createProductionAnalysis();
+      const result = await service.measure(() =>
+        service.text.analyzeContent(
+          {
+            text: input.text,
+            detectedContentType: 'ADVERTISEMENT_TEXT',
+            categoryHint: input.categoryHint,
+            productIdentity: input.productIdentity,
+          },
+          progress,
+        ),
       );
       return ScanAnalysisResultSchema.parse({
         ...result,
