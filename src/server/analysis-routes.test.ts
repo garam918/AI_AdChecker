@@ -7,6 +7,17 @@ import { ScanAnalysisResultSchema } from '@/src/compliance/core/schemas';
 import { AIAnalysisError } from '@/src/ai/providers/gemini-client';
 
 afterEach(() => vi.unstubAllEnvs());
+function stubNoAiProviders() {
+  for (const name of [
+    'VERTEX_API_KEY',
+    'GOOGLE_CLOUD_PROJECT',
+    'VERTEX_ACCESS_TOKEN',
+    'VERTEX_SERVICE_ACCOUNT_JSON',
+    'OPENAI_API_KEY',
+    'AI_RULES_FALLBACK',
+  ])
+    vi.stubEnv(name, '');
+}
 const request = (body: unknown, accept = 'application/json') =>
   new Request('https://example.test/api/analyze', {
     method: 'POST',
@@ -15,8 +26,22 @@ const request = (body: unknown, accept = 'application/json') =>
   });
 
 describe('analysis API boundaries', () => {
-  it('reports missing Gemini configuration with 503 and no mock success', async () => {
-    vi.stubEnv('GEMINI_API_KEY', '');
+  it('falls back to a clearly labelled rules-only result when no AI provider is configured', async () => {
+    stubNoAiProviders();
+    const response = await analyze(request({ text: '국내 최고의 AI 서비스' }));
+    expect(response.status).toBe(200);
+    const body = ScanAnalysisResultSchema.parse(await response.json());
+    expect(body.analysisModel).toBe('rules-only');
+    expect(body.metrics?.mode).toBe('offline');
+    expect(body.notices.map((notice) => notice.code)).toContain(
+      'AI_UNAVAILABLE_RULES_ONLY',
+    );
+    expect(body.issues.length).toBeGreaterThan(0);
+  });
+
+  it('reports missing AI configuration with 503 when the rules fallback is disabled', async () => {
+    stubNoAiProviders();
+    vi.stubEnv('AI_RULES_FALLBACK', 'off');
     const response = await analyze(request({ text: '국내 최고의 AI 서비스' }));
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({ code: 'AI_NOT_CONFIGURED' });
