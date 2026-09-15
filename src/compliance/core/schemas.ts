@@ -123,6 +123,20 @@ export const AnalysisDebugSchema = z.object({
   ),
 });
 
+export const AnalysisAttemptSchema = z.object({
+  provider: z.enum(['vertex', 'openai']),
+  model: z.string().min(1),
+  elapsedMs: z.number().nonnegative(),
+  outcome: z.enum(['success', 'error']),
+  code: z.string().optional(),
+});
+
+export const AnalysisMetricsSchema = z.object({
+  elapsedMs: z.number().nonnegative(),
+  mode: z.enum(['live', 'offline']),
+  attempts: z.array(AnalysisAttemptSchema),
+});
+
 export const ScanSchema = z.object({
   id: z.string().min(1),
   inputType: z.enum(['TEXT', 'URL', 'IMAGE']),
@@ -141,6 +155,11 @@ export const ScanAnalysisResultSchema = z
   .object({
     inputType: z.enum(['TEXT', 'URL', 'IMAGE']).default('TEXT'),
     analysisModel: z.string().min(1).optional(),
+    // Wall-clock and provider trace for value measurement. `offline` means
+    // every AI provider failed and the deterministic pipeline produced the result.
+    metrics: AnalysisMetricsSchema.optional(),
+    // Issue ids the user should read first, in display order (at most 3).
+    keyIssueIds: z.array(z.string().min(1)).default([]),
     imageContent: z
       .object({
         fileName: z.string(),
@@ -168,6 +187,7 @@ export const ScanAnalysisResultSchema = z
           code: z.enum([
             'CONTENT_TRUNCATED',
             'AI_REVIEW_REQUIRED',
+            'AI_UNAVAILABLE_RULES_ONLY',
             'IMAGE_EXTRACTION_LIMITS',
             'UNKNOWN_CATEGORY',
             'PRODUCT_AUTHORIZATION_REQUIRED',
@@ -203,6 +223,17 @@ export const ScanAnalysisResultSchema = z
         path: ['imageContent'],
       });
     }
+
+    const issueIds = new Set(result.issues.map((issue) => issue.id));
+    result.keyIssueIds.forEach((issueId, index) => {
+      if (!issueIds.has(issueId)) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Key issue must reference an existing issue.',
+          path: ['keyIssueIds', index],
+        });
+      }
+    });
 
     result.issues.forEach((issue, issueIndex) => {
       if (!claimIds.has(issue.claimId)) {
@@ -257,6 +288,8 @@ export type ClaimSignal = z.infer<typeof ClaimSignalSchema>;
 export type ClaimContextRole = z.infer<typeof ClaimContextRoleSchema>;
 export type ResolutionType = z.infer<typeof ResolutionTypeSchema>;
 export type Scan = z.infer<typeof ScanSchema>;
+export type AnalysisAttempt = z.infer<typeof AnalysisAttemptSchema>;
+export type AnalysisMetrics = z.infer<typeof AnalysisMetricsSchema>;
 export type Claim = z.infer<typeof ClaimSchema>;
 export type Issue = z.infer<typeof IssueSchema>;
 export type RegulationSource = z.infer<typeof RegulationSourceSchema>;
