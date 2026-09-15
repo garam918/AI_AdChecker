@@ -347,7 +347,9 @@ export function ContentLintApp() {
         controller.signal,
       );
       if (controller.signal.aborted) return;
-      const text = nextResult.imageContent?.analysisText ?? '';
+      // Only actual OCR text belongs in an advertising draft. Visual model
+      // observations remain in the separate evidence panel and full result.
+      const text = nextResult.imageContent?.extractedText ?? '';
       setAnalyzedText(text);
       setInputText(text);
       setResult(nextResult);
