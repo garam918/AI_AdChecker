@@ -18,11 +18,13 @@ export async function analyzeUrl(
     productIdentity?: ProductIdentity;
   },
   onProgress?: AnalysisProgress,
+  signal?: AbortSignal,
 ) {
   return requestAnalysis(
     '/api/analyze-url',
     {
       method: 'POST',
+      signal,
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(input),
     },
