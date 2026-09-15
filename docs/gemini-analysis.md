@@ -17,7 +17,7 @@
 
 - 안전성 차단(`AI_INCOMPLETE`)은 다른 AI 제공자로 재시도하지 않습니다.
 - 이미지의 OCR·시각 관찰 단계는 AI 없이는 대체할 수 없습니다. 추출이 실패하면 오류를 반환하고, 추출 후 규정 해석 단계가 실패하면 추출된 문구에 대해 규칙 기반 결과를 제공합니다.
-- 규칙 기반 결과는 결정론적 패턴 탐지와 검증된 조항 인용으로만 구성됩니다. 문맥 해석과 암시적 주장은 검토되지 않았음을 결과에 명시하며, UI는 "규칙 기반 결과 · AI 미사용" 배지를 표시합니다. AI 결과로 위장하지 않습니다.
+- 규칙 기반 최종 결과는 결정론적 패턴 탐지와 검증된 조항 인용으로 구성됩니다. 앞선 OCR·주장 추출은 성공하고 최종 AI 해석만 실패할 수 있으므로 호출 기록에서 부분 성공을 구분합니다. UI는 최종 규칙 대체와 문맥 해석의 한계를 표시하며, 부분 성공을 "AI 미사용"으로 뭉뚱그리지 않습니다.
 - 모든 시도는 `metrics.attempts`(제공자·모델·소요 시간·결과 코드)에 기록되고 `metrics.elapsedMs`에 전체 소요 시간이 남습니다. 요청마다 새 클라이언트를 만들어 동시 사용자의 기록이 섞이지 않습니다.
 - `AI_FALLBACK_PROVIDER=none`은 OpenAI 대체를, `AI_RULES_FALLBACK=off`는 규칙 기반 대체를 끕니다. 대표 데모(`업무 시간을 70% 줄여주는 국내 최고의 AI 서비스`)는 기본 설정에서 어떤 AI 제공자가 실패해도 규칙 기반 경로로 완료됩니다 ([production-analysis.test.ts](../src/server/production-analysis.test.ts)).
 
@@ -69,8 +69,10 @@ node scripts/configure-vertex.mjs --server-status --project=<id>
 - 이미지: 정지 이미지 1장, 최대 5MB, PNG/JPEG/WebP. MIME과 파일 시그니처를 함께 확인하며 영상·움직이는 PNG/WebP는 제외합니다.
 - AI 추가 주장 최대 24개, Pack별 병합 주장 최대 40개.
 - 분류·이미지 추출은 `low`, 규정 해석·수정안은 `medium` thinking. `gemini-2.5-*` 모델은 `thinkingBudget`(0 / 2048)으로 자동 변환합니다. 주장 8개씩 묶어 생성하며 호출별 출력 상한 12,000토큰, 응답 상한 1MB입니다.
-- Vertex 기본 호출 시간 제한은 25초(대체 경로가 같은 요청 안에 들어가도록), OpenAI 대체는 30초입니다. 기본 제공자는 503 재시도를 하지 않고 즉시 대체 경로로 넘어갑니다.
+- 요청별 AI 클라이언트의 공유 예산은 65초, Vertex 호출별 상한은 35초, OpenAI 대체 호출별 상한은 25초입니다. 매 호출은 남은 예산까지만 대기하며, 분류·이미지 추출·여러 주장 묶음이 같은 예산을 공유합니다. 콘텐츠 추출·검색·전송까지 포함한 HTTP 전체의 65초 완료 보장은 아닙니다. 기본 제공자는 503 재시도를 하지 않고 대체 경로로 넘어갑니다.
 - Gemini에 보내는 JSON Schema에서는 `$schema`, `minLength`, `maxLength`, `minItems`, `maxItems`를 제외하고 서버의 Zod 스키마로 계속 검증합니다. Vertex 구조화 출력은 `generationConfig.responseMimeType: "application/json"` + `responseJsonSchema`를 사용합니다.
+- OpenAI 대체도 `text.format`의 `strict: true` 구조화 출력과 서버 Zod 검증을 함께 사용합니다. 거부 응답은 별도 실패로 보존하고 다른 제공자로 안전성 거부를 우회하지 않습니다. 키의 존재를 나타내는 `metrics.fallbackConfigured`는 인증·잔액·실제 호출 성공을 보증하지 않습니다. [OpenAI 구조화 출력 공식 문서](https://developers.openai.com/api/docs/guides/structured-outputs)
+- 문구 제안은 사실 확인이 아닙니다. 수치·수상·검증·빈칸 템플릿과 수정 지침은 직접 검토 항목으로 나누고 자동 적용하지 않습니다. 일괄 수정은 인용 검증된 검토 대상 주장의 삭제만 수행하며, 현재 초안과 일치하지 않거나 위치가 모호하면 건너뜁니다. 삭제가 광고의 품질이나 적법성을 보장하지는 않습니다.
 
 ## 검증
 
@@ -79,8 +81,8 @@ node scripts/configure-vertex.mjs --server-status --project=<id>
 실제 제공자 점검(API 비용 발생):
 
 ```sh
-npm run ai:eval -- --live        # 텍스트 2·URL 1·이미지 1 예제
-npm run eval:e2e -- --live       # 40개 사례 탐지·출처·오탐·지연 측정
+npm run ai:eval -- --live --text-repeats=5 # 대표 텍스트 각각 5회 + URL 1·이미지 1
+npm run eval:e2e -- --dataset=challenge --live # 새 내부 문맥 사례 40개
 ```
 
-결과는 Git에서 제외된 `outputs/`에 저장됩니다. 평가 지표의 정의와 가치 검증 방법은 [value-metrics.md](./value-metrics.md)를 참고하세요.
+결과는 Git에서 제외된 `outputs/evaluations/`에 실행별 고유 이름으로 저장되며, 중단된 실행도 완료한 관측값을 보존합니다. 결과 반환율(규칙 대체 포함)과 최종 AI 완료율을 따로 확인하세요. 소수 데모의 반복 성공을 향후 100% 성공 보장으로 표현하지 않습니다. 평가 지표의 정의와 가치 검증 방법은 [value-metrics.md](./value-metrics.md)를 참고하세요.
