@@ -13,7 +13,7 @@ import {
 import { ProductIdentitySchema } from '@/src/compliance/product-authorization/schemas';
 import { DEMO_FIXTURE_IDS } from '@/src/content/web/fixture-web-content-extractor';
 import { validatePublicHttpUrl } from '@/src/security/url-validator';
-import { urlComplianceScanService } from '@/src/server/url-scan-runtime';
+import { createProductionAnalysis } from '@/src/server/production-analysis';
 
 const RequestSchema = z
   .object({
@@ -51,17 +51,20 @@ export async function POST(request: Request) {
         'YouTube 분석은 이번 지원 범위에 포함되지 않습니다. 광고 텍스트나 이미지를 입력해 주세요.',
       );
     }
+    const service = createProductionAnalysis();
     return analysisResponse(request, async (progress) =>
       ScanAnalysisResultSchema.parse({
-        ...(await urlComplianceScanService.analyze(
-          {
-            ...(url
-              ? { url: url.toString() }
-              : { fixtureId: input.fixtureId! }),
-            categoryHint: input.categoryHint,
-            productIdentity: input.productIdentity,
-          },
-          progress,
+        ...(await service.measure(() =>
+          service.url.analyze(
+            {
+              ...(url
+                ? { url: url.toString() }
+                : { fixtureId: input.fixtureId! }),
+              categoryHint: input.categoryHint,
+              productIdentity: input.productIdentity,
+            },
+            progress,
+          ),
         )),
         audience: input.audience,
       }),
