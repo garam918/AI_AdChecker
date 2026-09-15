@@ -8,13 +8,14 @@ export function analyzeImage(
   audience: AnalysisAudience,
   options?: Parameters<typeof analyzeContent>[2],
   onProgress?: AnalysisProgress,
+  signal?: AbortSignal,
 ) {
   const body = new FormData();
   body.append('image', image);
   body.append('options', JSON.stringify({ audience, ...options }));
   return requestAnalysis(
     '/api/analyze-image',
-    { method: 'POST', body },
+    { method: 'POST', body, signal },
     onProgress,
   );
 }
