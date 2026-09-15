@@ -43,6 +43,8 @@ export type GeminiImage = {
 export type GenerateOptions = {
   image?: GeminiImage;
   thinking?: 'low' | 'medium';
+  /** Per-call deadline, including authentication, bounded by the orchestrator. */
+  timeoutMs?: number;
 };
 
 /**
@@ -82,7 +84,7 @@ export class GeminiClient {
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
-      this.options.timeoutMs ?? 60_000,
+      options.timeoutMs ?? this.options.timeoutMs ?? 60_000,
     );
     try {
       let config;
@@ -96,6 +98,12 @@ export class GeminiClient {
           controller.signal,
         );
       } catch {
+        if (controller.signal.aborted)
+          throw new AIAnalysisError(
+            'AI_TIMEOUT',
+            'Vertex AI 인증 요청 시간이 초과되었습니다.',
+            504,
+          );
         throw new AIAnalysisError(
           'AI_NOT_CONFIGURED',
           'Vertex AI 연결이 아직 설정되지 않았습니다. 서버의 VERTEX_API_KEY 또는 GOOGLE_CLOUD_PROJECT와 서비스 계정 설정을 확인해 주세요.',
