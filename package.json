@@ -18,7 +18,8 @@
     "rag:check": "npm run rag:index -- --check",
     "rag:query": "vite-node --config vitest.config.ts scripts/query-regulatory-index.ts",
     "ai:eval": "vite-node --config vitest.config.ts scripts/evaluate-gemini.ts",
-    "rag:eval": "vitest run src/compliance/regulatory/retrieval-evaluation.test.ts"
+    "rag:eval": "vitest run src/compliance/regulatory/retrieval-evaluation.test.ts",
+    "eval:e2e": "vite-node --config vitest.config.ts scripts/evaluate-compliance.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
