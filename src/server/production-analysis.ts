@@ -1,5 +1,8 @@
 import { GeminiContentProvider } from '@/src/ai/providers/gemini-content-provider';
-import { ResilientAIClient } from '@/src/ai/providers/resilient-ai-client';
+import {
+  ResilientAIClient,
+  AI_REQUEST_BUDGET_MS,
+} from '@/src/ai/providers/resilient-ai-client';
 import type { VertexEnv } from '@/src/ai/providers/vertex-auth';
 import { FallbackComplianceScanService } from '@/src/compliance/core/fallback-compliance-scan-service';
 import type { ScanAnalysisResult } from '@/src/compliance/core/schemas';
@@ -45,6 +48,8 @@ export function createProductionAnalysis(
           elapsedMs: Date.now() - started,
           mode: offline ? 'offline' : 'live',
           attempts: [...client.attempts],
+          fallbackConfigured: client.fallbackConfigured,
+          aiBudgetMs: AI_REQUEST_BUDGET_MS,
         },
       };
     },
