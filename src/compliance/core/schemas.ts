@@ -147,6 +147,7 @@ export const AnalysisMetricsSchema = z.object({
   mode: z.enum(['live', 'offline']),
   attempts: z.array(AnalysisAttemptSchema),
   fallbackConfigured: z.boolean().optional(),
+  vertexFallbackModel: z.string().max(100).optional(),
   aiBudgetMs: z.number().positive().optional(),
 });
 
