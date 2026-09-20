@@ -35,4 +35,17 @@ describe('detectGeneralFoodCategory', () => {
       disposition: 'UNCERTAIN',
     });
   });
+
+  it('does not mistake a denied product class for an affirmative identity', () => {
+    expect(
+      detect('일반식품 과일 음료입니다. 건강기능식품이 아닙니다.'),
+    ).toMatchObject({
+      category: 'GENERAL_FOOD',
+      disposition: 'MATCH',
+    });
+    expect(detect('일반식품과 달리 건강기능식품입니다.')).toMatchObject({
+      category: 'UNKNOWN',
+      disposition: 'UNCERTAIN',
+    });
+  });
 });
