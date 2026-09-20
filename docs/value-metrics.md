@@ -21,15 +21,17 @@
 - 저장 버튼을 눌렀을 때만 이 브라우저의 `localStorage`에 원문·결과·초안·메모·시간을 보관합니다. 최대 10개, 다른 기기 동기화 없음, 이미지 원본 제외. 공용 PC 저장을 주의하고 삭제하면 복구할 수 없습니다.
 - 개발자가 화면 동작을 확인하며 기록한 시간은 실제 고객의 시간 절감 근거로 사용하지 않습니다.
 
-## 두 평가 데이터셋
+## 평가 데이터셋
 
 - `evals/end-to-end/cases.json`: 기존 40개 회귀 사례, FLAG 27 / SAFE 13. 기존 구현 분야를 보존한 회귀셋이며 규칙 설계와 겹칩니다.
 - `evals/challenge/cases.json`: 새 내부 합성 40개, 일반 광고·일반 식품 각각 FLAG 12 / SAFE 8. 부정문·암시·상충 주장 중심이며 **독립적 전문가 정답셋이 아닙니다**.
+- `evals/validation/cases.json`: 2026-09-20 추가한 합성 40개(FLAG 24 / SAFE 16). 기존 두 세트와 동일 원문은 없으며 첫 실행 전 기대 유형·해시를 고정했습니다. 이 또한 전문가 정답셋이 아닙니다. 결과를 보고 수정한 뒤에는 개발 회귀셋으로 취급합니다.
 
 ```sh
 npm run eval:e2e -- --dataset=regression --strict
 npm run eval:e2e -- --dataset=challenge
 npm run eval:e2e -- --dataset=challenge --live
+npm run eval:e2e -- --dataset=validation --live
 npm run ai:eval -- --live --text-repeats=5
 ```
 
