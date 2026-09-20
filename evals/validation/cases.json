@@ -1,0 +1,402 @@
+[
+  {
+    "id": "validation-ga-01",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": false,
+    "input": "AI 회의록 앱을 쓰면 회의 후 정리 시간이 62% 단축됩니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["EVIDENCE_REQUIRED"],
+    "notes": "정량 성과의 측정 조건 확인."
+  },
+  {
+    "id": "validation-ga-02",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": false,
+    "input": "이 문서 변환 소프트웨어를 도입한 사업장은 누적 8,200곳입니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["EVIDENCE_REQUIRED"],
+    "notes": "집계 기준·시점 확인."
+  },
+  {
+    "id": "validation-ga-03",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "이 일정 관리 앱과 함께하면 예전에는 사흘 걸리던 업무를 하루 만에 끝냅니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["EVIDENCE_REQUIRED"],
+    "notes": "숫자 기호 없이 제시한 정량 성과."
+  },
+  {
+    "id": "validation-ga-04",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": false,
+    "input": "국내 최고의 협업 소프트웨어, 순위의 판단 기준은 밝히지 않습니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["COMPARATIVE_CLAIM"],
+    "notes": "최상급 비교 근거 확인."
+  },
+  {
+    "id": "validation-ga-05",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "다른 모든 문서 작성 도구를 능가하는 속도, 우리 앱과 견줄 서비스는 없습니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["COMPARATIVE_CLAIM"],
+    "notes": "배타적 우월성의 문맥."
+  },
+  {
+    "id": "validation-ga-06",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": false,
+    "input": "경쟁사 대비 3배 빠른 AI 검색. 비교 제품과 측정 환경은 제공하지 않습니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["COMPARATIVE_CLAIM"],
+    "notes": "비교 성능 조건 확인."
+  },
+  {
+    "id": "validation-ga-07",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "이 AI 편집기는 완전 무료입니다. 파일을 내보내려면 별도 비용을 결제해야 합니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["CONDITION_DISCLOSURE"],
+    "notes": "무료 헤드라인과 필수 작업 요금 충돌."
+  },
+  {
+    "id": "validation-ga-08",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "첫 달 무료인 문서 앱입니다. 카드 등록 후 자동 유료 전환되며 청구 금액은 가입 완료 후 알 수 있습니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["CONDITION_DISCLOSURE"],
+    "notes": "사전 요금 안내 누락."
+  },
+  {
+    "id": "validation-ga-09",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "오류가 전혀 없는 AI 요약 앱입니다. 모든 내용을 원문과 대조하지 않고 그대로 사용해도 됩니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["EVIDENCE_REQUIRED"],
+    "notes": "절대적 성능 및 검토 불필요 주장."
+  },
+  {
+    "id": "validation-ga-10",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "한 고객이 이 자동화 앱으로 처리량을 세 배 늘렸습니다. 도입하는 모든 회사에 같은 성과를 약속합니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["EVIDENCE_REQUIRED"],
+    "notes": "개별 성과를 보편화."
+  },
+  {
+    "id": "validation-ga-11",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": false,
+    "input": "이 앱은 작업 속도를 35% 높입니다. 업계 1위 AI 파트너입니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["EVIDENCE_REQUIRED", "COMPARATIVE_CLAIM"],
+    "notes": "서로 다른 두 기대 이슈 모두 필요."
+  },
+  {
+    "id": "validation-ga-12",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "이 AI 앱이 국내 최고라는 뜻은 아니지만, 업무 정확도 99.7%를 제공합니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": ["EVIDENCE_REQUIRED"],
+    "notes": "부정한 우월성과 긍정한 수치 주장을 구분."
+  },
+  {
+    "id": "validation-ga-13",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "contextDependent": false,
+    "input": "AI 메모 앱에서 폴더 이름을 변경하고 작성한 문서를 PDF로 내려받을 수 있습니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "명시 기능이 실제 제공된다는 가정. 법적 적합성 정답 아님."
+  },
+  {
+    "id": "validation-ga-14",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "contextDependent": false,
+    "input": "이 협업 앱의 월 이용료는 18,000원이며 팀원 4명까지 등록할 수 있습니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "가격·제공량이 사실이라는 가정. 성능 수치가 아님."
+  },
+  {
+    "id": "validation-ga-15",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "문서 앱을 14일 동안 무료로 체험하세요. 자동 결제는 없으며 이후 사용자가 직접 유료 구독을 선택한 경우에만 월 8,000원이 결제됩니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "공개한 체험 기간·전환·요금이 실제 조건이라는 가정."
+  },
+  {
+    "id": "validation-ga-16",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "이 AI 앱은 국내 최고나 업계 1위라고 주장하지 않습니다. 제공하는 기능을 살펴보고 선택하세요.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "최상급의 직접 부정."
+  },
+  {
+    "id": "validation-ga-17",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "AI 초안의 정확도를 100% 보장하지 않습니다. 배포 전에 원문과 확인하세요.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "절대 성능이 아닌 검토 주의 문구."
+  },
+  {
+    "id": "validation-ga-18",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "이 AI 앱은 결과를 만드는 시간을 절반으로 줄여준다는 의미가 아닙니다. 개인별 작업 방식에 따라 차이가 있습니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "암시적 정량 성과의 직접 부정."
+  },
+  {
+    "id": "validation-ga-19",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "contextDependent": false,
+    "input": "AI 문서 서비스의 언어는 설정에서 한국어와 영어 중 선택할 수 있습니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "실제 제공 기능을 가정한 중립 설명."
+  },
+  {
+    "id": "validation-ga-20",
+    "pack": "GENERAL_ADVERTISING",
+    "group": "SAFE",
+    "contextDependent": false,
+    "input": "이 협업 앱에서는 팀 초대 링크를 생성하거나 기존 링크를 해제할 수 있습니다.",
+    "expectedCategory": "GENERAL_ADVERTISING",
+    "expectedIssueTypes": [],
+    "notes": "실제 제공 기능을 가정한 사용 절차."
+  },
+  {
+    "id": "validation-food-01",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": false,
+    "input": "일반식품 배즙입니다. 꾸준히 마시면 감기를 치료합니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["DISEASE_PREVENTION_TREATMENT"],
+    "notes": "일반식품의 직접 질병 치료 표현."
+  },
+  {
+    "id": "validation-food-02",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": false,
+    "input": "일반식품인 현미 음료입니다. 고혈압 예방에 좋은 매일의 한 잔.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["DISEASE_PREVENTION_TREATMENT"],
+    "notes": "질병 예방 표현."
+  },
+  {
+    "id": "validation-food-03",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": false,
+    "input": "일반식품 유자차를 마셔서 면역력 증진과 혈당 조절을 시작하세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["HEALTH_FUNCTIONAL_FOOD_CONFUSION"],
+    "notes": "일반식품과 기능성 효과의 연결."
+  },
+  {
+    "id": "validation-food-04",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "일반식품 곡물차입니다. 처방받은 약 대신 이 차를 드시면 됩니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["PHARMACEUTICAL_CONFUSION"],
+    "notes": "의약품 대체 암시."
+  },
+  {
+    "id": "validation-food-05",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": false,
+    "input": "일반식품인 이 음료는 약처럼 빠른 진통 효과를 냅니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["PHARMACEUTICAL_CONFUSION"],
+    "notes": "약리 효과 연결."
+  },
+  {
+    "id": "validation-food-06",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "일반식품 허브차 광고 후기: 이 차를 마시고 관절 통증이 나았어요. 누구든 같은 변화를 경험합니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["CONSUMER_EXPERIENCE_GENERALIZATION"],
+    "notes": "광고에 인용한 체험의 보편화."
+  },
+  {
+    "id": "validation-food-07",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": false,
+    "input": "일반식품 곡물 음료입니다. 의사가 추천하는 혈당 관리 비법.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["EXPERT_ENDORSEMENT_RISK"],
+    "notes": "전문가 권위를 효능 신뢰에 사용하는 검토 신호."
+  },
+  {
+    "id": "validation-food-08",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "일반식품 차의 섭취 전후 사진을 보세요. 달라진 허리둘레가 효과를 보여줍니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["BEFORE_AFTER_RISK"],
+    "notes": "효능을 암시하는 전후 비교."
+  },
+  {
+    "id": "validation-food-09",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": false,
+    "input": "일반식품 보리 음료로 체지방 감소를 관리하세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["HEALTH_FUNCTIONAL_FOOD_CONFUSION"],
+    "notes": "일반식품 기능성 오인 신호."
+  },
+  {
+    "id": "validation-food-10",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "일반식품 차입니다. 질병 치료를 주장하지 않지만 이 제품을 마시면 감기약이 필요 없어집니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["PHARMACEUTICAL_CONFUSION"],
+    "notes": "부정 뒤 별도의 약 대체 주장을 보존."
+  },
+  {
+    "id": "validation-food-11",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "일반식품 음료의 영양정보: 당류 0g, 감기 예방에 좋은 차입니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["DISEASE_PREVENTION_TREATMENT"],
+    "notes": "영양 표기가 긍정한 효능 주장을 지우지 않음."
+  },
+  {
+    "id": "validation-food-12",
+    "pack": "GENERAL_FOOD",
+    "group": "FLAG",
+    "contextDependent": true,
+    "input": "일반식품 생강차로 면역력 강화에 도움을 받으세요. 약을 복용하는 분은 섭취 전 상담하세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": ["HEALTH_FUNCTIONAL_FOOD_CONFUSION"],
+    "notes": "별도 주의 문구가 효능 주장을 지우지 않음."
+  },
+  {
+    "id": "validation-food-13",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "contextDependent": false,
+    "input": "일반식품 현미차입니다. 구수한 향을 느낄 수 있으며 따뜻한 물에 우려 드세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "관능·섭취법이 사실이라는 가정."
+  },
+  {
+    "id": "validation-food-14",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "contextDependent": false,
+    "input": "일반식품 배 음료 영양정보: 1병 180mL, 열량 60kcal, 당류 12g입니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "실제 영양 표기라는 가정. 건강 효과 아님."
+  },
+  {
+    "id": "validation-food-15",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "일반식품 곡물차입니다. 당뇨 환자는 섭취 전 전문가와 상담해 주세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "환자를 향한 주의 문구, 치료 주장 아님."
+  },
+  {
+    "id": "validation-food-16",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "일반식품 과일차는 감기 예방이나 질병 치료 효과를 보장하지 않습니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "연결된 질병 효과를 직접 부정."
+  },
+  {
+    "id": "validation-food-17",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "일반식품 유자차입니다. 혈당 조절 기능을 인정받은 건강기능식품이 아닙니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "기능성 및 제품 유형을 직접 부정."
+  },
+  {
+    "id": "validation-food-18",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "일반식품 허브차입니다. 복용 중인 약을 대체하는 용도로 사용하지 마세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "의약품 대체를 금지하는 주의 안내."
+  },
+  {
+    "id": "validation-food-19",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "contextDependent": true,
+    "input": "일반식품 음료의 변경 전후 사진은 용기 색상만 비교합니다. 내용물은 그대로입니다.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "효능과 무관한 포장 비교. 실제 동일 내용물 가정."
+  },
+  {
+    "id": "validation-food-20",
+    "pack": "GENERAL_FOOD",
+    "group": "SAFE",
+    "contextDependent": false,
+    "input": "일반식품 보리 음료를 열고 남은 내용물은 냉장 보관하세요.",
+    "expectedCategory": "GENERAL_FOOD",
+    "expectedIssueTypes": [],
+    "notes": "중립 보관 안내."
+  }
+]
