@@ -8,6 +8,7 @@ export class AIAnalysisError extends Error {
     public readonly code: string,
     message: string,
     public readonly status = 502,
+    public readonly retryAfterMs?: number,
   ) {
     super(message);
     this.name = 'AIAnalysisError';
@@ -141,6 +142,9 @@ export class GeminiClient {
         }),
       });
       if (!response.ok) {
+        const retryAfterMs = parseRetryAfter(
+          response.headers.get('retry-after'),
+        );
         if (response.status === 429) {
           const dailyLimit = await hasDailyQuotaFailure(response);
           throw new AIAnalysisError(
@@ -149,6 +153,7 @@ export class GeminiClient {
               ? 'Vertex AI 일일 사용 한도에 도달했습니다. 한도가 초기화되거나 운영자가 할당량을 조정한 뒤 다시 시도해 주세요.'
               : 'Vertex AI 사용량 한도에 도달했습니다. 잠시 후 다시 시도해 주세요.',
             429,
+            retryAfterMs,
           );
         }
         await response.body?.cancel();
@@ -157,6 +162,7 @@ export class GeminiClient {
             'AI_BUSY',
             'Vertex AI 요청이 일시적으로 몰리고 있습니다. 잠시 후 다시 시도해 주세요.',
             503,
+            retryAfterMs,
           );
         if (response.status === 400)
           throw new AIAnalysisError(
@@ -261,6 +267,16 @@ export class GeminiClient {
       });
     }
   }
+}
+
+/** Honor an upstream cooldown without persisting or exposing its error body. */
+export function parseRetryAfter(value: string | null): number | undefined {
+  if (!value?.trim()) return undefined;
+  const seconds = Number(value);
+  const delay = Number.isFinite(seconds)
+    ? seconds * 1000
+    : Date.parse(value) - Date.now();
+  return Number.isFinite(delay) && delay >= 0 ? delay : undefined;
 }
 
 // Gemini supports only a subset of JSON Schema. String-length and array-size
