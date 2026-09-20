@@ -26,10 +26,26 @@ const request = (body: unknown, accept = 'application/json') =>
   });
 
 describe('analysis API boundaries', () => {
+  it('rejects cross-origin browser analysis before any model work', async () => {
+    const work = vi.fn();
+    const response = await analysisResponse(
+      new Request('https://example.test/api/analyze', {
+        headers: {
+          origin: 'https://other.test',
+          accept: 'application/x-ndjson',
+        },
+      }),
+      work,
+    );
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ code: 'ORIGIN_REJECTED' });
+    expect(work).not.toHaveBeenCalled();
+  });
   it('falls back to a clearly labelled rules-only result when no AI provider is configured', async () => {
     stubNoAiProviders();
     const response = await analyze(request({ text: '국내 최고의 AI 서비스' }));
     expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
     const body = ScanAnalysisResultSchema.parse(await response.json());
     expect(body.analysisModel).toBe('rules-only');
     expect(body.metrics?.mode).toBe('offline');
@@ -44,6 +60,7 @@ describe('analysis API boundaries', () => {
     vi.stubEnv('AI_RULES_FALLBACK', 'off');
     const response = await analyze(request({ text: '국내 최고의 AI 서비스' }));
     expect(response.status).toBe(503);
+    expect(response.headers.get('cache-control')).toBe('no-store');
     expect(await response.json()).toMatchObject({ code: 'AI_NOT_CONFIGURED' });
   });
 
