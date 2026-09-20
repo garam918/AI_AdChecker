@@ -30,6 +30,7 @@ const DEFAULT_OPENAI_MODEL = 'gpt-4.1-mini';
 export const AI_REQUEST_BUDGET_MS = 65_000;
 const PRIMARY_CALL_TIMEOUT_MS = 35_000;
 const FALLBACK_CALL_TIMEOUT_MS = 25_000;
+const MAX_RETRY_WAIT_MS = 5_000;
 
 /**
  * Primary Vertex AI Gemini call with an optional OpenAI fallback.
@@ -38,6 +39,8 @@ const FALLBACK_CALL_TIMEOUT_MS = 25_000;
  * timeout, malformed output). A safety block (`AI_INCOMPLETE`) is never
  * retried through a different provider. Every attempt is recorded so the
  * result can show which model produced it and how long each step took.
+ * With no alternate provider, one explicit temporary 429/503 failure may be
+ * retried after a bounded jittered backoff, within the same request deadline.
  */
 export class ResilientAIClient implements StructuredAIClient {
   readonly attempts: AIAttempt[] = [];
@@ -83,26 +86,46 @@ export class ResilientAIClient implements StructuredAIClient {
     data: unknown,
     options: GenerateOptions = {},
   ): Promise<T> {
-    const remaining = this.deadline - Date.now();
-    if (remaining <= 0)
-      throw new AIAnalysisError(
-        'AI_BUDGET_EXCEEDED',
-        'AI 분석 시간 한도에 도달했습니다. 내용을 나누어 검사해 주세요.',
-        504,
-      );
-    const primaryStart = Date.now();
-    try {
-      const result = await this.vertex.generate(schema, instructions, data, {
-        ...options,
-        timeoutMs: Math.min(PRIMARY_CALL_TIMEOUT_MS, remaining),
-      });
-      this.record('vertex', this.vertex.model, primaryStart, 'success');
-      return result;
-    } catch (error) {
-      this.record('vertex', this.vertex.model, primaryStart, 'error', error);
-      if (error instanceof AIAnalysisError && error.code === 'AI_INCOMPLETE')
-        throw error;
-      if (!this.fallbackConfigured) throw error;
+    for (let attempt = 0; ; attempt += 1) {
+      const primaryStart = Date.now();
+      const remaining = this.deadline - primaryStart;
+      if (remaining <= 0)
+        throw new AIAnalysisError(
+          'AI_BUDGET_EXCEEDED',
+          'AI 분석 시간 한도에 도달했습니다. 내용을 나누어 검사해 주세요.',
+          504,
+        );
+      try {
+        const result = await this.vertex.generate(schema, instructions, data, {
+          ...options,
+          timeoutMs: Math.min(PRIMARY_CALL_TIMEOUT_MS, remaining),
+        });
+        this.record('vertex', this.vertex.model, primaryStart, 'success');
+        return result;
+      } catch (error) {
+        this.record('vertex', this.vertex.model, primaryStart, 'error', error);
+        if (error instanceof AIAnalysisError && error.code === 'AI_INCOMPLETE')
+          throw error;
+        if (this.fallbackConfigured) break;
+        // Do not repeat ambiguous network errors, timeouts, malformed output,
+        // safety refusals, authentication errors or explicit daily exhaustion.
+        if (
+          attempt > 0 ||
+          !(error instanceof AIAnalysisError) ||
+          !['AI_RATE_LIMIT', 'AI_BUSY'].includes(error.code)
+        )
+          throw error;
+        const waitMs = Math.max(
+          1500 + Math.random() * 500,
+          error.retryAfterMs ?? 0,
+        );
+        if (
+          waitMs > MAX_RETRY_WAIT_MS ||
+          this.deadline - Date.now() < waitMs + 1000
+        )
+          throw error;
+        await new Promise<void>((resolve) => setTimeout(resolve, waitMs));
+      }
     }
 
     const model =
