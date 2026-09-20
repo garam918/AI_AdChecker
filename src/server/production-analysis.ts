@@ -56,6 +56,7 @@ export function createProductionAnalysis(
           mode: offline ? 'offline' : 'live',
           attempts: [...client.attempts],
           fallbackConfigured: client.fallbackConfigured,
+          vertexFallbackModel: client.vertexFallbackModel,
           aiBudgetMs: AI_REQUEST_BUDGET_MS,
         },
       };
