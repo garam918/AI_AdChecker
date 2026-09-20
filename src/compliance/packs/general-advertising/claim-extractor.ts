@@ -1,5 +1,6 @@
 import type { PreparedClaim } from '../../core/compliance-analyzer';
 import type { Claim, ClaimSignal } from '../../core/schemas';
+import { affirmedExpressionMatches } from '../../core/affirmed-expressions';
 
 type ClaimPattern = {
   pattern: RegExp;
@@ -76,7 +77,7 @@ export function extractGeneralAdvertisingClaimCandidates(
 ): PreparedClaim[] {
   const candidates = CLAIM_PATTERNS.flatMap(
     ({ pattern, claimType, importance, signals }) =>
-      [...input.matchAll(pattern)].map((match) => ({
+      affirmedExpressionMatches(input, pattern).map((match) => ({
         text: match[0].trim(),
         claimType,
         importance,
@@ -84,6 +85,8 @@ export function extractGeneralAdvertisingClaimCandidates(
         startOffset: (context.baseOffset ?? 0) + match.index,
         endOffset: (context.baseOffset ?? 0) + match.index + match[0].length,
         sourceSectionId: context.sourceSectionId ?? null,
+        contextText: input,
+        contextRole: 'ADVERTISING' as const,
       })),
   ).sort(
     (a, b) =>
