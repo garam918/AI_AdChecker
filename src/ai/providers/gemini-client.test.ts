@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { GeminiClient } from './gemini-client';
+import { GeminiClient, parseRetryAfter } from './gemini-client';
 
 const schema = z.object({ answer: z.string() });
 const response = (text: string, finishReason = 'STOP') =>
@@ -16,6 +16,35 @@ const response = (text: string, finishReason = 'STOP') =>
   });
 
 describe('Gemini structured HTTP boundary', () => {
+  it('preserves a safe retry delay for rate limiting', async () => {
+    const client = new GeminiClient({
+      apiKey: () => 'test-secret',
+      fetch: vi.fn<typeof fetch>().mockResolvedValue(
+        new Response('', {
+          status: 429,
+          headers: { 'retry-after': '3' },
+        }),
+      ),
+    });
+    await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+      code: 'AI_RATE_LIMIT',
+      retryAfterMs: 3000,
+    });
+  });
+
+  it('parses seconds and HTTP dates without shortening a long cooldown', () => {
+    expect(parseRetryAfter('120')).toBe(120000);
+    expect(parseRetryAfter('-1')).toBeUndefined();
+    expect(parseRetryAfter('private error')).toBeUndefined();
+    expect(parseRetryAfter(null)).toBeUndefined();
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-09-20T00:00:00Z'));
+      expect(parseRetryAfter('Sun, 20 Sep 2026 00:00:04 GMT')).toBe(4000);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it('reports daily quota exhaustion without suggesting an immediate retry or exposing provider text', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
       Response.json(
