@@ -22,6 +22,147 @@ const env = {
 };
 
 describe('ResilientAIClient', () => {
+  it('switches to the configured Vertex model on malformed output and keeps it for subsequent stages', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(vertexResponse('{"answer":12}'))
+      .mockImplementation(async () => vertexResponse('{"answer":"ok"}'));
+    const client = new ResilientAIClient(
+      {
+        VERTEX_API_KEY: 'test-only',
+        VERTEX_FALLBACK_MODEL: 'gemini-3.6-flash',
+      },
+      fetcher,
+    );
+    await client.generate(
+      schema,
+      '',
+      {},
+      { image: { mimeType: 'image/png', data: 'AAAA' } },
+    );
+    await client.generate(schema, '', {});
+    expect(
+      fetcher.mock.calls.map(
+        ([url]) =>
+          (typeof url === 'string'
+            ? url
+            : url instanceof URL
+              ? url.href
+              : url.url
+          ).match(/models\/(.*):generateContent/)?.[1],
+      ),
+    ).toEqual(['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.6-flash']);
+    expect(
+      JSON.parse(fetcher.mock.calls[1][1]?.body as string).contents[0].parts[0],
+    ).toEqual({ inlineData: { mimeType: 'image/png', data: 'AAAA' } });
+    expect(client.model).toBe('vertex/gemini-3.6-flash');
+    expect(client.fallbackConfigured).toBe(false);
+    expect(client.vertexFallbackModel).toBe('gemini-3.6-flash');
+    expect(client.attempts.map((a) => a.outcome)).toEqual([
+      'error',
+      'success',
+      'success',
+    ]);
+  });
+
+  it('uses only the remaining shared budget for a backup after primary timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockImplementationOnce(
+          (_url, init) =>
+            new Promise((_resolve, reject) => {
+              init?.signal?.addEventListener(
+                'abort',
+                () => reject(new Error('aborted')),
+                { once: true },
+              );
+            }),
+        )
+        .mockResolvedValueOnce(vertexResponse('{"answer":"recovered"}'));
+      const client = new ResilientAIClient(
+        {
+          VERTEX_API_KEY: 'test-only',
+          VERTEX_FALLBACK_MODEL: 'gemini-3.6-flash',
+        },
+        fetcher,
+      );
+      const pending = client.generate(schema, '', {});
+      await vi.advanceTimersByTimeAsync(35000);
+      await expect(pending).resolves.toEqual({ answer: 'recovered' });
+      expect(client.attempts[0]).toMatchObject({
+        code: 'AI_TIMEOUT',
+        elapsedMs: 35000,
+      });
+      vi.setSystemTime(Date.now() + 30001);
+      await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+        code: 'AI_BUDGET_EXCEEDED',
+      });
+      expect(fetcher).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([401, 403])(
+    'does not use an alternate Vertex model for shared authentication failure %s',
+    async (status) => {
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response('', { status }));
+      const client = new ResilientAIClient(
+        {
+          VERTEX_API_KEY: 'test-only',
+          VERTEX_FALLBACK_MODEL: 'gemini-3.6-flash',
+        },
+        fetcher,
+      );
+      await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+        code: 'AI_AUTH_FAILED',
+      });
+      expect(fetcher).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('does not switch models for safety refusal or daily quota exhaustion', async () => {
+    for (const response of [
+      vertexResponse('{}', 'SAFETY'),
+      Response.json(
+        {
+          error: { details: [{ violations: [{ quotaId: 'RequestsPerDay' }] }] },
+        },
+        { status: 429 },
+      ),
+    ]) {
+      const fetcher = vi.fn<typeof fetch>().mockResolvedValue(response);
+      const client = new ResilientAIClient(
+        {
+          VERTEX_API_KEY: 'test-only',
+          VERTEX_FALLBACK_MODEL: 'gemini-3.6-flash',
+        },
+        fetcher,
+      );
+      await expect(client.generate(schema, '', {})).rejects.toBeDefined();
+      expect(fetcher).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('ignores a duplicate model and rejects malformed backup configuration', () => {
+    expect(
+      new ResilientAIClient({
+        VERTEX_API_KEY: 'test-only',
+        VERTEX_FALLBACK_MODEL: 'gemini-3.8-flash',
+      }).vertexFallbackModel,
+    ).toBeUndefined();
+    expect(
+      () =>
+        new ResilientAIClient({
+          VERTEX_API_KEY: 'test-only',
+          VERTEX_FALLBACK_MODEL: '../private',
+        }),
+    ).toThrow();
+  });
   it.each([429, 503])(
     'retries transient HTTP %s once without an alternate account and records both attempts',
     async (status) => {
