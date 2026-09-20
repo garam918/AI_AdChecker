@@ -198,5 +198,12 @@ describe('production analysis chain', () => {
     await expect(blind.image.analyze(file, {})).rejects.toMatchObject({
       code: 'AI_UNAVAILABLE',
     });
+    expect(blind.attempts).toEqual([
+      expect.objectContaining({
+        provider: 'vertex',
+        outcome: 'error',
+        code: 'AI_UNAVAILABLE',
+      }),
+    ]);
   });
 });
