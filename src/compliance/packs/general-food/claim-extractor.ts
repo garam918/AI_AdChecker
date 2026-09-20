@@ -1,4 +1,5 @@
 import type { PreparedClaim } from '@/src/compliance/core/compliance-analyzer';
+import { affirmedExpressionMatches } from '@/src/compliance/core/affirmed-expressions';
 import type {
   ClaimContextRole,
   ClaimImportance,
@@ -14,7 +15,7 @@ type FoodClaimPattern = {
 const FOOD_CLAIM_PATTERNS: FoodClaimPattern[] = [
   {
     pattern:
-      /(?:감기|당뇨(?:병)?|아토피|관절염|고혈압|암)(?:을|를|에|의)?\s*(?:예방|치료|개선|완화)(?:에\s*좋은|하는|해주는|합니다)?/g,
+      /(?:감기|당뇨(?:병)?|아토피|관절염|고혈압|암|질병)(?:을|를|에|의)?\s*(?:예방|치료|개선|완화)(?:에\s*좋은|하는|해주는|합니다)?/g,
     claimType: 'DISEASE_PREVENTION_TREATMENT',
     importance: 'HIGH',
     signals: ['DISEASE', 'EFFICACY'],
@@ -65,8 +66,8 @@ const WARNING_PATTERN =
   /(?:환자|치료\s*중|약을\s*복용)[^.!?\n]{0,40}(?:주의|상담)|섭취\s*전[^.!?\n]{0,30}상담/;
 const NUTRITION_INFORMATION_PATTERN =
   /(?:영양정보|영양성분|당류\s*\d+(?:\.\d+)?\s*g|열량\s*\d+(?:\.\d+)?\s*kcal)/i;
-const NEGATED_CLAIM_PATTERN =
-  /(?:효능|효과|기능성|추천|보증|전후\s*사진)[^.!?\n]{0,16}(?:아닙니다|없습니다|않습니다|않았습니다)|(?:사용|표방|의미)하지\s*않/;
+const FUNCTION_DISCLAIMER =
+  /^\s*기능(?:성)?(?:을|이)?\s*(?:인정받은\s*)?건강\s*기능\s*식품(?:이|은)?\s*아닙니다/;
 
 export function extractGeneralFoodClaimCandidates(
   input: string,
@@ -78,36 +79,55 @@ export function extractGeneralFoodClaimCandidates(
 ): PreparedClaim[] {
   const candidates = FOOD_CLAIM_PATTERNS.flatMap(
     ({ pattern, claimType, importance, signals }) =>
-      [...input.matchAll(pattern)].flatMap((match) => {
-        const localContext = extractSentenceContext(
-          input,
-          match.index,
-          match[0].length,
-        );
-        const contextRole = classifyContext(localContext, context.contextRole);
-        if (
-          contextRole === 'WARNING' ||
-          contextRole === 'NUTRITION_INFORMATION' ||
-          NEGATED_CLAIM_PATTERN.test(localContext)
-        ) {
-          return [];
-        }
+      affirmedExpressionMatches(input, pattern, FUNCTION_DISCLAIMER).flatMap(
+        (match) => {
+          const localContext = extractSentenceContext(
+            input,
+            match.index,
+            match[0].length,
+          );
+          const contextRole = classifyContext(
+            localContext,
+            context.contextRole,
+          );
+          const tail = input.slice(match.index + match[0].length);
+          if (
+            (contextRole === 'WARNING' &&
+              /^\s*(?:(?:하는|중인|중)\s*)?(?:환자|사람|분)(?:는|은|께|이|들)/.test(
+                tail,
+              )) ||
+            (claimType === 'BEFORE_AFTER_RISK' &&
+              /^\s*(?:은|는)?\s*(?:포장|패키지|용기|라벨)\s*(?:디자인|색상)?만\s*(?:비교|보여)/.test(
+                tail,
+              )) ||
+            /(?:추천|보증)하지\s*않(?:았|습)/.test(match[0])
+          ) {
+            return [];
+          }
 
-        return [
-          {
-            text: match[0].trim(),
-            claimType,
-            importance,
-            signals,
-            startOffset: (context.baseOffset ?? 0) + match.index,
-            endOffset:
-              (context.baseOffset ?? 0) + match.index + match[0].length,
-            sourceSectionId: context.sourceSectionId ?? null,
-            contextText: localContext,
-            contextRole,
-          },
-        ];
-      }),
+          return [
+            {
+              text: match[0].trim(),
+              claimType,
+              importance,
+              signals,
+              startOffset: (context.baseOffset ?? 0) + match.index,
+              endOffset:
+                (context.baseOffset ?? 0) + match.index + match[0].length,
+              sourceSectionId: context.sourceSectionId ?? null,
+              contextText: localContext,
+              // These matches are affirmative claims that survived the local
+              // warning/negation filter. Nearby nutrition or caution text must
+              // not mislabel them as neutral context for the reasoning layer.
+              contextRole:
+                contextRole === 'WARNING' ||
+                contextRole === 'NUTRITION_INFORMATION'
+                  ? 'ADVERTISING'
+                  : contextRole,
+            },
+          ];
+        },
+      ),
   ).sort(
     (a, b) =>
       a.startOffset - b.startOffset ||
