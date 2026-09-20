@@ -27,7 +27,9 @@ export function RewriteOptionsPanel({
   copied: boolean;
 }) {
   const options = getRewriteOptions(issue);
-  const ready = options.filter(canApplyRewrite);
+  const ready = options
+    .filter(canApplyRewrite)
+    .sort((a, b) => Number(a.kind === 'REMOVE') - Number(b.kind === 'REMOVE'));
   const conditional = options.filter((option) => !canApplyRewrite(option));
   const selected = options.find((option) => option.id === selectedId);
   const preview =
@@ -64,6 +66,12 @@ export function RewriteOptionsPanel({
   return (
     <section className="space-y-3" aria-label="수정 방향 선택">
       <h3 className="text-sm font-semibold text-slate-900">수정 방향</h3>
+      {!selected && (
+        <p className="text-sm leading-6 text-slate-600">
+          실제 제품 설명과 맞는 방향을 선택하세요. 선택하기 전에는 초안이 바뀌지
+          않습니다.
+        </p>
+      )}
       {ready.map(renderOption)}
       {conditional.length > 0 && (
         <details className="rounded-xl border border-amber-200 bg-amber-50/50 p-3">
@@ -92,7 +100,7 @@ export function RewriteOptionsPanel({
           ))}
         </div>
       )}
-      <div className="flex flex-wrap gap-2">
+      <div className="sticky bottom-3 z-10 flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur">
         {onApply && (
           <Button
             onClick={onApply}
