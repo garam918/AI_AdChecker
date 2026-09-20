@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Issue } from '@/src/compliance/core/schemas';
-import { buildRewriteOptions } from '@/src/compliance/core/rewrite-options';
+import {
+  buildRewriteOptions,
+  defaultRewriteId,
+} from '@/src/compliance/core/rewrite-options';
 import { applyDraftEdits, removeFlaggedClaims } from './rewrite-draft';
 
 function issue(
@@ -29,6 +32,12 @@ function issue(
 }
 
 describe('rewrite options and draft edits', () => {
+  it('requires an explicit choice instead of preselecting deletion or generated text', () => {
+    expect(defaultRewriteId(issue('a', '국내 최고의', ['업무를 돕는']))).toBe(
+      '',
+    );
+    expect(defaultRewriteId(null)).toBe('');
+  });
   it('does not auto-apply placeholders, rankings or new awards', () => {
     const found = issue('a', '국내 최고의', [
       '[확인된 수상/평가 내역] 선정 AI 서비스',
