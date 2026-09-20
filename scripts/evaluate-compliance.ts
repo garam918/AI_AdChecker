@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 
 import rawCases from '../evals/end-to-end/cases.json';
 import challengeCases from '../evals/challenge/cases.json';
+import validationCases from '../evals/validation/cases.json';
 import {
   EvaluationDatasetSchema,
   evaluateCase,
@@ -30,8 +31,18 @@ const strict = args.includes('--strict');
 const dataset =
   args.find((arg) => arg.startsWith('--dataset='))?.split('=')[1] ??
   'regression';
-if (dataset !== 'regression' && dataset !== 'challenge')
-  throw new Error('--dataset must be regression or challenge.');
+if (
+  dataset !== 'regression' &&
+  dataset !== 'challenge' &&
+  dataset !== 'validation'
+)
+  throw new Error('--dataset must be regression, challenge or validation.');
+const pauseMs = Number(
+  args.find((arg) => arg.startsWith('--pause-ms='))?.split('=')[1] ??
+    (live ? 5000 : 0),
+);
+if (!Number.isInteger(pauseMs) || pauseMs < 0 || pauseMs > 30000)
+  throw new Error('--pause-ms must be 0–30000.');
 const baselineMinutes = Number(
   args.find((arg) => arg.startsWith('--baseline-minutes='))?.split('=')[1] ??
     30,
@@ -40,7 +51,11 @@ if (!Number.isFinite(baselineMinutes) || baselineMinutes <= 0)
   throw new Error('--baseline-minutes must be a positive number.');
 
 const cases = EvaluationDatasetSchema.parse(
-  dataset === 'challenge' ? challengeCases : rawCases,
+  dataset === 'challenge'
+    ? challengeCases
+    : dataset === 'validation'
+      ? validationCases
+      : rawCases,
 );
 const datasetSha256 = createHash('sha256')
   .update(JSON.stringify(cases))
@@ -127,6 +142,7 @@ async function checkpoint(completed: boolean) {
         revision,
         worktreeDirty,
         implementationSha256,
+        pauseMs,
         summary,
         outcomes,
       },
@@ -138,6 +154,8 @@ async function checkpoint(completed: boolean) {
 }
 await checkpoint(false);
 for (const item of cases) {
+  if (outcomes.length > 0 && pauseMs > 0)
+    await new Promise<void>((resolve) => setTimeout(resolve, pauseMs));
   const outcome = await evaluateCase(scan, item);
   outcomes.push(outcome);
   // Preserve completed observations if a long paid run is interrupted.
