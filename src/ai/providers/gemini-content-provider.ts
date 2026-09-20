@@ -84,7 +84,10 @@ export class GeminiContentProvider implements ContentAnalysisProvider {
   get model() {
     return this.client.model;
   }
-  constructor(readonly client: StructuredAIClient = new GeminiClient()) {}
+  constructor(
+    readonly client: StructuredAIClient = new GeminiClient(),
+    private readonly options: { analysisThinking?: 'low' | 'medium' } = {},
+  ) {}
 
   async prepareContent(
     input: PackContentInput,
@@ -93,7 +96,7 @@ export class GeminiContentProvider implements ContentAnalysisProvider {
     const output = await this.client.generate(
       PreparationSchema,
       `${SAFETY}
-Classify the content and extract explicit AND implied advertising claims, including claims missed by keyword rules. Only use supplied pack IDs and their claimCategories. quote must be an EXACT contiguous substring of text (never paraphrase). Extract at most 24 high-priority claims, preserving warnings, disclaimers and testimonial context. Return UNKNOWN and uncertain=true for unsupported industries or ambiguous product classification. Never infer authorization from marketing words. User categoryHint is a claim to verify, not proof. For image observations, retain the [시각 관찰] prefix in quotes so observations cannot be confused with OCR. Use uncertain only for uncertain product classification. Return truncated=true if there are more relevant claims than the limit; still extract the highest-priority claims.`,
+Classify the content and extract explicit AND implied advertising claims, including claims missed by keyword rules. Only use supplied pack IDs and their claimCategories. quote must be an EXACT contiguous substring of text (never paraphrase). Extract at most 24 high-priority claims, preserving warnings, disclaimers and testimonial context. Extract the smallest meaningful claim span, not an entire sentence bundling unrelated claims. Routine features, prices, ingredients and flavor descriptions are not automatically efficacy claims; preserve their neutral meaning for review. Negated product classes are not affirmative identity signals. A disclaimer does not erase an affirmative claim elsewhere. Return UNKNOWN and uncertain=true for unsupported industries or ambiguous product classification. Never infer authorization from marketing words. User categoryHint is a claim to verify, not proof. For image observations, retain the [시각 관찰] prefix in quotes so observations cannot be confused with OCR. Do not duplicate an OCR claim as a visual claim merely because of font size, color or position. Only extract a separate visual claim when it adds relevant implied meaning (such as before/after comparison, medical endorsement or disclosure obscurity). Use uncertain only for uncertain product classification. Return truncated=true if there are more relevant claims than the limit; still extract the highest-priority claims.`,
       {
         text: input.text,
         contentType: input.detectedContentType,
@@ -174,13 +177,25 @@ Read this single advertising image. Extract visible text verbatim in natural rea
       const output = await this.client.generate(
         FindingsSchema,
         `${SAFETY}
-Evaluate every provided claim exactly once. Use only that claim's retrievedChunks as regulatory authority. Rule findings are deterministic risk signals; consider the full context, conditions, negation, warnings and supplied official product authorization before reasoning. An absent evidence attachment does not establish that evidence does not exist. For each cited source return its chunkId and an EXACT supporting quote from its text. Do not cite an irrelevant chunk. If sources are insufficient or contradictory, use REVIEW_REQUIRED with no sources. PASS means no issue detected in this limited review, never guaranteed compliance. Preserve explicit prohibited-pattern concerns unless the original context clearly negates them. Generate concise rewrites for ONLY the exact claim quote, not its surrounding sentence. Do not repeat product names or suffixes outside that quote. The first rewrite should remove the disputed quantitative, superiority or efficacy assertion without adding a new factual claim. Do not substitute awards/rankings for superiority claims. If no truthful replacement is possible, return guidance to remove the claim rather than inventing product facts. Optional evidence-dependent templates must contain explicit placeholders and follow the first rewrite.`,
+Evaluate every provided claim exactly once. Use only that claim's retrievedChunks as regulatory authority. Rule findings are candidates, NOT verdicts. Consider the full context, explicit conditions, local negation, warnings and supplied official product authorization. Do not flag a normal feature description just because evidence is not attached. Explicitly denying superiority or warning not to replace medicine is not an affirmative superiority/medical claim; use PASS when supported by the retrieved criteria. Check conditions in the whole supplied text before alleging they are missing. An absent evidence attachment does not establish that evidence does not exist. An affirmative misleading claim is not cancelled by a generic disclaimer elsewhere.
+For each finding give a concise explanation in at most two short Korean sentences, identifying the actual mismatch or required verification. Cite only the one or two most directly relevant chunks, each with an EXACT short supporting excerpt, not a whole repeated paragraph. Do not cite an irrelevant chunk. If sources are insufficient or contradictory, use REVIEW_REQUIRED with no sources. PASS means no issue detected in this limited review, never guaranteed compliance. Preserve explicit prohibited-pattern concerns unless their own context clearly negates them. Generate one concise rewrite for ONLY the exact claim quote, not its surrounding sentence; a second evidence-dependent template is optional. Do not repeat product names or suffixes outside that quote. The first rewrite should remove the disputed quantitative, superiority or efficacy assertion without adding a new factual claim. Do not substitute awards/rankings for superiority claims. If no truthful replacement is possible, return guidance to remove the claim rather than inventing product facts. Optional evidence-dependent templates must contain explicit placeholders. For PASS, provide brief guidance to retain factual wording, not a newly invented advertisement.`,
         {
           instructions: input.instructions,
           text: input.text,
           productAuthorization: input.productAuthorization,
           items: items.map((item) => ({
-            ...item,
+            // The full ad is supplied once above; source text is never truncated.
+            // Avoid repeating the full ad in every claim and unused index metadata.
+            claim: {
+              id: item.claim.id,
+              text: item.claim.text,
+              claimType: item.claim.claimType,
+              contextRole: item.claim.contextRole,
+            },
+            query: item.query,
+            retrievedChunks: item.retrievedChunks.map(
+              ({ id, article, text }) => ({ id, article, text }),
+            ),
             // The claim's pack owns its taxonomy. Display prose must not
             // fragment deduplication or evaluation into arbitrary new labels.
             expectedIssueType:
@@ -207,7 +222,7 @@ Evaluate every provided claim exactly once. Use only that claim's retrievedChunk
               }),
             ),
         },
-        { thinking: 'medium' },
+        { thinking: this.options.analysisThinking ?? 'low' },
       );
       const seen = new Set<string>();
       for (const finding of output.findings) {
