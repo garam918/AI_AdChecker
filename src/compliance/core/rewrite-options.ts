@@ -19,7 +19,7 @@ export function buildRewriteOptions(issue: Issue): RewriteOption[] {
           id: `${issue.id}:remove`,
           kind: 'REMOVE',
           text: '',
-          label: '이 주장 삭제',
+          label: '이 표현 삭제',
           explanation:
             '새로운 사실을 추가하지 않고 이 표현만 제거합니다. 남은 문장과 제품 설명은 직접 확인하세요.',
         },
@@ -39,7 +39,7 @@ export function buildRewriteOptions(issue: Issue): RewriteOption[] {
         text,
         label:
           kind === 'REPLACE'
-            ? '문구 제안'
+            ? '문구 수정 제안'
             : kind === 'CONDITIONAL'
               ? '증빙 확인 후 작성'
               : '직접 검토 필요',
@@ -61,11 +61,10 @@ export function getRewriteOptions(issue: Issue): RewriteOption[] {
 }
 
 export function defaultRewriteId(issue: Issue | null | undefined): string {
-  if (!issue) return '';
-  const options = getRewriteOptions(issue);
-  return (
-    (options.find((option) => option.kind === 'REMOVE') ?? options[0])?.id ?? ''
-  );
+  // A proposed rewrite is not verified product truth. Neither deletion nor an
+  // AI suggestion should be preselected as the user's choice.
+  void issue;
+  return '';
 }
 
 export function canApplyRewrite(option: RewriteOption | undefined): boolean {
