@@ -2,6 +2,7 @@ import type {
   PackCategoryDetection,
   PackContentInput,
 } from '@/src/compliance/core/compliance-pack';
+import { affirmedExpressionMatches } from '@/src/compliance/core/affirmed-expressions';
 
 const FOOD_IDENTITY_PATTERNS = [
   /일반\s*식품|가공식품|식품\s*유형|원재료|영양정보|섭취/,
@@ -25,7 +26,9 @@ export function detectGeneralFoodCategory(
     pattern.test(searchableText),
   ).length;
   const hasSoftwareSignal = SOFTWARE_PATTERN.test(searchableText);
-  const hasExcludedProduct = EXCLUDED_PRODUCT_PATTERN.test(searchableText);
+  const hasExcludedProduct =
+    affirmedExpressionMatches(searchableText, EXCLUDED_PRODUCT_PATTERN).length >
+    0;
   const hasHealthClaim = HEALTH_CLAIM_PATTERN.test(searchableText);
 
   if (hasSoftwareSignal && identitySignals === 0) {
