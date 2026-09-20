@@ -33,18 +33,22 @@ const FALLBACK_CALL_TIMEOUT_MS = 25_000;
 const MAX_RETRY_WAIT_MS = 5_000;
 
 /**
- * Primary Vertex AI Gemini call with an optional OpenAI fallback.
+ * Primary Vertex AI Gemini call with an optional OpenAI fallback, or an
+ * explicitly configured alternate Vertex model when OpenAI is unavailable.
  *
  * Fallback fires only for provider-side failures (auth, quota, overload,
  * timeout, malformed output). A safety block (`AI_INCOMPLETE`) is never
  * retried through a different provider. Every attempt is recorded so the
  * result can show which model produced it and how long each step took.
- * With no alternate provider, one explicit temporary 429/503 failure may be
- * retried after a bounded jittered backoff, within the same request deadline.
+ * Without either fallback, only explicit temporary 429/503 failures are retried.
+ * The alternate Vertex model never bypasses shared auth or daily quota errors;
+ * all additional attempts share the original request deadline.
  */
 export class ResilientAIClient implements StructuredAIClient {
   readonly attempts: AIAttempt[] = [];
   private readonly vertex: GeminiClient;
+  private readonly secondaryVertex?: GeminiClient;
+  private selectedVertex: GeminiClient;
   private readonly deadline: number;
 
   constructor(
@@ -60,6 +64,26 @@ export class ResilientAIClient implements StructuredAIClient {
       retries: 0,
       timeoutMs: PRIMARY_CALL_TIMEOUT_MS,
     });
+    this.selectedVertex = this.vertex;
+    const backup = env.VERTEX_FALLBACK_MODEL?.trim();
+    if (backup && backup !== this.vertex.model) {
+      if (!/^[a-zA-Z0-9._-]+$/.test(backup))
+        throw new AIAnalysisError(
+          'AI_NOT_CONFIGURED',
+          'Vertex 대체 모델 설정을 확인해 주세요.',
+          503,
+        );
+      this.secondaryVertex = new GeminiClient({
+        env: { ...env, VERTEX_MODEL: backup },
+        fetch: fetcher,
+        retries: 0,
+        timeoutMs: FALLBACK_CALL_TIMEOUT_MS,
+      });
+    }
+  }
+
+  get vertexFallbackModel() {
+    return this.secondaryVertex?.model;
   }
 
   get model() {
@@ -96,35 +120,71 @@ export class ResilientAIClient implements StructuredAIClient {
           504,
         );
       try {
-        const result = await this.vertex.generate(schema, instructions, data, {
-          ...options,
-          timeoutMs: Math.min(PRIMARY_CALL_TIMEOUT_MS, remaining),
-        });
-        this.record('vertex', this.vertex.model, primaryStart, 'success');
+        const result = await this.selectedVertex.generate(
+          schema,
+          instructions,
+          data,
+          {
+            ...options,
+            timeoutMs: Math.min(
+              this.selectedVertex === this.vertex
+                ? PRIMARY_CALL_TIMEOUT_MS
+                : FALLBACK_CALL_TIMEOUT_MS,
+              remaining,
+            ),
+          },
+        );
+        this.record(
+          'vertex',
+          this.selectedVertex.model,
+          primaryStart,
+          'success',
+        );
         return result;
       } catch (error) {
-        this.record('vertex', this.vertex.model, primaryStart, 'error', error);
+        this.record(
+          'vertex',
+          this.selectedVertex.model,
+          primaryStart,
+          'error',
+          error,
+        );
         if (error instanceof AIAnalysisError && error.code === 'AI_INCOMPLETE')
           throw error;
         if (this.fallbackConfigured) break;
-        // Do not repeat ambiguous network errors, timeouts, malformed output,
-        // safety refusals, authentication errors or explicit daily exhaustion.
+        const switchModel =
+          this.secondaryVertex &&
+          this.selectedVertex === this.vertex &&
+          error instanceof AIAnalysisError &&
+          [
+            'AI_RATE_LIMIT',
+            'AI_BUSY',
+            'AI_TIMEOUT',
+            'AI_INVALID_RESPONSE',
+            'AI_UNAVAILABLE',
+            'AI_MODEL_NOT_FOUND',
+            'AI_REQUEST_REJECTED',
+          ].includes(error.code);
+        // A same-model retry is only for explicit temporary failure. A configured
+        // alternate Vertex model can recover timeout/format errors, but never
+        // shared authentication failures, daily exhaustion or safety refusals.
         if (
           attempt > 0 ||
           !(error instanceof AIAnalysisError) ||
-          !['AI_RATE_LIMIT', 'AI_BUSY'].includes(error.code)
+          (!switchModel && !['AI_RATE_LIMIT', 'AI_BUSY'].includes(error.code))
         )
           throw error;
-        const waitMs = Math.max(
-          1500 + Math.random() * 500,
-          error.retryAfterMs ?? 0,
-        );
+        const waitMs = ['AI_RATE_LIMIT', 'AI_BUSY'].includes(error.code)
+          ? Math.max(1500 + Math.random() * 500, error.retryAfterMs ?? 0)
+          : 0;
         if (
           waitMs > MAX_RETRY_WAIT_MS ||
           this.deadline - Date.now() < waitMs + 1000
         )
           throw error;
-        await new Promise<void>((resolve) => setTimeout(resolve, waitMs));
+        if (waitMs > 0)
+          await new Promise<void>((resolve) => setTimeout(resolve, waitMs));
+        if (switchModel) this.selectedVertex = this.secondaryVertex!;
       }
     }
 
