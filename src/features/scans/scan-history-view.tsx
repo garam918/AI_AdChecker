@@ -3,6 +3,14 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { SavedScan } from './scan-history';
+import { getAnalysisCoverage } from '@/src/compliance/core/analysis-coverage';
+
+const RISK_LABELS = {
+  LOW: '탐지 위험 낮음',
+  MEDIUM: '주의 필요',
+  HIGH: '높은 위험',
+  REVIEW_REQUIRED: '추가 검토 필요',
+};
 
 export function ScanHistoryView({
   records,
@@ -48,7 +56,10 @@ export function ScanHistoryView({
               className="rounded-2xl border border-slate-200 bg-white p-5"
             >
               <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                <Badge variant="outline">{record.result.overallRisk}</Badge>
+                <Badge variant="outline">
+                  {RISK_LABELS[record.result.overallRisk]}
+                </Badge>
+                <span>{getAnalysisCoverage(record.result).label}</span>
                 <span>{new Date(record.savedAt).toLocaleString('ko-KR')}</span>
                 <span>
                   {record.result.inputType === 'IMAGE'
