@@ -24,7 +24,9 @@ export function createProductionAnalysis(
 ) {
   const env = options.env ?? process.env;
   const client = new ResilientAIClient(env, options.fetch);
-  const provider = new GeminiContentProvider(client);
+  const provider = new GeminiContentProvider(client, {
+    analysisThinking: env.AI_ANALYSIS_THINKING === 'medium' ? 'medium' : 'low',
+  });
   const live = createContentComplianceScanService(provider);
   const rules = createContentComplianceScanService();
   const compliance = new FallbackComplianceScanService(live, rules, {
@@ -32,6 +34,11 @@ export function createProductionAnalysis(
   });
 
   return {
+    // Sanitized per-request diagnostics remain available even if OCR fails
+    // before a report exists. Never include prompts or provider response bodies.
+    get attempts() {
+      return [...client.attempts];
+    },
     text: compliance,
     url: createUrlComplianceScanService(compliance),
     image: new ImageComplianceScanService(provider, compliance),
