@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 import cases from '../evals/gemini/cases.json';
 import type { ScanAnalysisResult } from '../src/compliance/core/schemas';
+import { AIAnalysisError } from '../src/ai/providers/gemini-client';
 
 /**
  * Sends the four representative examples (2 text, 1 URL fixture, 1 image)
@@ -34,12 +35,25 @@ const textRepeats = Number(
 );
 if (!Number.isInteger(textRepeats) || textRepeats < 1 || textRepeats > 10)
   throw new Error('--text-repeats must be an integer between 1 and 10.');
-const runCases = cases.flatMap((item) =>
-  Array.from(
-    { length: item.inputType === 'TEXT' ? textRepeats : 1 },
-    (_, repeat) => ({ ...item, repeat: repeat + 1 }),
-  ),
+const caseId = process.argv
+  .find((arg) => arg.startsWith('--case='))
+  ?.split('=')[1];
+if (caseId && !cases.some((item) => item.id === caseId))
+  throw new Error('Unknown --case id.');
+const pauseMs = Number(
+  process.argv.find((arg) => arg.startsWith('--pause-ms='))?.split('=')[1] ??
+    5000,
 );
+if (!Number.isInteger(pauseMs) || pauseMs < 0 || pauseMs > 30000)
+  throw new Error('--pause-ms must be 0–30000.');
+const runCases = cases
+  .filter((item) => !caseId || item.id === caseId)
+  .flatMap((item) =>
+    Array.from(
+      { length: item.inputType === 'TEXT' ? textRepeats : 1 },
+      (_, repeat) => ({ ...item, repeat: repeat + 1 }),
+    ),
+  );
 const startedAt = new Date().toISOString();
 const outputPath = `outputs/evaluations/demo-${startedAt.replace(/[:.]/g, '-')}-${randomUUID().slice(0, 8)}.json`;
 await mkdir('outputs/evaluations', { recursive: true });
@@ -58,7 +72,14 @@ const report: Array<{
   humanReview: { status: 'PENDING' };
   result: ScanAnalysisResult;
 }> = [];
-const errors: Array<{ id: string; repeat: number; error: string }> = [];
+const errors: Array<{
+  id: string;
+  repeat: number;
+  error: string;
+  code: string;
+  elapsedMs: number;
+  attempts: NonNullable<ScanAnalysisResult['metrics']>['attempts'];
+}> = [];
 async function checkpoint(completed: boolean) {
   await writeFile(
     outputPath,
@@ -69,6 +90,7 @@ async function checkpoint(completed: boolean) {
         completed,
         expectedCases: runCases.length,
         textRepeats,
+        pauseMs,
         report,
         errors,
       },
@@ -79,8 +101,11 @@ async function checkpoint(completed: boolean) {
 }
 await checkpoint(false);
 for (const item of runCases) {
+  if (report.length + errors.length > 0 && pauseMs > 0)
+    await new Promise<void>((resolve) => setTimeout(resolve, pauseMs));
+  const analysis = createProductionAnalysis();
+  const started = Date.now();
   try {
-    const analysis = createProductionAnalysis();
     const result = await analysis.measure(() =>
       item.inputType === 'URL'
         ? analysis.url.analyze({ fixtureId: item.fixtureId! })
@@ -123,6 +148,9 @@ for (const item of runCases) {
       id: item.id,
       repeat: item.repeat,
       error: error instanceof Error ? error.message : String(error),
+      code: error instanceof AIAnalysisError ? error.code : 'EVALUATION_ERROR',
+      elapsedMs: Date.now() - started,
+      attempts: analysis.attempts,
     });
     console.log(`${item.id} #${item.repeat}: ERROR (see report)`);
   }
