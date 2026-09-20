@@ -2,6 +2,7 @@ import type {
   PackCategoryDetection,
   PackContentInput,
 } from '@/src/compliance/core/compliance-pack';
+import { affirmedExpressionMatches } from '@/src/compliance/core/affirmed-expressions';
 
 const STRONG_IDENTITY_PATTERN =
   /건강\s*기능\s*식품|건기식|품목(?:제조)?(?:신고|보고)?번호|건강기능식품\s*(?:마크|도안)|기능성\s*원료/;
@@ -23,7 +24,10 @@ export function detectHealthFunctionalFoodCategory(
     .map((entry) => JSON.stringify(entry))
     .join(' ');
   const searchableText = `${input.text} ${structuredText}`;
-  if (STRONG_IDENTITY_PATTERN.test(searchableText)) {
+  if (
+    affirmedExpressionMatches(searchableText, STRONG_IDENTITY_PATTERN).length >
+    0
+  ) {
     return {
       category: 'HEALTH_FUNCTIONAL_FOOD',
       confidence: 0.99,
