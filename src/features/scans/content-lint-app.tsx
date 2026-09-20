@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Copy,
   FileImage,
   Gauge,
   Globe2,
@@ -44,6 +45,9 @@ import type { AnalysisStage } from '@/src/ai/providers/content-analysis-provider
 import { ImageScanInput } from './image-scan-input';
 import { RewriteOptionsPanel } from './rewrite-options-panel';
 import { ImageEvidence } from './image-evidence';
+import { AnalysisCoverageBanner } from './analysis-coverage-banner';
+import { getAnalysisCoverage } from '@/src/compliance/core/analysis-coverage';
+import { conciseIssueReason, issueNextAction } from './issue-presentation';
 import { ReviewComparison, type PreviousReview } from './review-comparison';
 import { ReviewRecord } from './review-record';
 import { ScanHistoryView } from './scan-history-view';
@@ -930,6 +934,50 @@ function Dashboard({
         </Button>
       </section>
 
+      <section
+        aria-label="수정 흐름 미리보기"
+        className="rounded-2xl border border-indigo-200 bg-white p-5 sm:p-6"
+      >
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold text-slate-900">
+            검토에서 수정까지, 이렇게 이어집니다
+          </h2>
+          <span className="text-xs text-slate-600">
+            흐름 설명용 예시 · 실시간 분석 결과 아님
+          </span>
+        </div>
+        <ol className="grid gap-4 lg:grid-cols-3">
+          <li className="rounded-xl bg-slate-50 p-4">
+            <p className="text-xs font-semibold text-slate-600">1. 광고 원문</p>
+            <p className="mt-2 text-sm leading-7">
+              <mark className="bg-amber-100">업무 시간을 70% 줄여주는</mark>{' '}
+              <mark className="bg-amber-100">국내 최고의</mark> AI 서비스
+            </p>
+          </li>
+          <li className="rounded-xl bg-slate-50 p-4">
+            <p className="text-xs font-semibold text-slate-600">
+              2. 근거와 수정 방향
+            </p>
+            <p className="mt-2 text-sm leading-7">
+              수치의 측정 근거 확인
+              <br />
+              최상급 표현의 비교 기준 확인
+            </p>
+          </li>
+          <li className="rounded-xl bg-indigo-50 p-4">
+            <p className="text-xs font-semibold text-indigo-800">
+              3. 수정 후 다시 검사
+            </p>
+            <p className="mt-2 text-sm leading-7">
+              업무 시간 단축을 돕는 AI 서비스
+            </p>
+            <p className="mt-2 text-xs leading-5 text-slate-600">
+              실제 제품 설명과 맞을 때만 사용하며, 게시 적합성을 보증하지
+              않습니다.
+            </p>
+          </li>
+        </ol>
+      </section>
       <section className="grid gap-4 lg:grid-cols-3">
         <ScanCard
           eyebrow="텍스트"
@@ -1344,25 +1392,26 @@ function NewScan({
               >
                 광고 문구
               </label>
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-lg border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                onClick={() => setText(DEMO_TEXT)}
-              >
-                <Sparkles /> AI SaaS 데모
-              </Button>
+              <span className="text-xs text-slate-600">
+                예제를 선택하거나 직접 입력하세요
+              </span>
             </div>
             <div
               className="mb-4 flex flex-wrap gap-2"
-              aria-label="일반식품 데모 문구"
+              aria-label="광고 문구 예제"
             >
-              {FOOD_DEMO_PRESETS.map((preset) => (
+              {[
+                { label: 'SaaS · 수치·최상급', text: DEMO_TEXT },
+                ...FOOD_DEMO_PRESETS.map((preset) => ({
+                  ...preset,
+                  label: `식품 · ${preset.label}`,
+                })),
+              ].map((preset) => (
                 <button
                   key={preset.text}
                   type="button"
                   onClick={() => setText(preset.text)}
-                  className="rounded-full border border-emerald-200 bg-emerald-50/70 px-3 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100"
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-indigo-500"
                 >
                   {preset.label}
                 </button>
@@ -1403,6 +1452,13 @@ function NewScan({
           </TabsContent>
         </Tabs>
       </Card>
+      <p className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 px-4 py-3 text-xs leading-6 text-slate-700">
+        입력한 문구·이미지와 URL에서 추출한 내용은 분석을 위해 서버와 외부 AI
+        제공자(Vertex AI, 대체 연결 시 해당 제공자)로 전송됩니다.
+        개인정보·영업비밀·공개 전 기밀 자료는 넣지 마세요. 결과 보관은 사용자가
+        선택할 때 이 브라우저에만 저장되며, 외부 AI의 데이터 처리는 해당 제공자
+        정책을 따릅니다.
+      </p>
       <div className="mt-5 flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-500">
         <FileImage className="mt-1 size-4 shrink-0 text-slate-400" />
         공개 웹페이지의 텍스트·이미지 대체 설명, 광고 문구, 업로드 이미지를
@@ -1629,6 +1685,7 @@ function ScanResult({
   onNewImage: () => void;
 }) {
   const isLow = result.overallRisk === 'LOW';
+  const coverage = getAnalysisCoverage(result);
   const isWeb = result.inputType === 'URL' && Boolean(result.webContent);
   const isBusiness = result.audience === 'BUSINESS';
   const { keyIssues, otherIssues } = splitKeyIssues(result);
@@ -1712,6 +1769,32 @@ function ScanResult({
           </Button>
         </div>
       </section>
+      <AnalysisCoverageBanner result={result} />
+      {result.issues.length > 0 && (
+        <nav
+          aria-label="검토 작업 순서"
+          className="flex flex-wrap gap-2 text-sm"
+        >
+          <a
+            href="#key-issues"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2"
+          >
+            1. 확인할 표현 {result.issues.length}개
+          </a>
+          <a
+            href="#issue-inspector"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2"
+          >
+            2. 수정 방향 선택
+          </a>
+          <a
+            href="#rewrite-draft"
+            className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-indigo-800"
+          >
+            3. 초안 확인·재검사
+          </a>
+        </nav>
+      )}
       {result.notices.length > 0 && (
         <details
           className="rounded-xl border border-amber-200 bg-amber-50/60 p-3"
@@ -1744,18 +1827,22 @@ function ScanResult({
           result={result}
         />
       )}
-      {isLow ? (
+      {isLow && coverage.state !== 'PARTIAL' ? (
         <LowRiskResult
           text={analyzedText}
           audience={result.audience}
           onNewScan={onNewScan}
         />
       ) : result.issues.length === 0 ? (
-        <ReviewRequiredEmptyState text={analyzedText} onNewScan={onNewScan} />
+        <ReviewRequiredEmptyState
+          text={analyzedText}
+          result={result}
+          onNewScan={onNewScan}
+        />
       ) : (
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
           <div className="min-w-0 space-y-6">
-            <section>
+            <section id="key-issues" className="scroll-mt-6" tabIndex={-1}>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-900">
                   핵심 이슈
@@ -1826,6 +1913,15 @@ function ScanResult({
               copied={copied}
               draftText={draftText}
               canApplyRewrite
+              onNextIssue={() => {
+                const currentIndex = result.issues.findIndex(
+                  (item) => item.id === activeIssue.id,
+                );
+                onSelectIssue(
+                  result.issues[(currentIndex + 1) % result.issues.length],
+                );
+              }}
+              issuePosition={`${result.issues.findIndex((item) => item.id === activeIssue.id) + 1} / ${result.issues.length}`}
             />
           )}
         </div>
@@ -1935,12 +2031,15 @@ function IssueListItem({
             “{issue.originalText}”
           </span>
         </span>
-        <span className="block line-clamp-2 text-sm leading-6 text-slate-500">
-          {issue.explanation}
+        <span className="line-clamp-2 text-sm leading-6 text-slate-600">
+          {conciseIssueReason(issue.explanation)}
+        </span>
+        <span className="mt-2 block text-sm font-medium text-indigo-800">
+          다음 행동 · {issueNextAction(issue)}
         </span>
         {legalBasis && (
           <span className="mt-2 block text-xs font-medium text-violet-700">
-            검토 기준 · {legalBasis}
+            근거 연결됨 · 상세에서 확인
           </span>
         )}
       </span>
@@ -2431,8 +2530,31 @@ function RewriteDraft({
   onRescan: () => void;
   allowBatch?: boolean;
 }) {
+  const [copyState, setCopyState] = useState<{
+    value: string;
+    message: string;
+  } | null>(null);
+  const copyDraft = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyState({
+        value,
+        message:
+          '초안 전체를 복사했습니다. 게시 전 실제 제품 정보와 남은 검토 사항을 확인하세요.',
+      });
+    } catch {
+      setCopyState({
+        value,
+        message:
+          '복사 권한을 사용할 수 없습니다. 아래 초안 입력란의 문구를 직접 선택해 복사하세요.',
+      });
+    }
+  };
   return (
-    <Card className="border-0 py-0 shadow-sm ring-1 ring-indigo-200">
+    <Card
+      id="rewrite-draft"
+      className="scroll-mt-6 border-0 py-0 shadow-sm ring-1 ring-indigo-200"
+    >
       <CardHeader className="block border-b border-indigo-100 bg-indigo-50/50 px-5 py-4">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
           <Sparkles className="size-4 text-indigo-600" /> 수정 초안
@@ -2442,15 +2564,24 @@ function RewriteDraft({
           초안도 여기서는 텍스트만 재검사합니다.
         </CardDescription>
         <CardAction className="mt-3">
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50"
-            onClick={onApplyAll}
-            disabled={!allowBatch}
-          >
-            검토 대상 주장 삭제
-          </Button>
+          <details className="text-sm text-slate-600">
+            <summary className="cursor-pointer">
+              다른 방법 · 검토 대상 표현을 모두 삭제
+            </summary>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50"
+              onClick={onApplyAll}
+              disabled={!allowBatch}
+            >
+              검토 대상 표현 모두 삭제
+            </Button>
+            <p className="mt-2 text-xs leading-5">
+              광고의 의미가 사라질 수 있습니다. 적용 후 문장을 확인하고 필요하면
+              원문으로 되돌리세요.
+            </p>
+          </details>
         </CardAction>
       </CardHeader>
       <CardContent className="px-6 py-6">
@@ -2474,14 +2605,34 @@ function RewriteDraft({
           <p className="text-sm leading-6 text-slate-600" aria-live="polite">
             {notice ?? '수정한 내용은 재검사 전까지 초안으로 유지됩니다.'}
           </p>
-          <Button
-            disabled={!value.trim() || value.length > 20000}
-            onClick={onRescan}
-            className="h-10 rounded-xl bg-indigo-600 px-4 hover:bg-indigo-700"
-          >
-            <RefreshCw /> 수정 문구 재검사
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {value !== originalText && (
+              <Button variant="ghost" onClick={() => onChange(originalText)}>
+                분석한 원문으로 되돌리기
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => void copyDraft()}
+              disabled={!value.trim()}
+            >
+              <Copy />
+              초안 전체 복사
+            </Button>
+            <Button
+              disabled={!value.trim() || value.length > 20000}
+              onClick={onRescan}
+              className="h-10 rounded-xl bg-indigo-600 px-4 hover:bg-indigo-700"
+            >
+              <RefreshCw /> 수정 문구 재검사
+            </Button>
+          </div>
         </div>
+        {copyState?.value === value && (
+          <output className="mt-3 block text-sm leading-6 text-slate-700">
+            {copyState.message}
+          </output>
+        )}
       </CardContent>
     </Card>
   );
@@ -2497,6 +2648,8 @@ function IssueInspector({
   copied,
   draftText,
   canApplyRewrite = true,
+  onNextIssue,
+  issuePosition,
 }: {
   issue: Issue;
   result: ScanAnalysisResult;
@@ -2507,6 +2660,8 @@ function IssueInspector({
   copied: boolean;
   draftText?: string;
   canApplyRewrite?: boolean;
+  onNextIssue?: () => void;
+  issuePosition?: string;
 }) {
   const sources = result.sources.filter((source) =>
     issue.regulationSourceIds.includes(source.id),
@@ -2524,6 +2679,7 @@ function IssueInspector({
   return (
     <aside
       id="issue-inspector"
+      tabIndex={-1}
       className="scroll-mt-6 rounded-2xl border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.07)]"
     >
       <div className="border-b border-slate-200 px-5 py-5">
@@ -2533,7 +2689,22 @@ function IssueInspector({
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
           <Badge variant="outline">{formatIssueType(issue.category)}</Badge>
-          <Badge variant="outline">{formatPack(issue.packId)} Pack</Badge>
+          <Badge variant="outline">{formatPack(issue.packId)} 검토 기준</Badge>
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-2 text-sm">
+          <a
+            href="#key-issues"
+            className="rounded-lg px-2 py-2 text-indigo-700 underline underline-offset-4"
+          >
+            이슈 목록으로
+          </a>
+          {onNextIssue && (
+            <Button size="sm" variant="outline" onClick={onNextIssue}>
+              다음 이슈{' '}
+              <span className="text-xs text-slate-500">{issuePosition}</span>
+              <ArrowRight />
+            </Button>
+          )}
         </div>
       </div>
       <div className="space-y-6 px-5 py-5">
@@ -2763,9 +2934,11 @@ function LowRiskResult({
 
 function ReviewRequiredEmptyState({
   text,
+  result,
   onNewScan,
 }: {
   text: string;
+  result: ScanAnalysisResult;
   onNewScan: () => void;
 }) {
   return (
@@ -2776,12 +2949,14 @@ function ReviewRequiredEmptyState({
         </span>
         <RiskBadge severity="REVIEW_REQUIRED" />
         <h2 className="mt-5 text-2xl font-semibold tracking-tight text-slate-950">
-          제품 분류를 먼저 확인해 주세요
+          {result.detectedCategory === 'UNKNOWN'
+            ? '제품 유형을 먼저 확인해 주세요'
+            : '이번 검사만으로 위험도를 판단하기 어렵습니다'}
         </h2>
         <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
-          현재 지원 범위에서 제품 유형을 확정하지 못해 규정 근거가 없는 Issue를
-          만들지 않았습니다. 제품 유형과 제품명·공식 품목 식별번호를 확인한 뒤
-          다시 검사해 주세요.
+          {result.detectedCategory === 'UNKNOWN'
+            ? '제품 유형을 확정하지 못했습니다. 제품 분류와 원문을 확인한 뒤 다시 검사하세요.'
+            : '표시할 이슈가 없더라도 분석이 충분히 완료된 것은 아닙니다. 위 분석 범위를 확인하고 다시 검사하거나 담당자에게 검토를 요청하세요.'}
         </p>
         <div className="mt-7 w-full max-w-2xl rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-left text-base leading-7 text-slate-700">
           {text}
@@ -2807,22 +2982,22 @@ function RiskBadge({
 }) {
   const config = {
     HIGH: {
-      label: 'HIGH RISK',
+      label: '높은 위험',
       icon: TriangleAlert,
       className: 'border-red-200 bg-red-50 text-red-700',
     },
     MEDIUM: {
-      label: 'MEDIUM RISK',
+      label: '주의 필요',
       icon: ShieldAlert,
       className: 'border-amber-200 bg-amber-50 text-amber-700',
     },
     LOW: {
-      label: 'LOW RISK',
+      label: '탐지 위험 낮음',
       icon: CheckCircle2,
       className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
     },
     REVIEW_REQUIRED: {
-      label: 'REVIEW REQUIRED',
+      label: '추가 검토 필요',
       icon: Info,
       className: 'border-blue-200 bg-blue-50 text-blue-700',
     },
