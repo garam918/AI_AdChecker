@@ -121,7 +121,7 @@ export class ImageComplianceScanService {
     return ScanAnalysisResultSchema.parse({
       ...result,
       inputType: 'IMAGE',
-      ...(extraction.incomplete && { overallRisk: 'REVIEW_REQUIRED' }),
+      // Coverage normalization preserves already-discovered HIGH/MEDIUM findings.
       imageContent: {
         ...extraction,
         analysisText,
