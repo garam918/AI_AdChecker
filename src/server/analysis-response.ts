@@ -9,6 +9,10 @@ import {
 } from '@/src/compliance/core/schemas';
 import { WebExtractionError } from '@/src/content/web/web-extraction-error';
 import { UnsafeUrlError } from '@/src/security/url-validator';
+import {
+  analysisAdmission,
+  AnalysisAdmissionError,
+} from './analysis-admission';
 
 export class AnalysisInputError extends Error {
   constructor(
@@ -20,6 +24,12 @@ export class AnalysisInputError extends Error {
 }
 
 export function analysisError(error: unknown) {
+  if (error instanceof AnalysisAdmissionError)
+    return {
+      code: error.status === 429 ? 'ANALYSIS_BUSY' : 'ORIGIN_REJECTED',
+      message: error.message,
+      status: error.status,
+    };
   if (error instanceof AIAnalysisError)
     return { code: error.code, message: error.message, status: error.status };
   if (error instanceof AnalysisInputError || error instanceof UnsafeUrlError)
@@ -43,7 +53,13 @@ export function analysisError(error: unknown) {
 
 export function errorResponse(error: unknown) {
   const { status, ...body } = analysisError(error);
-  return Response.json(body, { status });
+  return Response.json(body, {
+    status,
+    headers: {
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+    },
+  });
 }
 
 export async function readLimitedBody(request: Request, limit: number) {
@@ -88,13 +104,27 @@ export async function analysisResponse(
   request: Request,
   work: (progress: AnalysisProgress) => Promise<ScanAnalysisResult>,
 ) {
+  let release: () => void;
+  try {
+    release = analysisAdmission.enter(request);
+  } catch (error) {
+    return errorResponse(error);
+  }
   if (!request.headers.get('accept')?.includes('application/x-ndjson')) {
     try {
       return Response.json(
         ScanAnalysisResultSchema.parse(await work(() => {})),
+        {
+          headers: {
+            'cache-control': 'no-store',
+            'x-content-type-options': 'nosniff',
+          },
+        },
       );
     } catch (error) {
       return errorResponse(error);
+    } finally {
+      release();
     }
   }
   let closed = false;
@@ -130,6 +160,7 @@ export async function analysisResponse(
       } catch (error) {
         send({ type: 'error', ...analysisError(error) });
       } finally {
+        release();
         if (!closed) controller.close();
         closed = true;
       }
