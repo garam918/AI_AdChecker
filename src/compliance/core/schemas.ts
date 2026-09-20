@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getAnalysisCoverage } from './analysis-coverage';
 
 import {
   DetectedCategorySchema,
@@ -290,7 +291,17 @@ export const ScanAnalysisResultSchema = z
         }
       });
     });
-  });
+  })
+  .transform((result) => ({
+    ...result,
+    // Also repairs old saved reports when parsed: no hits is not an all-clear
+    // if AI reasoning, extraction or classification was incomplete.
+    overallRisk:
+      result.overallRisk === 'LOW' &&
+      getAnalysisCoverage(result).state === 'PARTIAL'
+        ? ('REVIEW_REQUIRED' as const)
+        : result.overallRisk,
+  }));
 
 export type Severity = z.infer<typeof SeveritySchema>;
 export type AnalysisAudience = z.infer<typeof AnalysisAudienceSchema>;
