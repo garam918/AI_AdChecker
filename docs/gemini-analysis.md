@@ -1,4 +1,4 @@
-# AI 분석 연결: Vertex AI → OpenAI → 규칙 기반
+# AI 분석 연결과 장애 대체 경로
 
 텍스트, 공개 URL·상품 상세페이지, 업로드 이미지의 분석은 **Vertex AI의 Gemini**(`gemini-3.8-flash`, `VERTEX_MODEL`로 변경 가능)를 기본 제공자로 사용합니다. Gemini Developer API(`generativelanguage.googleapis.com`, `GEMINI_API_KEY`)는 더 이상 사용하지 않습니다. YouTube·영상은 제외하며, 기존 규정 Pack의 범위를 유지합니다.
 
@@ -16,11 +16,13 @@
 ```
 
 - 안전성 차단(`AI_INCOMPLETE`)은 다른 AI 제공자로 재시도하지 않습니다.
-- 별도 제공자 인증이 없으면 일시적 429/503 응답만 1.5~2초의 무작위 대기 후 최대 1회 재시도합니다. `Retry-After`가 더 길면 이를 존중하되 5초 대기 또는 전체 남은 예산을 초과하면 재시도하지 않습니다. 일일 한도·인증·시간 초과·응답 검증·안전 차단은 이 경로로 재시도하지 않습니다. 각 시도는 별도 기록합니다. [Google의 429 처리 지침](https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429)
+- 별도 제공자 인증이 없고 `VERTEX_FALLBACK_MODEL`이 있으면, 일시적 429/503·시간 초과·응답 형식 오류·모델 불가 등의 오류에서 같은 Vertex의 대체 모델로 한 번 전환합니다. 전환한 요청의 후속 분석 단계도 대체 모델을 사용합니다. 인증·일일 한도·안전 차단에서는 전환하지 않습니다. 동일 Google 계정·서비스의 대체 모델이지 다른 제공자로의 장애 격리가 아닙니다. 빈 값이면 비활성화됩니다.
+- 별도 제공자와 Vertex 대체 모델이 모두 없으면 일시적 429/503 응답만 같은 모델로 최대 1회 재시도합니다. 시간 초과·응답 검증 오류는 이 경로로 재시도하지 않습니다. 429/503 재시도·모델 전환은 1.5~2초 무작위 대기를 적용합니다. `Retry-After`가 더 길면 이를 존중하되 5초 대기 또는 전체 남은 예산을 초과하면 추가 요청하지 않습니다. 각 시도는 별도 기록합니다. [Google의 429 처리 지침](https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429)
 - 이미지의 OCR·시각 관찰 단계는 AI 없이는 대체할 수 없습니다. 추출이 실패하면 오류를 반환하고, 추출 후 규정 해석 단계가 실패하면 추출된 문구에 대해 규칙 기반 결과를 제공합니다.
 - 규칙 기반 최종 결과는 결정론적 패턴 탐지와 검증된 조항 인용으로 구성됩니다. 앞선 OCR·주장 추출은 성공하고 최종 AI 해석만 실패할 수 있으므로 호출 기록에서 부분 성공을 구분합니다. UI는 최종 규칙 대체와 문맥 해석의 한계를 표시하며, 부분 성공을 "AI 미사용"으로 뭉뚱그리지 않습니다.
 - 모든 시도는 `metrics.attempts`(제공자·모델·소요 시간·결과 코드)에 기록되고 `metrics.elapsedMs`에 전체 소요 시간이 남습니다. 요청마다 새 클라이언트를 만들어 동시 사용자의 기록이 섞이지 않습니다.
-- `AI_FALLBACK_PROVIDER=none`은 OpenAI 대체를, `AI_RULES_FALLBACK=off`는 규칙 기반 대체를 끕니다. 대표 데모(`업무 시간을 70% 줄여주는 국내 최고의 AI 서비스`)는 기본 설정에서 어떤 AI 제공자가 실패해도 규칙 기반 경로로 완료됩니다 ([production-analysis.test.ts](../src/server/production-analysis.test.ts)).
+- `AI_FALLBACK_PROVIDER=none`은 OpenAI 대체를, `AI_RULES_FALLBACK=off`는 규칙 기반 대체를 끕니다. 대표 데모(`업무 시간을 70% 줄여주는 국내 최고의 AI 서비스`)의 AI 실패 시 규칙 기반 경로가 결과를 만드는지 모의 테스트합니다. 서버·네트워크 장애까지 포함한 완료 보장은 아닙니다 ([production-analysis.test.ts](../src/server/production-analysis.test.ts)).
+- 운영 설정은 기본 `gemini-3.8-flash`, 같은 Vertex 대체 `gemini-3.6-flash`입니다. 외부 제공자 인증은 없습니다. `metrics.vertexFallbackModel`과 `metrics.fallbackConfigured`는 각각 모델 설정과 별도 제공자 키의 존재를 뜻하며, 실제 전환·성공 여부는 `metrics.attempts`로 확인합니다.
 
 ## Vertex AI 설정
 
@@ -70,7 +72,7 @@ node scripts/configure-vertex.mjs --server-status --project=<id>
 - 이미지: 정지 이미지 1장, 최대 5MB, PNG/JPEG/WebP. MIME과 파일 시그니처를 함께 확인하며 영상·움직이는 PNG/WebP는 제외합니다.
 - AI 추가 주장 최대 24개, Pack별 병합 주장 최대 40개.
 - 분류·이미지 추출·규정 해석의 기본값은 `low` thinking입니다. 규정 해석만 `AI_ANALYSIS_THINKING=medium`으로 높일 수 있습니다. `gemini-2.5-*` 모델은 `thinkingBudget`(0 / 2048)으로 자동 변환합니다. 주장 8개씩 묶어 생성하며 호출별 출력 상한 12,000토큰, 응답 상한 1MB입니다. 전체 문맥은 한 번만 전송하고, 주장별 검색 조항은 원문을 자르지 않은 채 중복 메타데이터만 제외합니다.
-- 요청별 AI 클라이언트의 공유 예산은 65초, Vertex 호출별 상한은 35초, OpenAI 대체 호출별 상한은 25초입니다. 매 호출은 남은 예산까지만 대기하며, 분류·이미지 추출·여러 주장 묶음과 재시도가 같은 예산을 공유합니다. 콘텐츠 추출·검색·전송까지 포함한 HTTP 전체의 65초 완료 보장은 아닙니다. 별도 제공자 인증이 있으면 기존 대체 경로를 우선합니다.
+- 요청별 AI 클라이언트의 공유 예산은 65초, 기본 Vertex 호출별 상한은 35초, Vertex 대체 모델·OpenAI 대체 호출별 상한은 25초입니다. 매 호출은 남은 예산까지만 대기하며, 분류·이미지 추출·여러 주장 묶음과 재시도가 같은 예산을 공유합니다. 콘텐츠 추출·검색·전송까지 포함한 HTTP 전체의 65초 완료 보장은 아닙니다. 별도 제공자 인증이 있으면 기존 OpenAI 대체 경로를 우선합니다.
 - HTTP 분석 진입점은 단일 서버 인스턴스에서 동시 3건·직전 1분 15건으로 제한하고, 다른 Origin의 브라우저 요청을 거부합니다. IP나 광고 원문을 제한용 기록에 보관하지 않습니다. **분산 인스턴스 전체의 일일 비용 제한이나 인증이 아닙니다.** Origin 없는 API 클라이언트는 허용되므로 공개 서비스의 악용 방지를 완료했다고 볼 수 없으며, 전역 사용량 제한·계정별 할당량·결제 알림이 추가로 필요합니다. 평가 스크립트는 HTTP 진입점을 거치지 않습니다.
 - JSON·스트리밍 결과와 오류는 `no-store`로 반환합니다. 저장 기록을 복원할 때에도 AI 미완료를 LOW로 안심시키지 않으며, 이미 찾은 HIGH/MEDIUM 이슈와 분석 완성도는 따로 표시합니다.
 - Gemini에 보내는 JSON Schema에서는 `$schema`, `minLength`, `maxLength`, `minItems`, `maxItems`를 제외하고 서버의 Zod 스키마로 계속 검증합니다. Vertex 구조화 출력은 `generationConfig.responseMimeType: "application/json"` + `responseJsonSchema`를 사용합니다.
