@@ -1,5 +1,7 @@
 import rawCases from '@/evals/end-to-end/cases.json';
 import challengeCases from '@/evals/challenge/cases.json';
+import validationCases from '@/evals/validation/cases.json';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
 import { createContentComplianceScanService } from '@/src/server/regulatory-runtime';
@@ -15,6 +17,18 @@ const cases = EvaluationDatasetSchema.parse(rawCases);
 const service = createContentComplianceScanService();
 
 describe('end-to-end evaluation dataset', () => {
+  it('keeps the first validation set frozen and disjoint from development examples', () => {
+    const validation = EvaluationDatasetSchema.parse(validationCases);
+    expect(validation).toHaveLength(40);
+    expect(validation.filter((item) => item.group === 'FLAG')).toHaveLength(24);
+    const oldInputs = new Set(
+      [...rawCases, ...challengeCases].map((item) => item.input),
+    );
+    expect(validation.every((item) => !oldInputs.has(item.input))).toBe(true);
+    expect(
+      createHash('sha256').update(JSON.stringify(validation)).digest('hex'),
+    ).toBe('12337ce1d73ae2fcdae99c443f9112a24a5cd25fabc4ce298144dbe7a1b49fc6');
+  });
   it('holds 30–50 unique cases across FLAG and SAFE groups for every pack', () => {
     expect(cases.length).toBeGreaterThanOrEqual(30);
     expect(cases.length).toBeLessThanOrEqual(50);
