@@ -1,6 +1,7 @@
 import type { Claim } from '@/src/compliance/core/schemas';
 import type { RegulationChunk } from '@/src/compliance/regulatory/schemas';
 import { BASE_SAFE_ANALYSIS_INSTRUCTIONS } from '@/src/compliance/core/analysis-instructions';
+import { hasExplicitNonRenewingTrial } from '@/src/compliance/packs/general-advertising/trial-conditions';
 
 import {
   ComplianceFindingSchema,
@@ -98,6 +99,26 @@ function createFinding(
   }
 
   if (claim.claimType === 'PRICE_CONDITION' || claim.claimType === 'FREE') {
+    if (
+      hasSources &&
+      hasExplicitNonRenewingTrial(claim.contextText ?? claim.text)
+    ) {
+      return {
+        claimId: claim.id,
+        disposition: 'PASS',
+        severity: 'LOW',
+        issueType: 'CONDITION_DISCLOSURE',
+        resolutionType: 'HUMAN_REVIEW',
+        explanation:
+          '무료 기간, 자동 결제 없음, 이용자의 별도 선택과 이후 요금이 입력에 명시되어 있어 이 항목에서는 조건 누락을 탐지하지 않았습니다. 실제 조건의 사실성은 별도로 확인해야 합니다.',
+        sourceChunkIds,
+        citationAssertions,
+        requiredEvidence: [],
+        suggestedRewrites: [
+          '표시된 체험·결제 조건이 실제 서비스와 일치하는지 확인하세요.',
+        ],
+      };
+    }
     return {
       claimId: claim.id,
       severity: hasSources ? 'MEDIUM' : 'REVIEW_REQUIRED',
@@ -169,7 +190,7 @@ function createEvidenceFindingContent(claim: Claim) {
         '원본 집계 자료',
       ],
       suggestedRewrites: [
-        '2026년 8월 기준, 중복 계정을 제외한 누적 도입 기업 수는 10,000곳입니다.',
+        '[집계 기준일] 기준, [중복 제거 등 집계 기준]에 따른 도입 기업 수는 [확인된 수치]곳입니다.',
         '확인 가능한 집계 기준과 기준 시점을 수치와 함께 명시합니다.',
       ],
     };
