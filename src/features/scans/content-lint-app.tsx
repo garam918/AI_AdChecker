@@ -2069,7 +2069,13 @@ function ValueMetricNote({ result }: { result: ScanAnalysisResult }) {
         <span className="text-slate-700">
           {metrics.fallbackConfigured
             ? '대체 AI 인증 설정 있음 · 실제 실행 여부는 처리 기록 참조'
-            : '대체 AI 인증 미구성 · AI 장애 시 규칙 기반 대체 사용'}
+            : '다른 AI 제공자 인증 미구성'}
+        </span>
+      )}
+      {metrics.vertexFallbackModel && (
+        <span>
+          같은 Vertex 내 대체 모델 {metrics.vertexFallbackModel} 설정 · 실제
+          전환은 처리 기록 참조
         </span>
       )}
       {metrics.mode === 'offline' ? (
