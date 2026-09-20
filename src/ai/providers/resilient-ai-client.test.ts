@@ -22,6 +22,99 @@ const env = {
 };
 
 describe('ResilientAIClient', () => {
+  it.each([429, 503])(
+    'retries transient HTTP %s once without an alternate account and records both attempts',
+    async (status) => {
+      vi.useFakeTimers();
+      try {
+        const fetcher = vi
+          .fn<typeof fetch>()
+          .mockResolvedValueOnce(
+            new Response('', { status, headers: { 'retry-after': '3' } }),
+          )
+          .mockResolvedValueOnce(vertexResponse('{"answer":"recovered"}'));
+        const client = new ResilientAIClient(
+          { VERTEX_API_KEY: 'test-only' },
+          fetcher,
+        );
+        const pending = client.generate(schema, '', {});
+        await vi.advanceTimersByTimeAsync(2999);
+        expect(fetcher).toHaveBeenCalledTimes(1);
+        await vi.advanceTimersByTimeAsync(1);
+        await expect(pending).resolves.toEqual({ answer: 'recovered' });
+        expect(client.attempts.map(({ outcome }) => outcome)).toEqual([
+          'error',
+          'success',
+        ]);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it('bounds persistent overload to two calls under the same total deadline', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockImplementation(async () => new Response('', { status: 429 }));
+      const client = new ResilientAIClient(
+        { VERTEX_API_KEY: 'test-only' },
+        fetcher,
+      );
+      const pending = expect(
+        client.generate(schema, '', {}),
+      ).rejects.toMatchObject({ code: 'AI_RATE_LIMIT' });
+      await vi.advanceTimersByTimeAsync(2000);
+      await pending;
+      expect(fetcher).toHaveBeenCalledTimes(2);
+      expect(client.attempts).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([
+    { budget: 1000, delay: '1' },
+    { budget: 65000, delay: '60' },
+  ])(
+    'does not retry when the cooldown exceeds the available wait: %o',
+    async ({ budget, delay }) => {
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(
+          new Response('', { status: 429, headers: { 'retry-after': delay } }),
+        );
+      const client = new ResilientAIClient(
+        { VERTEX_API_KEY: 'test-only' },
+        fetcher,
+        budget,
+      );
+      await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+        code: 'AI_RATE_LIMIT',
+      });
+      expect(fetcher).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('never retries explicit daily exhaustion without a fallback account', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json(
+        {
+          error: { details: [{ violations: [{ quotaId: 'RequestsPerDay' }] }] },
+        },
+        { status: 429 },
+      ),
+    );
+    const client = new ResilientAIClient(
+      { VERTEX_API_KEY: 'test-only' },
+      fetcher,
+    );
+    await expect(client.generate(schema, '', {})).rejects.toMatchObject({
+      code: 'AI_DAILY_LIMIT',
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it('uses Vertex when it succeeds and records a single attempt', async () => {
     const fetcher = vi
       .fn<typeof fetch>()
